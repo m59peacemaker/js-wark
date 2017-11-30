@@ -1,0 +1,18 @@
+{
+  "name": "wark",
+  "version": "0.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "node -r reify ./test",
+    "dev": "onchange '*.js' -i -- npm test"
+  },
+  "keywords": [],
+  "author": "Johnny Hauser <johnnyhauser@gmail.com>",
+  "license": "CC0-1.0",
+  "devDependencies": {
+    "onchange": "^3.2.1",
+    "reify": "^0.12.3",
+    "tape": "^4.8.0"
+  }
+}
