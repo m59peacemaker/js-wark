@@ -112,28 +112,55 @@ test('merge() when one dep is initialized', t => {
   t.end()
 })
 
-test('very uncool dependency prollem', t => {
+test('atomic updates', t => {
   const a = Stream()
   a.label = 'a'
   const b = map (v => v + 1) (a)
   b.label = 'b'
   const c = map (v => -1) (a)
   c.label = 'c'
-  const bc = combine
+  const d = combine
     (([ b, c ], self) => {
       self.set(b.get() + c.get())
     })
     ([ b, c ])
-  bc.label = 'bc'
+  d.label = 'd'
 
   let timesCalled = 0
-  const bcmap = map (v => ++timesCalled) (bc)
-  bcmap.label = 'bcmap'
+  const e = combine
+    ((dependencies, self, changedDependencies) => {
+      t.deepEqual(changedDependencies, [ d ])
+      ++timesCalled
+    })
+    ([ d ])
+    e.label = 'e'
 
   a.set(0)
   a.set(10)
 
   t.equal(timesCalled, 2)
+
+  t.end()
+})
+
+// TODO: what is supposed to happen here?
+test('multiple sets within combineFn', t => {
+  const a = Stream()
+
+  const b = combine
+    (([ a ], self) => {
+    self.set(a.get())
+    self.set(a.get() + 1)
+    })
+    ([ a ])
+
+  let count = 0
+  map (() => ++count) (b)
+
+  a.set(1)
+
+  t.equal(b.get(), 2)
+  t.equal(count, 2) // or 1?
 
   t.end()
 })

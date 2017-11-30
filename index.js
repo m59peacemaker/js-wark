@@ -1,102 +1,103 @@
+const queueDependants = queue => dependency => {
+  return dependency.dependants.reduce((queue, dependant) => {
+    const queuedDependant = queue.get(dependant)
+      || { stream: dependant, changedDependencies: new Set() }
+    queue.delete(dependant)
+    queuedDependant.changedDependencies.add(dependency)
+    queue.set(dependant, queuedDependant)
+    return queueDependants (queue) (dependant)
+  }, queue)
+}
+
+// TODO: implement lifecycle stream.end
+
 const Stream = function (initialValue) {
-
-  function stream (value) {
-    if (!stream.stale) {
-      stream.markStale()
-    }
-
-    stream.value = value
-    stream.initialized = true
-    stream.stale = false
-
-    stream.callDependants()
-  }
-
-  const callDependants = () =>
-    stream.dependants.forEach(dependant => dependant.dependencyListener(stream))
-
-  Object.assign(stream, {
-    value: initialValue,
+  const stream = {
     initialized: arguments.length !== 0,
-    dependants: [],
-    dependencies: [],
-    stale: false,
-    staleDependencies: 0
-  })
-
-  const get = () => stream.value
-
-  const set = stream
-
-  const markStale = () => {
-    stream.stale = true
-    stream.dependants.forEach(dependant => dependant.notifyOfStaleDependency())
+    dependants: []
   }
 
-  const notifyOfStaleDependency = () => {
-    stream.staleDependencies = stream.staleDependencies + 1
-    stream.markStale()
+  let value = initialValue
+
+  const get = () => value
+
+  const set = newValue => {
+    value = newValue
+    stream.initialized = true
+    stream.notifyDependants()
   }
 
   const registerDependant = dependant => stream.dependants.push(dependant)
 
+  const notifyDependants = () => {
+    const queue = queueDependants (new Map()) (stream)
+    queue.forEach(
+      ({ stream, changedDependencies }) => stream.onDependencyChange([ ...changedDependencies ])
+    )
+  }
+
+
+  const toString = () => `stream (${value})`
+  const toJSON = () => value
+
   return Object.assign(stream, {
     get,
     set,
-    callDependants,
+    toString,
+    toJSON,
     registerDependant,
-    markStale,
-    notifyOfStaleDependency
+    notifyDependants
+  })
+}
+
+const DependantStream = computeFn => dependencies => {
+  const stream = Stream()
+  let dependenciesInitialized = false
+
+  // TODO: this is quite ugly
+  let shouldNotifyDependants = true
+  const notifyDependants = stream.notifyDependants
+  stream.notifyDependants = () => {
+    if (shouldNotifyDependants) {
+      notifyDependants()
+    }
+  }
+
+  const recompute = (changedDependencies = []) =>
+    computeFn(dependencies, stream, changedDependencies)
+
+  const initialize = () => {
+    dependenciesInitialized = true
+    recompute()
+    return stream
+  }
+
+  const onDependencyChange = changedDependencies => {
+    dependenciesInitialized = dependenciesInitialized
+      || dependencies.every(dependency => dependency.initialized)
+
+    if (dependenciesInitialized) {
+      shouldNotifyDependants = false
+      recompute(changedDependencies)
+      shouldNotifyDependants = true
+    }
+  }
+
+  dependencies.forEach(dependency => dependency.registerDependant(stream))
+  onDependencyChange()
+
+  return Object.assign(stream, {
+    initialize,
+    onDependencyChange
   })
 }
 
 const combine = combineFn => dependencies => {
-  const stream = Stream()
-  let changedDependencies = []
-
-  stream.recompute = () => {
-    combineFn(dependencies, stream, changedDependencies)
-  }
-
-  stream.dependencies = dependencies
-  stream.dependenciesInitialized = false
-
-  stream.dependencyListener = dependency => {
-    changedDependencies.push(dependency)
-    stream.staleDependencies = Math.max(0, stream.staleDependencies - 1)
-
-    if (stream.staleDependencies) {
-      stream.callDependants()
-      return
-    }
-
-    stream.dependenciesInitialized = stream.dependenciesInitialized
-      || dependencies.every(dependency => dependency.initialized)
-
-    if (stream.dependenciesInitialized) {
-      stream.recompute(dependency)
-    }
-
-    stream.stale = false
-    changedDependencies = []
-  }
-
-  dependencies.forEach(
-    dependency => dependency.registerDependant(stream)
-  )
-
-  stream.dependencyListener()
-
+  const stream = DependantStream (combineFn) (dependencies)
   return stream
 }
 
-const immediate = stream => {
-  if (!stream.dependenciesInitialized) {
-    stream.dependenciesInitialized = true
-    stream.recompute()
-  }
-  return stream
-}
+const immediate = stream => stream.initialize()
 
 const map = mappingFn => stream =>
   combine
