@@ -4,8 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "node -r reify ./test",
-    "dev": "onchange '*.js' -i -- npm test"
+    "test": "tape -r reify ./lib/*.test.js",
+    "dev": "onchange '*.js' 'lib/*.js' -i -- npm test"
   },
   "keywords": [],
   "author": "Johnny Hauser <johnnyhauser@gmail.com>",
