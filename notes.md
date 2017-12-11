@@ -1,2 +1,0 @@
-- A dependency change causes a dependant to recompute, but that doesn't mean a dependant will emit. The dependant may choose not to emit, to emit, or to emit later. Consequently, dependant streams need to be able to initiate dependant updates just like non-dependant streams.
-- What should happen if in a combine function `self.set` is called multiple times?

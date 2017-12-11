@@ -2,10 +2,10 @@
   "name": "wark",
   "version": "0.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "lib/index.js",
   "scripts": {
-    "test": "tape -r reify ./lib/*.test.js",
-    "dev": "onchange '*.js' 'lib/*.js' -i -- npm test"
+    "test": "tape -r reify './lib/**/*.test.js'",
+    "dev": "onchange 'lib/**/*.js' -i -- npm test"
   },
   "keywords": [],
   "author": "Johnny Hauser <johnnyhauser@gmail.com>",
@@ -14,5 +14,6 @@
     "onchange": "^3.2.1",
     "reify": "^0.12.3",
     "tape": "^4.8.0"
-  }
+  },
+  "dependencies": {}
 }
