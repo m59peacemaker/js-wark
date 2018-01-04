@@ -1,19 +1,32 @@
 {
   "name": "wark",
   "version": "0.0.0",
-  "description": "",
+  "description": "An observable library similar to flyd, named after a chocobo sound.",
   "main": "lib/index.js",
   "scripts": {
     "test": "tape -r reify './lib/**/*.test.js'",
     "dev": "onchange 'lib/**/*.js' -i -- npm test"
   },
-  "keywords": [],
+  "keywords": [
+    "observable",
+    "stream",
+    "computed",
+    "property",
+    "functional",
+    "frp",
+    "fp",
+    "state"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/m59peacemaker/js-wark"
+  },
   "author": "Johnny Hauser <johnnyhauser@gmail.com>",
   "license": "CC0-1.0",
+  "dependencies": {},
   "devDependencies": {
     "onchange": "^3.2.1",
     "reify": "^0.12.3",
     "tape": "^4.8.0"
-  },
-  "dependencies": {}
+  }
 }
