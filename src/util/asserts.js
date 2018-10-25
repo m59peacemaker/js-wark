@@ -14,7 +14,7 @@ const assertStreamIsType = type => stream => {
 
 const assertIsArray = label => value => {
   if (!Array.isArray(value)) {
-    throw new Error(`${label} should to be an array. ${stream} given.`)
+    throw new Error(`${label} should be an array. ${stream} given.`)
   }
 }
 
