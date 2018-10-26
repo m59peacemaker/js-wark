@@ -50,14 +50,14 @@ const canPropagate = stream => {
 		}
 		sortedGraph.reduce(
 		  (propagationState, dependant) => {
-				dependant.propagationEnabled = false
-				const unsubscribe = dependant.once('set', () => propagationState.updatedStreams.push(dependant))
-				dependant.onPropagation(propagationState)
-				unsubscribe()
-				dependant.propagationEnabled = true
-				return propagationState
+			dependant.propagationEnabled = false
+			const unsubscribe = dependant.once('set', () => propagationState.updatedStreams.push(dependant))
+			dependant.onPropagation(propagationState)
+			unsubscribe()
+			dependant.propagationEnabled = true
+			return propagationState
 		  },
-			{ updatedStreams: [ stream ] },
+			{ updatedStreams: [ stream ] }
 		)
 		console.log(stream.label, 'propagation complete')
 		sortedGraph.forEach(dependant => dependant.onPropagationComplete())

@@ -1,7 +1,7 @@
 import test from 'zora'
 import EndStream from './EndStream'
 
-test('EndStream',  t => {
+test('EndStream', t => {
 	t.test('value is initially false', t => {
 		t.equal(EndStream().get(), false)
 	})

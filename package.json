@@ -6,9 +6,13 @@
   "scripts": {
     "build": "tsc",
     "build-no-type-check": "(tsc || true)",
+    "lint": "tslint -c tslint.yaml --project tsconfig.json 'src/**/*.ts'",
+    "lint-fix": "tslint --fix -c tslint.yaml --project tsconfig.json 'src/**/*.ts'",
+    "prebuild": "npm run lint-fix",
+    "prebuild-no-type-check": "npm run lint",
     "test": "glob-module-file --pattern './dist/**/*.{spec,test}.js' | node -r reify",
-		"build:test": "npm run build && npm run test",
-		"build-no-type-check:test": "npm run build-no-type-check && npm run test",
+    "build:test": "npm run build && npm run test",
+    "build-no-type-check:test": "npm run build-no-type-check && npm run test",
     "dev": "onchange 'src/**/*' -i -- npm run build:test",
     "prototype": "onchange 'src/**/*' -i -- npm run build-no-type-check:test"
   },
@@ -35,6 +39,8 @@
     "glob-module-file": "^2.2.1",
     "onchange": "^3.2.1",
     "reify": "^0.12.3",
+    "tslint": "^5.11.0",
+    "tslint-eslint-rules": "^5.4.0",
     "typescript": "^3.1.1",
     "zora": "^2.0.1"
   }

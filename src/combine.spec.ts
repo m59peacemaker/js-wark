@@ -5,14 +5,14 @@ const doubleFn = (self, [ x ]) => self.set(x.get() * 2)
 
 test('combine', t => {
 	t.test('combineFn is passed a new stream', t => {
-		let stream;
+		let stream
 		combine (self => stream = self) ([ ])
 		t.ok(isStream(stream))
 	})
 
 	t.test('combineFn is passed an array of dependencies', t => {
-		let a$;
-		let b$;
+		let a$
+		let b$
 		combine
 			((self, [ a, b ]) => {
 				a$ = a
@@ -280,7 +280,7 @@ test('combine', t => {
 	})
 
 	// TODO: flyd says this should be [ 1, 2 ], but I don't see that as a good thing
-	//t.test('executes to the end before handlers are triggered', t => {
+	// t.test('executes to the end before handlers are triggered', t => {
 	t.test('execution order when setting another stream in a combineFn', t => {
 		const order = []
 		const x = Stream(4)

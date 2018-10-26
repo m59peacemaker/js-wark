@@ -20,8 +20,8 @@ function Stream (value) {
 
 	const end = EndStream()
 
-  return Object.assign(
-	  stream,
+	return Object.assign(
+		stream,
 		getterSetter,
 		canPropagate(Emitter(stream)),
 		{
@@ -30,7 +30,7 @@ function Stream (value) {
 			set: stream,
 			end,
 			[Symbol.toStringTag]: TYPE_STREAM
-	  }
+		}
 	)
 }
 
