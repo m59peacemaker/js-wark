@@ -15,7 +15,7 @@ const canGetSet = stream => {
 		return `${stream[Symbol.toStringTag]}(${stream.value})`
 	}
 
-  return {
+	return {
 		set,
 		get,
 		toJSON: get,

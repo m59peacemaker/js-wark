@@ -14,8 +14,8 @@ const EndStream = () => {
 
 	const getterSetter = canGetSet(endStream)
 
-  return Object.assign(
-	  endStream,
+	return Object.assign(
+		endStream,
 		getterSetter,
 		canPropagate(Emitter(endStream)),
 		{
@@ -24,7 +24,7 @@ const EndStream = () => {
 			set: endStream,
 			end: endStream,
 			[Symbol.toStringTag]: TYPE_END_STREAM
-	  }
+		}
 	)
 }
 

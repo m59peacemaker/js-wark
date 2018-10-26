@@ -7,9 +7,9 @@ import assertStreamNotEnded from '../util/assertStreamNotEnded'
 
 function ComputedStream (combineFn, dependencies) {
 
-  let inPropagation = false
+	let inPropagation = false
 	let calledSetDuringThisPropagation = false
-  let queuedValues = []
+	let queuedValues = []
 
 	const computedStream = value => {
 		if (calledSetDuringThisPropagation) {
@@ -54,7 +54,6 @@ function ComputedStream (combineFn, dependencies) {
 		queuedValues.forEach(value => computedStream(value))
 		queuedValues = []
 	}
-
 
 	const getterSetter = canGetSet(computedStream)
 
