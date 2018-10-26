@@ -21,6 +21,7 @@ const EndStream = () => {
 		{
 			value: false,
 			initialized: false,
+			dependants: new Set(),
 			set: endStream,
 			end: endStream,
 			[Symbol.toStringTag]: TYPE_END_STREAM

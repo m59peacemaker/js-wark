@@ -1,7 +1,7 @@
 import test from 'zora'
 import { Stream, combine, isStream } from './'
 
-const doubleFn = (self, [ x ]) => self.set(x.get() * 2)
+const doubleFn = (self, [ x ]) => self.update(x.get() * 2)
 
 test('combine', t => {
 	t.test('combineFn is passed a new stream', t => {
@@ -26,7 +26,7 @@ test('combine', t => {
 	t.test('basic combine', t => {
 		const a = Stream ()
 		const b = combine
-			((self, [ x ]) => self.set(x.get() + 1))
+			((self, [ x ]) => self.update(x.get() + 1))
 			([ a ])
 
 		t.equal(b.get(), undefined)
@@ -53,7 +53,7 @@ test('combine', t => {
 		const b = Stream(2)
 		const c = combine
 			((self, [ a, b ]) => {
-				self.set(a.get() + b.get())
+				self.update(a.get() + b.get())
 			})
 			([ a, b ])
 
@@ -68,7 +68,7 @@ test('combine', t => {
 		const b = Stream()
 		const c = combine
 			((self, [ a, b ]) => {
-				self.set(a.get() + b.get())
+				self.update(a.get() + b.get())
 			})
 			([ a, b ])
 
@@ -83,7 +83,7 @@ test('combine', t => {
 		const b = Stream(2)
 		const c = combine
 			((self, [ a, b ]) => {
-				self.set(a.get() + b.get())
+				self.update(a.get() + b.get())
 			})
 			([ a, b ])
 
@@ -100,15 +100,15 @@ test('combine', t => {
 
 		const a = Stream(1)
 		const b = combine
-			((self, [ a ]) => self.set(a.get() + 1))
+			((self, [ a ]) => self.update(a.get() + 1))
 			([ a ])
 		const c = combine
-			((self, [ a ]) => self.set(a.get() + 10))
+			((self, [ a ]) => self.update(a.get() + 10))
 			([ a ])
 		const d = combine
 			((self, [ b, c ]) => {
 				++dUpdateCount
-				self.set(b.get() + c.get())
+				self.update(b.get() + c.get())
 			})
 			([ b, c ])
 
@@ -128,7 +128,7 @@ test('combine', t => {
 	t.test('creating and combining streams inside of a stream body', t => {
 		const n = Stream (1)
 		const nPlus = combine
-			((self, [ n ]) => self.set(n.get() + 100))
+			((self, [ n ]) => self.update(n.get() + 100))
 			([ n ])
 		t.equal(nPlus.get(), 101)
 
@@ -136,7 +136,7 @@ test('combine', t => {
 			(() => {
 				const n = Stream(1)
 				const nPlus = combine
-					((self, [ n ]) => self.set(n.get() + 100))
+					((self, [ n ]) => self.update(n.get() + 100))
 					([ n ])
 				t.equal(nPlus.get(), 101)
 			})
@@ -151,7 +151,7 @@ test('combine', t => {
 		const setAndSum = combine
 			((self, [ y, z ]) => {
 				x.set(3)
-				self.set(z.get() + y.get())
+				self.update(z.get() + y.get())
 			})
 			([y, z])
 
@@ -161,13 +161,13 @@ test('combine', t => {
 		t.equal(doubleX.get(), 6)
 	})
 
-	t.test('multiple self.sets within combineFn', t => {
+	t.test('multiple self.updates within combineFn', t => {
 		const a = Stream()
 
 		const b = combine
 			((self, [ a ]) => {
-				self.set(a.get())
-				self.set(a.get() + 1)
+				self.update(a.get())
+				self.update(a.get() + 1)
 			})
 			([ a ])
 
@@ -175,7 +175,7 @@ test('combine', t => {
 		const c = combine
 			((self, [ b ]) => {
 				++count
-				self.set(b.get())
+				self.update(b.get())
 			})
 			([ b ])
 
@@ -205,7 +205,7 @@ test('combine', t => {
 					a.set(11)
 				}
 				console.log('setting b')
-				self.set(a.get() + 2)
+				self.update(a.get() + 2)
 			})
 			([ a ])
 
@@ -227,15 +227,14 @@ test('combine', t => {
 		t.equal(cCount, 2, '"c" called twice')
 	})
 
-	return
 	t.test('setting dependant stream directly', t => {
 		const a = Stream()
 		const b = combine
-			(([ a ], self) => {
-				self.set(a.get() + 1)
+			((self, [ a ]) => {
+				self.update(a.get() + 1)
 			})
 			([ a ])
-		const c = combine (([ b ], self) => self.set(b.get() + 10)) ([ b ])
+		const c = combine ((self, [ b ]) => self.update(b.get() + 10)) ([ b ])
 
 		b.set(1)
 		b.set(2)
@@ -255,12 +254,13 @@ test('combine', t => {
 		t.equal(c.get(), 20)
 	})
 
+	return
 	t.test('combining end streams', t => {
 		// TODO:
 		const a = Stream()
 		const b = Stream()
 		const c = combine
-			(([ aEnd, bEnd ], self) => self.set(123))
+			((self, [ aEnd, bEnd ]) => self.update(123))
 			([ a.end, b.end ])
 
 		endsOn ([ c ]) (c)
@@ -286,18 +286,18 @@ test('combine', t => {
 		const x = Stream(4)
 		const y = Stream(3)
 		const z = combine
-			(([ x ], self) => { // executes now
+			((self, [ x ]) => { // executes now
 				if (x.get() === 3) {
 					order.push(2) // executes when x.set(3) in the next combine
 				}
-				self.set(x.get() * 2)
+				self.update(x.get() * 2)
 			})
 			([ x ])
 
 		t.equal(z.get(), 8)
 
 		combine
-			(([ y ], self) => { // executes now
+			((self, [ y ]) => { // executes now
 				x.set(3) // triggers combine function above, flyd says it should wait
 				order.push(1)
 			})
