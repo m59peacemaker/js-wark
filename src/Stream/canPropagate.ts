@@ -1,5 +1,4 @@
 import depthFirstTopologicalSort from '../depth-first-topological-sort'
-import extend from '../util/extend'
 
 const flatMap = fn => array => array.reduce((acc, x) => acc.concat(fn(x)), [])
 
@@ -24,11 +23,6 @@ which would only be the case if all dependencies of a node happened to depend on
 
 const canPropagate = stream => {
 
-	extend(stream, {
-		propagationEnabled: true,
-		dependants: new Set()
-	})
-
 	let resortRequired = false
 	let sortedGraph = []
 
@@ -40,27 +34,22 @@ const canPropagate = stream => {
 	const getDependants = () => Array.from(stream.dependants)
 
 	const propagate = () => {
-		console.log(stream.label, 'propagate()'
-		if (!stream.propagationEnabled) {
-			return
-		}
 		if (resortRequired) {
 			sortedGraph = sortGraph(stream)
-		  resortRequired = false
+			resortRequired = false
 		}
 		sortedGraph.reduce(
-		  (propagationState, dependant) => {
-			dependant.propagationEnabled = false
-			const unsubscribe = dependant.once('set', () => propagationState.updatedStreams.push(dependant))
-			dependant.onPropagation(propagationState)
-			unsubscribe()
-			dependant.propagationEnabled = true
-			return propagationState
-		  },
+			(propagationState, dependant) => {
+				dependant.onUpdate = () => {
+					propagationState.updatedStreams.push(dependant)
+					dependant.onUpdate = undefined
+				}
+				dependant.compute()
+				dependant.onUpdate = undefined
+				return propagationState
+			},
 			{ updatedStreams: [ stream ] }
 		)
-		console.log(stream.label, 'propagation complete')
-		sortedGraph.forEach(dependant => dependant.onPropagationComplete())
 	}
 
 	return Object.assign(stream, {
