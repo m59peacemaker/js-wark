@@ -1,5 +1,8 @@
 # DESIGN
 
+Propagation is not a stream informing dependants of the change, that then inform dependants of the change, and so on. Propagation is mapping one source value/change to one graph state.
+Therefore, changes are propagated directly from the source stream introducing the change to all graph members.
+
 ## when to gather and sort dependants
 
 Streams must propagate changes to dependants. To do so, dependants are deeply iterated to gather a flat list of streams within the stream's dependant tree, and then that list of dependants is topologically sorted.
@@ -15,6 +18,7 @@ Instead, changes to the tree of dependants set a flag, and when the stream chang
 
 ## Stream
 
+Could also be referred to as `SourceStream`
 a container for a value that you can get and set
 when it is set, it causes its dependencies to be computed in topological order
 
@@ -22,11 +26,12 @@ when it is set, it causes its dependencies to be computed in topological order
 
 a stream with a computeFn and dependencies that are streams
 the computeFn may or may not cause the computed stream to update
-its only responsibility is having a computedStream and having dependencies
+it is only the computation from its dependencies, its only responsibility
 it can let dependences know it depends on them
 it can compute
+it should not be settable
 it should have nothing to do with the propagation process
-however, since it is a stream, it can also set/propogate (but that is a separate matter)
-computedStream.update may be helpful, as an alternative to `set`
-`update` would not propagate in the first place, so need to try to modify `set`
-however, `set` would still propagate as usual
+
+ComputedStream (computation)
+computedStream.dependsOn
+computedstream.endsOn

@@ -1,16 +1,19 @@
 import depthFirstTopologicalSort from '../depth-first-topological-sort'
+import ComputedStream from './ComputedStream'
 
 const flatMap = fn => array => array.reduce((acc, x) => acc.concat(fn(x)), [])
 
 const removeDuplicates = array => Array.from(new Set(array))
 
+const getDependants = stream => Array.from(stream.dependants)
+
 const getDeepDependants = stream => flatMap
-  (stream => [ stream, ...stream.getDependants() ])
-	(stream.getDependants())
+	(dependant => [ dependant, ...getDependants(dependant))
+	(getDependants(stream))
 
 const sortGraph = sourceStream => {
 	const dependantStreams = removeDuplicates(getDeepDependants(sourceStream))
-	const graph = dependantStreams.map(stream => [ stream, stream.getDependants() ])
+	const graph = dependantStreams.map(stream => [ stream, getDependants(stream) ])
 	const sortedGraph = depthFirstTopologicalSort(graph)
 	return sortedGraph
 }
@@ -31,32 +34,32 @@ const canPropagate = stream => {
 		stream.dependants.add(dependant)
 	}
 
-	const getDependants = () => Array.from(stream.dependants)
-
 	const propagate = () => {
 		if (resortRequired) {
 			sortedGraph = sortGraph(stream)
 			resortRequired = false
 		}
 		sortedGraph.reduce(
-			(propagationState, dependant) => {
-				dependant.onUpdate = () => {
-					propagationState.updatedStreams.push(dependant)
-					dependant.onUpdate = undefined
+			(updatedStreams, dependant) => {
+				const updatedDependencies = dependant.dependencies.filter(
+					dependency => updatedStreams.includes(dependency)
+				)
+				if (updatedDependencies.length) {
+					const value = dependant.compute(updatedDependencies)
+					if (value !== ComputedStream.noUpdate) {
+						updatedStreams.push(dependant)
+					}
 				}
-				dependant.compute()
-				dependant.onUpdate = undefined
-				return propagationState
+				return updatedStreams
 			},
-			{ updatedStreams: [ stream ] }
+			[ stream ]
 		)
 	}
 
-	return Object.assign(stream, {
+	return {
 		registerDependant,
-		getDependants,
 		propagate
-	})
+	}
 }
 
 export default canPropagate

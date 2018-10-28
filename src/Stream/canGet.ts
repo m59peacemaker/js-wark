@@ -1,9 +1,4 @@
-const canGetSet = stream => {
-
-	const set = value => {
-		stream.initialized = true
-		stream.value = value
-	}
+const canGet = stream => {
 
 	const get = () => stream.value
 
@@ -12,11 +7,10 @@ const canGetSet = stream => {
 	}
 
 	return {
-		set,
 		get,
 		toJSON: get,
 		toString
 	}
 }
 
-export default canGetSet
+export default canGet

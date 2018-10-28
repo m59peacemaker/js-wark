@@ -1,28 +1,32 @@
-import canGetSet from './canGetSet'
+import { TYPE_END_STREAM } from '../constants'
+import canGet from './canGet'
+import canSet from './canSet'
 import canPropagate from './canPropagate'
 import Emitter from 'better-emitter'
-import { TYPE_END_STREAM } from '../constants'
 import assertStreamNotEnded from '../util/assertStreamNotEnded'
 
 const EndStream = () => {
 
 	function endStream () {
 		assertStreamNotEnded(endStream)
-		getterSetter.set(true)
-		endStream.propagate()
+		setter.set(true)
+		propagator.propagate()
 	}
 
-	const getterSetter = canGetSet(endStream)
+	const setter = canSet(endStream)
+	const propagator = canPropagate(endStream)
 
 	return Object.assign(
 		endStream,
-		getterSetter,
-		canPropagate(Emitter(endStream)),
+		canGet(endStream),
+		setter,
+
 		{
 			value: false,
 			initialized: false,
-			dependants: new Set(),
 			set: endStream,
+			dependants: new Set(),
+			registerDependant: propagator.registerDependant,
 			end: endStream,
 			[Symbol.toStringTag]: TYPE_END_STREAM
 		}
