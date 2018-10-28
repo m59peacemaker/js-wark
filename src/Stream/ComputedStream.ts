@@ -1,54 +1,49 @@
-import canGetSet from './canGetSet'
-import canPropagate from './canPropagate'
 import { TYPE_COMPUTED_STREAM } from '../constants'
+import canGet from './canGet'
+import canSet from './canSet'
 import EndStream from './EndStream'
 import assertStreamNotEnded from '../util/assertStreamNotEnded'
 
+const noUpdate = { [`@@${TYPE_COMPUTED_STREAM}/noUpdate`]: true }
+
 const ComputedStream = computeFn => dependencies => {
 
-	function computedStream (value) {
-		assertStreamNotEnded(computedStream)
-		getterSetter.set(value)
-		computedStream.propagate()
+	const computedStream = {
+		value: undefined,
+		initialized: false,
+		active: false,
+		dependants: new Set(),
+		dependencies,
+		end: EndStream(),
+		[Symbol.toStringTag]: TYPE_COMPUTED_STREAM
 	}
 
-	const update = value => {
-		assertStreamNotEnded(computedStream)
-		getterSetter.set(value)
-		computedStream.onUpdate && computedStream.onUpdate()
-	}
+	const getter = canGet(computedStream)
+	const setter = canSet(computedStream)
+
+	const allDependenciesInitialized = () => dependencies.every(dependency => dependency.initialized)
 
 	const compute = (updatedDependencies = []) => {
 		assertStreamNotEnded(computedStream)
 		computedStream.active = computedStream.active || allDependenciesInitialized()
 		if (!computedStream.active) {
-			return
+			return noUpdate
 		}
-		return computeFn(computedStream, dependencies, updatedDependencies)
+		const value = computeFn(dependencies, updatedDependencies)
+		if (value !== noUpdate) {
+			setter.set(value)
+		}
+		return value
 	}
 
-	const allDependenciesInitialized = () => dependencies.every(dependency => dependency.initialized)
-
-	const getterSetter = canGetSet(computedStream)
-
-	const end = EndStream()
+	const registerDependant = stream => computedStream.dependants.add(stream)
 
 	Object.assign(
 		computedStream,
-		getterSetter,
-		dependencies,
-		canPropagate(computedStream),
+		getter,
 		{
-			value: undefined,
-			initialized: false,
-			active: false,
-			dependants: new Set(),
-			set: computedStream,
 			compute,
-			update,
-			onUpdate: undefined,
-			end,
-			[Symbol.toStringTag]: TYPE_COMPUTED_STREAM
+			registerDependant
 		}
 	)
 
@@ -57,5 +52,7 @@ const ComputedStream = computeFn => dependencies => {
 
 	return computedStream
 }
+
+ComputedStream.noUpdate = noUpdate
 
 export default ComputedStream

@@ -1,20 +1,14 @@
 import test from 'zora'
 import { Stream, combine, isStream } from './'
 
-const doubleFn = (self, [ x ]) => self.update(x.get() * 2)
+const doubleFn = ([ x ]) => x.get() * 2
 
 test('combine', t => {
-	t.test('combineFn is passed a new stream', t => {
-		let stream
-		combine (self => stream = self) ([ ])
-		t.ok(isStream(stream))
-	})
-
-	t.test('combineFn is passed an array of dependencies', t => {
+	t.test('computeFn is passed an array of dependencies', t => {
 		let a$
 		let b$
 		combine
-			((self, [ a, b ]) => {
+			(([ a, b ]) => {
 				a$ = a
 				b$ = b
 			})
@@ -26,7 +20,7 @@ test('combine', t => {
 	t.test('basic combine', t => {
 		const a = Stream ()
 		const b = combine
-			((self, [ x ]) => self.update(x.get() + 1))
+			(([ x ]) => x.get() + 1)
 			([ a ])
 
 		t.equal(b.get(), undefined)
@@ -36,13 +30,13 @@ test('combine', t => {
 		t.equal(b.get(), 2)
 	})
 
-	t.test('combineFn is called immediately if dependencies are initialized', t => {
+	t.test('computeFn is called immediately if dependencies are initialized', t => {
 		let result = 0
 		combine (() => ++result) ([ Stream(0) ])
 		t.equal(result, 1)
 	})
 
-	t.test('combineFn is not called immediately if dependencies are not initialized', t => {
+	t.test('computeFn is not called immediately if dependencies are not initialized', t => {
 		let result = 0
 		combine (() => ++result) ([ Stream(0), Stream() ])
 		t.equal(result, 0)
@@ -52,9 +46,7 @@ test('combine', t => {
 		const a = Stream(1)
 		const b = Stream(2)
 		const c = combine
-			((self, [ a, b ]) => {
-				self.update(a.get() + b.get())
-			})
+			(([ a, b ]) => a.get() + b.get())
 			([ a, b ])
 
 		t.ok(a.initialized)
@@ -67,9 +59,7 @@ test('combine', t => {
 		const a = Stream(1)
 		const b = Stream()
 		const c = combine
-			((self, [ a, b ]) => {
-				self.update(a.get() + b.get())
-			})
+			(([ a, b ]) => a.get() + b.get())
 			([ a, b ])
 
 		t.ok(a.initialized)
@@ -82,9 +72,7 @@ test('combine', t => {
 		const a = Stream(1)
 		const b = Stream(2)
 		const c = combine
-			((self, [ a, b ]) => {
-				self.update(a.get() + b.get())
-			})
+			(([ a, b ]) => a.get() + b.get())
 			([ a, b ])
 
 		t.equal(c.get(), 3)
@@ -100,15 +88,15 @@ test('combine', t => {
 
 		const a = Stream(1)
 		const b = combine
-			((self, [ a ]) => self.update(a.get() + 1))
+			(([ a ]) => a.get() + 1)
 			([ a ])
 		const c = combine
-			((self, [ a ]) => self.update(a.get() + 10))
+			(([ a ]) => a.get() + 10)
 			([ a ])
 		const d = combine
-			((self, [ b, c ]) => {
+			(([ b, c ]) => {
 				++dUpdateCount
-				self.update(b.get() + c.get())
+				return b.get() + c.get()
 			})
 			([ b, c ])
 
@@ -128,7 +116,7 @@ test('combine', t => {
 	t.test('creating and combining streams inside of a stream body', t => {
 		const n = Stream (1)
 		const nPlus = combine
-			((self, [ n ]) => self.update(n.get() + 100))
+			(([ n ]) => n.get() + 100)
 			([ n ])
 		t.equal(nPlus.get(), 101)
 
@@ -136,22 +124,22 @@ test('combine', t => {
 			(() => {
 				const n = Stream(1)
 				const nPlus = combine
-					((self, [ n ]) => self.update(n.get() + 100))
+					(([ n ]) => n.get() + 100)
 					([ n ])
 				t.equal(nPlus.get(), 101)
 			})
 			([ Stream (1) ])
 	})
 
-	t.test('setting another stream within combineFn', t => {
+	t.test('setting another stream within computeFn', t => {
 		const x = Stream(4)
 		const y = Stream(3)
 		const z = Stream(1)
 		const doubleX = combine (doubleFn) ([x])
 		const setAndSum = combine
-			((self, [ y, z ]) => {
+			(([ y, z ]) => {
 				x.set(3)
-				self.update(z.get() + y.get())
+				return z.get() + y.get()
 			})
 			([y, z])
 
@@ -161,61 +149,24 @@ test('combine', t => {
 		t.equal(doubleX.get(), 6)
 	})
 
-	t.test('multiple self.updates within combineFn', t => {
-		const a = Stream()
-
-		const b = combine
-			((self, [ a ]) => {
-				self.update(a.get())
-				self.update(a.get() + 1)
-			})
-			([ a ])
-
-		let count = 0
-		const c = combine
-			((self, [ b ]) => {
-				++count
-				self.update(b.get())
-			})
-			([ b ])
-
-		a.set(1)
-
-		t.equal(b.get(), 2)
-		t.equal(c.get(), 2)
-		t.equal(count, 2)
-
-		a.set(10)
-
-		t.equal(b.get(), 11)
-		t.equal(c.get(), 11)
-		t.equal(count, 4)
-	})
-
-	t.test('setting dependency within combineFn', t => {
+	t.test('setting dependency within computeFn', t => {
 		let bCount = 0
 		let cCount = 0
 
 		const a = Stream()
-		a.label = 'a'
 		const b = combine
-			((self, [ a ]) => {
+			(([ a ]) => {
 				++bCount
 				if (a.get() === 10) {
 					a.set(11)
 				}
-				console.log('setting b')
-				self.update(a.get() + 2)
+				return a.get() + 2
 			})
 			([ a ])
 
 		const c = combine (() => {
-			console.log('c: b.get()', b.get())
 			++cCount
 		}) ([ b ])
-
-		b.label = 'b'
-		c.label = 'c'
 
 		t.equal(bCount, 0)
 		t.equal(cCount, 0)
@@ -227,40 +178,42 @@ test('combine', t => {
 		t.equal(cCount, 2, '"c" called twice')
 	})
 
-	t.test('setting dependant stream directly', t => {
-		const a = Stream()
-		const b = combine
-			((self, [ a ]) => {
-				self.update(a.get() + 1)
+	// flyd says this should be [ 1, 2 ], but I don't see that as a good thing
+	// commented out lines show the comparison to flyd
+	// t.test('executes to the end before handlers are triggered', t => {
+	t.test('execution order when setting another stream in a computeFn', t => {
+		const order = []
+		const x = Stream(4)
+		const y = Stream(3)
+		const z = combine
+			(([ x ]) => { // executes now
+				if (x.get() === 3) {
+					order.push(2) // executes when x.set(3) in the next combine
+				}
+				return x.get() * 2
 			})
-			([ a ])
-		const c = combine ((self, [ b ]) => self.update(b.get() + 10)) ([ b ])
+			([ x ])
 
-		b.set(1)
-		b.set(2)
-		b.set(3)
+		t.equal(z.get(), 8)
 
-		t.equal(b.get(), 3)
-		t.equal(c.get(), 13)
+		combine
+			(([ y ]) => { // executes now
+				x.set(3) // triggers combine function above, flyd says it should wait
+				order.push(1)
+			})
+			([ y ])
 
-		a.set(0)
-
-		t.equal(b.get(), 1)
-		t.equal(c.get(), 11)
-
-		b.set(10)
-
-		t.equal(b.get(), 10)
-		t.equal(c.get(), 20)
+		// t.deepEqual(order, [ 1, 2 ])
+		t.deepEqual(order, [ 2, 1 ])
 	})
 
+	// TODO:
 	return
 	t.test('combining end streams', t => {
-		// TODO:
 		const a = Stream()
 		const b = Stream()
 		const c = combine
-			((self, [ aEnd, bEnd ]) => self.update(123))
+			(([ aEnd, bEnd ]) => 123)
 			([ a.end, b.end ])
 
 		endsOn ([ c ]) (c)
@@ -277,33 +230,5 @@ test('combine', t => {
 
 		t.equal(c.get(), 123)
 		t.true(c.end.get())
-	})
-
-	// TODO: flyd says this should be [ 1, 2 ], but I don't see that as a good thing
-	// t.test('executes to the end before handlers are triggered', t => {
-	t.test('execution order when setting another stream in a combineFn', t => {
-		const order = []
-		const x = Stream(4)
-		const y = Stream(3)
-		const z = combine
-			((self, [ x ]) => { // executes now
-				if (x.get() === 3) {
-					order.push(2) // executes when x.set(3) in the next combine
-				}
-				self.update(x.get() * 2)
-			})
-			([ x ])
-
-		t.equal(z.get(), 8)
-
-		combine
-			((self, [ y ]) => { // executes now
-				x.set(3) // triggers combine function above, flyd says it should wait
-				order.push(1)
-			})
-			([ y ])
-
-		// t.deepEqual(order, [ 1, 2 ])
-		t.deepEqual(order, [ 2, 1 ])
 	})
 })
