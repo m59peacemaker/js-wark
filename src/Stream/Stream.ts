@@ -1,7 +1,7 @@
+import Emitter from 'better-emitter'
 import { TYPE_STREAM } from '../constants'
 import canGet from './canGet'
 import canSet from './canSet'
-import canPropagate from './canPropagate'
 import EndStream from './EndStream'
 import assertStreamNotEnded from '../util/assertStreamNotEnded'
 
@@ -10,11 +10,10 @@ function Stream (value) {
 	function stream (value) {
 		assertStreamNotEnded(stream)
 		setter.set(value)
-		propagator.propagate()
+		stream.emit('propagation')
 	}
 
 	const setter = canSet(stream)
-	const propagator = canPropagate(stream)
 
 	const end = EndStream()
 
@@ -22,12 +21,11 @@ function Stream (value) {
 		stream,
 		canGet(stream),
 		setter,
+		Emitter(),
 		{
 			value,
 			initialized: arguments.length > 0,
 			set: stream,
-			dependants: new Set(),
-			registerDependant: propagator.registerDependant,
 			end,
 			[Symbol.toStringTag]: TYPE_STREAM
 		}

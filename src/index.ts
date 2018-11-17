@@ -22,11 +22,26 @@ const Monad = ({ of, get, flatten }) => {
 }
 
 const Stream = value => {
-	const stream = { value }
+	const stream = {
+		value,
+		initialized: false
+	}
+
 	const of = Stream.of
 	const flatten = () => Stream.flatten(stream)
 	const get = () => stream.value
-	const set = value => stream.value = value
+	const set = value => {
+		stream.initialized = true
+		stream.value = value
+		stream.emit('propagation')
+	}
+
+	const end = EndStream()
+
+	// hmph... not sure this belongs here, maybe... the end of something can be dependant on something else, even if the thing itself isn't
+	const endsWhen = () => {
+		return stream
+	}
 
 	return Object.assign(
 		stream,
@@ -34,10 +49,12 @@ const Stream = value => {
 			get,
 			set,
 			flatten,
+			end,
 			toJSON: get,
 			toString: () => `${stream[Symbol.toStringTag]} (${get()})`,
 			[Symbol.toStringTag]: 'Stream'
 		},
+		Emitter(),
 		Monad({ of, get, flatten })
 	)
 }
@@ -48,3 +65,26 @@ Object.assign(Stream, {
 	of: Stream,
 	flatten: stream => isStream(stream.get()) ? stream.get() : stream.of(stream.get())
 })
+
+const ComputedStream = computation => {
+	const stream = Stream()
+
+| let stateDependencies = []
+	let timeDependencies = []
+
+	const stateOf = streams => {
+		return stream
+	}
+
+	const timeOf = streams => {
+		return stream
+	}
+
+	return Object.assign(
+		stream,
+		{
+			stateOf,
+			timeOf
+		}
+	)
+}

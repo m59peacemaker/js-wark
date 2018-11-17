@@ -6,14 +6,16 @@ import assertStreamNotEnded from '../util/assertStreamNotEnded'
 
 const noUpdate = { [`@@${TYPE_COMPUTED_STREAM}/noUpdate`]: true }
 
-const ComputedStream = computeFn => dependencies => {
+const ComputedStream = computeFn => {
+
+	let dependencies = []
+	let dependencySubscribers = []
 
 	const computedStream = {
 		value: undefined,
 		initialized: false,
 		active: false,
 		dependants: new Set(),
-		dependencies,
 		end: EndStream(),
 		[Symbol.toStringTag]: TYPE_COMPUTED_STREAM
 	}
@@ -36,18 +38,23 @@ const ComputedStream = computeFn => dependencies => {
 		return value
 	}
 
-	const registerDependant = stream => computedStream.dependants.add(stream)
+	const dependsOn = newDependencies => {
+		dependencySubscribers.forEach(subscriber => subscriber.unsubscrube())
+		dependencies = newDependencies
+		dependencySubscribers = dependencies.map(dependency => dependency.on('propagation', () => {
+
+		}))
+	}
 
 	Object.assign(
 		computedStream,
 		getter,
 		{
 			compute,
-			registerDependant
+			dependsOn
 		}
 	)
 
-	dependencies.forEach(dependency => dependency.registerDependant(computedStream))
 	compute()
 
 	return computedStream
