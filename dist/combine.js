@@ -1,8 +1,7 @@
 import ComputedStream from './Stream/ComputedStream';
-var combine = function (combineFn) { return function (dependencies) {
-    var computedStream = ComputedStream(combineFn, dependencies);
-    dependencies.forEach(function (dependency) { return dependency.registerDependant(computedStream); });
-    computedStream.computeIfActive();
-    return computedStream;
+var combine = function (computeFn) { return function (dependencies) {
+    var stream = ComputedStream(computeFn);
+    stream.dependsOn(dependencies);
+    return stream;
 }; };
 export default combine;

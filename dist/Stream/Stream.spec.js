@@ -27,15 +27,14 @@ test('Stream', function (t) {
         n.set(false);
         t.equal(n.get(), false);
     });
-    // TODO: not sure I will keep the emitting stuff
-    /* t.test('emits "set" when set', t => { */
-    /*   const stream = Stream(0) */
-    /* let total = 0 */
-    /*   stream.on('set', v => total += v) */
-    /*   stream.set(74) */
-    /* stream.set(6) */
-    /* t.equal(total, 80) */
-    /* }) */
+    t.test('emits "propagation" when set()', function (t) {
+        var stream = Stream(0);
+        var total = 0;
+        stream.on('propagation', function () { return total += stream.get(); });
+        stream.set(74);
+        stream.set(6);
+        t.equal(total, 80);
+    });
     t.test('throws if set after ended', function (t) {
         var stream = Stream();
         stream.end();
