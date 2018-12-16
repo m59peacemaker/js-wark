@@ -33,15 +33,16 @@
   "author": "Johnny Hauser <johnnyhauser@gmail.com>",
   "license": "CC0-1.0",
   "dependencies": {
-    "better-emitter": "^2.1.0"
+    "better-emitter": "^2.1.1",
+    "reify": "^0.18.1"
   },
   "devDependencies": {
     "glob-module-file": "^2.2.1",
     "onchange": "^3.2.1",
-    "reify": "^0.12.3",
+    "ts-node": "^7.0.1",
     "tslint": "^5.11.0",
     "tslint-eslint-rules": "^5.4.0",
-    "typescript": "^3.1.1",
+    "typescript": "^3.1.6",
     "zora": "^2.0.1"
   }
 }

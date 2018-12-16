@@ -201,13 +201,293 @@ Time [(Moment, Instant, Frame)]
 Event, Occurrence, Change [ Moment, Value ]
 
 State
-a reactive value
+a reactive, but passive value, needs to be pulled (event)
 
 Moment
 generic units of time, indexed
 Perhaps actually a type of State - an incrementing value of times occurred, so that specific moments can be composed
 Moments can occur more than once
 i.e. the moment the user clicks, the moment the day becomes Friday
+moments are eager/pushy, when they occur, their dependants (moments composed of them) occur
 
 Event
 A Moment that has a State, should be seperatable
+
+I am leaning toward the notion that by separating moment from state, state can be pull based / lazy, like shiz, and calculated when moments happen.
+
+const firstNameChange = Event.of ()
+const lastNameChange = Event.of ()
+const firstName = State.fromEvent ('') (firstNameChange)
+const lastName = State.fromEvent ('') (lastNameChange)
+const fullName = State.lift (String.concat) ([ firstName, lastName ])
+const fullNameChange = Event.combine ([ firstNameChange, lastNameChange ])
+const fullName = X.lift (String.join (' ')) ([ firstName, lastName ])
+
+[ Just(1), Just(2) ]
+Just([ 1, 2 ])
+
+[ [ 'a', Just(1) ], [ 'b', Just(2) ] ]
+Just({ a: 1, b: 2 })
+
+[ [ 'a', Just(1) ], [ 'b', Just(2) ] ]
+[ Just([ 'a', 1 ]), Just([ 'b', 2 ]) ]
+Just([ [ 'a', 1 ], [ 'b', 2 ] ])
+Just({ a: 1, b: 2 })
+// Event.toState Event.remember, Event.memoryState, Event.stateOfLatest, Event.toStateOfLatestValue, Event.stepper
+
+const x = objectOfEvents => {
+	const state = pipe
+		([
+			Object.entries,
+			Array.map(([ key, event ]) => pipe
+				([
+					Event.toStepperState,
+					State.map (value => [ key, value ])
+				])
+				(event)
+			),
+			Array.sequence (State.of),
+			State.map (Object.fromEntries)
+		])
+		(objectOfEvents)
+	return pipe
+		([
+			Event.combine,
+			Event.mapState (state)
+		])
+		(Object.values(objectOfEvents))
+}
+
+const stateChange = Event.x
+	({
+		fullName
+	})
+
+map (render) (state)
+
+[   0, 1, 2, 3 ]
+[ 0,           1 ]
+
+[ [ 0, 0 ], [ 1, 1 ] ]
+[ [ 0, 0 ], [ 3, 1 ] ]
+
+const eventA = Event()
+const eventB = Event()
+const eventC = x([ a, b ])
+
+[ 0, 0 ]
+[ 0, 1 ]
+
+[ 1, 0 ]
+[ 1, 1 ]
+const isThatMoment = Event.scan
+	(({ previousOccurrences, xMomentTarget }, recentOccurrences) => {
+		const [ previousZipOccurrence, previousXOccurrence ] = previousOccurrences
+		const [ recentZipOccurrence, recentXOccurrence ] = recentOccurrences
+		const isZipOccurrence = recentZipOccurrence > previousZipOccurrence
+		xMomentTarget = isZipOccurrence ? recentXOccurrence + 1 : xMomentTarget
+		const isThatMoment = recentXOccurrence === xMomentTarget
+		return {
+			xMomentTarget,
+			isThatMoment
+		}
+	})
+	({ minimumOccurrences: occurrences, isThatMoment: true })
+Event.map (({ isThatMoment }) => isThatMoment)
+Event.when(isThatMoment).mapState(X)
+X.when(isThatMoment)
+
+zip
+--1---2---------3--4-
+----a---b---c-d------
+----1a--2b------3c-4d
+
+pairLatest
+--1---2---------3--4-5---
+----a---b---c-d--------e-
+----1a--2b------3d-----5e
+
+pairEarliest
+--1---2---------3--4-5---
+----a---b---c-d--------e-
+----1a--2b------3c-----4e
+
+
+zip
+--1---2---------3--4-
+----a---b---c-d------
+----1a--2b------3c-4d
+  1 1 2 2   2 2 3  4
+  0 1 1 2   3 4 4  4
+    x   x       x  x
+
+
+pairLatest
+--1---2---------3--4-5---
+----a---b---c-d--------e-
+----1a--2b------3d-----5e
+
+pairEarliest
+--1---2---------3--4-5---
+----a---b---c-d--------e-
+----1a--2b------3c-----4e
+  1 1 2 2   2 2 3  4 5 5
+  0 1 1 2   3 4 4  4 4 5
+    x   x       x  x   x
+
+
+Moment.zip
+a
+b
+zip([ a, b ])
+occurrences of both have to be greater than an incrementing index, composition of a[0] and b[0], a[1] and b[1], etc
+
+-x---x-------x-x
+---x---x-x-x----
+---x---x-----x-x
+ 1 1 2 2 2 2 3 4
+ 0 1 1 2 3 4 4 4
+0   1   2     3 4
+
+
+Moment.x?
+a
+b
+x([ a, b ])
+occurrences of both have to be greater than they were
+
+-x---x-------x-x-x--
+---x---x-x-x-------x
+---x---x-----x-----x
+ 1 1 2 2 2 2 3 4 5 5
+ 0 1 1 2 3 4 4 4 4 5
+0   1   2     3     5
+0   1   2     4     5
+
+
+these are called "barriers"
+
+
+Sample/Record
+state of a thing at a time
+description of that kind of thing, not an actual "one"
+The real world time may have multiple occurrences, so many samples would come to be, but defining what a sample is doesn't involve any regard for there being 0, 1, or many
+
+
+From Conal:
+Behavior: a time varying value (what I think of as a State or just Value)
+Behavior of "a" is "time" to "a"
+Behavior a -> (T -> a)
+Time must be infinitely divisible (real numbers, not integers)
+
+
+I need to write down/define, and have examples of every kind of time/value thing I can think of
+
+State/Value, a time varying value
+const state = State.of(1)
+state.get() // 1
+state.set(2)
+set.get() // 2
+const mappedState = State.map (add(1)) (state)
+mappedState.get() // 3
+
+Event/Source (time,value) a moment (with or without a value) coming into the system
+
+Sample
+Future
+When composing events, you don't want to talk about past events (like last 10), you want to talk about some future events (like the **next** 10
+What if could just arbitrarily reference N Future values and use them, and the code you're working with is always that
+so, even dynamically, it could be Events.futureN((incrementingIndex + 1) \* 10) (groups 0 - 9, 10-19, etc)
+
+Promise.all([ Event.next(eventA), Event.next(eventB), Event.next(eventC) ])
+
+Event time, index
+dynamic buffering system? event records available according to what operators are using?
+
+// You can't do anything like this, because you can't know how many records to keep upfront in all cases
+[ eventA, eventB, eventC ].map(Event.record(2))
+
+What if an event is a time varying value that pushes when it changes or something about its time matching the current time...
+whose values is { time, value }
+
+barrier
+[
+  { time: 187, value: 5 },
+  { time: 57, value: 10 },
+  { time: 543, value: 7 },
+]
+[
+  { time: 543, value: 5 },
+  { time: 543, value: 10 },
+  { time: 543, value: 7 },
+]
+
+think about expressing synchronization rather than combining/deriving events?
+take N events, return N events with the same time value?
+then somehow turn that into something pushy...
+the cool thing is that it does allow lifting event values, as they are in sync
+but that also poses an interesting situation in that you could try to lift events that are not in sync..
+
+events => {
+	const latest = events
+		.map(({ time }) => time)
+		.sort()
+		[0]
+	return events.map(({ time, value }) => ({ time: latest, value }))
+}
+
+a barrier is each next event synchronized
+
+Event.aggregate
+	(aggregated => aggregated.every(event => event !== undefined))
+	([ eventA, eventB, eventC ])
+
+State { set, get }
+Event { { time, value }, occur }
+
+const scan = fn => initialValue => event => {
+	let acc = initialValue
+	return Event.map
+		(value => {
+			acc = fn(acc, value)
+			return acc
+		})
+		(event)
+}
+
+const Counter = initialValue => ({ incrementSource, decrementSource }) => {
+	const counterChanges = Event.combine([
+		Event.constant (1) (incrementSource),
+		Event.constant (-1) (decrementSource)
+	])
+	return Event.scan (add) (initialValue) (counterChanges)
+}
+
+const firstName = State.of ('')
+const lastName = State.of ('')
+const fullName = State.lift (join(' ')) ([ firstName, lastName ])
+
+perhaps "Streams" or whatever atomic type have a reference back to source events, and just subscribe directly to them
+So type Event can always have a reference to the source event to pass on
+
+const a = Event()
+// these keep internal reference to "a"
+const b = Event.map (inc) (a)
+const c = Event.map (inc) (a)
+const streamB = Event.record(b)
+const streamC = Event.record(c)
+const streamD = Stream.lift (sum) ([ streamB, streamC ])
+
+// streamD subscribes to the source of streamB and streamC, which is "a"
+// so "a" emits, triggering b,c, updating streamB and streamC values, and then triggering streamD, which gets the latest values of B,C
+
+pull value, push event
+
+const a = Value()
+const b = Event()
+const c = Event.map (b.get()) (a)
+const c = Event.withValue (b) (a)
+
+const withValue = value => Event.map (value.get())
+
+
