@@ -14,7 +14,7 @@ const create = () => {
 
 	function emitter (value) { return emit(value) }
 
-	const emit = (value?) => Array.from(subscribers.values()).forEach(subscriber => subscriber(value))
+	const emit = value => Array.from(subscribers.values()).forEach(subscriber => subscriber(value))
 
 	const subscribe = subscriber => {
 		const subscriberId = subscriberIds.next()
@@ -112,7 +112,7 @@ const switchMap = fn => emitter => switchTo(map (fn) (emitter))
 const constant = v => map (_ => v)
 
 const recentN = n => scan
-	(v => acc => [ ...acc.slice(acc.length - (n - 1)), v ])
+	(v => acc => [ ...acc.slice(Math.max(0, acc.length - n + 1)), v ])
 	([])
 
 const bufferTo = notifier => source => {
@@ -133,7 +133,11 @@ const bufferN = n => startEvery => source => {
 	const maxBufferLength = Math.max(n, startEvery)
 	return filter
 		(buffer => buffer.length === n)
-		(recentN (maxBufferLength) (source))
+		(scan
+			(v => buffer => [ ...(buffer.length === maxBufferLength ? buffer.slice(startEvery) : buffer), v ])
+			([])
+			(source)
+		)
 }
 
 const pairwise = bufferN (2) (1)
