@@ -111,6 +111,10 @@ const switchMap = fn => emitter => switchTo(map (fn) (emitter))
 
 const constant = v => map (_ => v)
 
+const recentN = n => scan
+	(v => acc => [ ...acc.slice(acc.length - (n - 1)), v ])
+	([])
+
 const bufferTo = notifier => source => {
 	let bufferedValues = []
 
@@ -129,16 +133,7 @@ const bufferN = n => startEvery => source => {
 	const maxBufferLength = Math.max(n, startEvery)
 	return filter
 		(buffer => buffer.length === n)
-		(scan
-			(v => buffer => {
-				buffer = buffer.length === maxBufferLength
-					? buffer.slice(startEvery)
-					: buffer
-				return buffer.concat([ v ])
-			})
-			([])
-			(source)
-		)
+		(recentN (maxBufferLength) (source))
 }
 
 const pairwise = bufferN (2) (1)
@@ -155,6 +150,7 @@ export {
 	from,
 	fromPromise,
 	map,
+	recentN,
 	scan,
 	switchMap,
 	switchTo,
