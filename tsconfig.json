@@ -1,9 +1,12 @@
 {
-  "compilerOptions": {
-    "outDir": "./dist",
-    "module": "es6",
-    "moduleResolution": "Node",
-    "lib": [ "es2017", "dom" ],
+	"include": [
+		"src/**/*.ts"
+	],
+	"compilerOptions": {
+		"outDir": "./dist",
+		"module": "es6",
+		"moduleResolution": "Node",
+		"lib": [ "es2017", "dom" ],
 		"strictNullChecks": true
-  }
+	}
 }

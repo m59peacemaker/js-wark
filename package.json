@@ -2,13 +2,13 @@
   "name": "wark",
   "version": "0.0.0",
   "description": "An FRP observable/stream library similar to flyd, named after a chocobo sound.",
-  "main": "lib/index.js",
+  "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
     "build-no-type-check": "(tsc || true)",
     "lint": "tslint -c tslint.yaml --project tsconfig.json 'src/**/*.ts'",
-    "lint-fix": "tslint --fix -c tslint.yaml --project tsconfig.json 'src/**/*.ts'",
-    "prebuild": "npm run lint-fix",
+    "lint-fix": "tslint --force --fix -c tslint.yaml --project tsconfig.json 'src/**/*.ts'",
+    "prebuild": "npm run lint",
     "prebuild-no-type-check": "npm run lint",
     "test": "glob-module-file --pattern './dist/**/*.{spec,test}.js' | node -r reify",
     "build:test": "npm run build && npm run test",
@@ -33,16 +33,15 @@
   "author": "Johnny Hauser <johnnyhauser@gmail.com>",
   "license": "CC0-1.0",
   "dependencies": {
-    "better-emitter": "^2.1.1",
     "reify": "^0.18.1"
   },
   "devDependencies": {
     "glob-module-file": "^2.2.1",
     "onchange": "^3.2.1",
+    "tape": "^4.9.1",
     "ts-node": "^7.0.1",
     "tslint": "^5.11.0",
     "tslint-eslint-rules": "^5.4.0",
-    "typescript": "^3.1.6",
-    "zora": "^2.0.1"
+    "typescript": "^3.1.6"
   }
 }

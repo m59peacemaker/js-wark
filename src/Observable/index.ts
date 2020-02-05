@@ -1,10 +1,6 @@
-import Emitter from './Emitter'
+import * as Emitter from '../Emitter'
 
-const noop = () => {}
-
-const identity = v => v
-
-const isPromise = v => typeof v.then === 'function'
+import { noop, identity, pipe, add, isPromise } from '../utils'
 
 /* observable contract:
 	emits pendingChange (when its change is pending, which is when any of its dependencies emit pendingChange)
@@ -13,10 +9,16 @@ const isPromise = v => typeof v.then === 'function'
 	and then emits pendingChangeResolution
 */
 
-const create = ({ initialValue, dependencies = [] }) => {
+const create = initialValue => {
 	let value = initialValue
 
-	const observable = Emitter()
+	const observable = Emitter.create()
+
+	const emitters = {
+		changeOpportunity: Emitter.create(),
+		pendingChange: Emitter.create(),
+		pendingChangeResolution: Emitter.create()
+	}
 
 	const get = () => value
 
@@ -26,34 +28,46 @@ const create = ({ initialValue, dependencies = [] }) => {
 	}
 
 	const observe = observerFn => {
-		observerFn(value)
+		observerFn(get())
 		return observable.subscribe(observerFn)
 	}
 
-	const dependencyChange = Emitter.combine(dependencies)
-	const dependencyPendingChange = Emitter.combine(dependencies.map(dependency => dependency.emitters.pendingChange))
-	const dependencyPendingChangeResolution = Emitter.combine(dependencies.map(dependency => dependency.emitters.pendingChangeResolution))
+	let unsubscribeFromDependencies = noop
 
-	const pendingChangeCount = Emitter.scan
-		(add)
-		(0)
-		(Emitter.combine([
-			Emitter.constant (1) (dependencyPendingChange),
-			Emitter.constant (-1) (dependencyPendingChangeResolution),
-		]))
+	const stopDepending = () => unsubscribeFromDependencies()
 
-	const allDependenciesResolved = Emitter.filter (value => value === 0) (pendingChangeCount)
+	const dependOn = dependencies => {
+		stopDepending()
 
-	const canChange = Emitter.filter
-		(dependencyChanges => dependencyChanges.length > 0)
-		(Emitter.bufferTo (allDependenciesResolved) (dependencyChange))
+		const dependencyChange = Emitter.combine(dependencies)
+		const dependencyPendingChange = Emitter.combine(dependencies.map(dependency => dependency.emitters.pendingChange))
+		const dependencyPendingChangeResolution = Emitter.combine(dependencies.map(dependency => dependency.emitters.pendingChangeResolution))
 
-	const changeOpportunity = Emitter.constant (change) (canChange)
+		const pendingChangeCount = Emitter.scan
+			(add)
+			(0)
+			(Emitter.combine([
+				Emitter.constant (1) (dependencyPendingChange),
+				Emitter.constant (-1) (dependencyPendingChangeResolution)
+			]))
 
-	const emitters = {
-		changeOpportunity,
-		pendingChange: dependencyPendingChange,
-		pendingChangeResolution: changeOpportunity
+		const allDependenciesResolved = Emitter.filter (value => value === 0) (pendingChangeCount)
+
+		const canChange = Emitter.filter
+			(dependencyChanges => dependencyChanges.length > 0)
+			(Emitter.bufferTo (allDependenciesResolved) (dependencyChange))
+
+		unsubscribeFromDependencies = pipe([
+			Emitter.map (emitters.pendingChange.emit) (dependencyPendingChange),
+			Emitter.map
+				(() => {
+					emitters.changeOpportunity.emit(change)
+					emitters.pendingChangeResolution.emit()
+				})
+				(canChange)
+		])
+
+		return observable
 	}
 
 	Object.assign(
@@ -62,6 +76,7 @@ const create = ({ initialValue, dependencies = [] }) => {
 			observe,
 			get,
 			emitters,
+			dependOn
 		}
 	)
 
@@ -70,22 +85,30 @@ const create = ({ initialValue, dependencies = [] }) => {
 
 const observablizeEmitter = emitter => {
 	const observablized = Emitter.from(emitter)
-	Object.assign(
-		observablized
+	return Object.assign(
+		observablized,
 		{
 			get: noop,
 			observe: observablized.subscribe,
 			emitters: {
-				changeOpportunity: observablizedEmitter,
-				pendingChange: observablizedEmitter,
-				pendingChangeResolution: observablizedEmitter
+				changeOpportunity: observablized,
+				pendingChange: observablized,
+				pendingChangeResolution: observablized
 			}
 		}
 	)
 }
 
-const fromEmitter = initialValue => source => create({ initialValue, dependencies: [ observablizeEmitter(source) ] })
-const fromObservable = initialValue => source => create({ initialValue, dependencies: [ source ] })
+const fromEmitter = initialValue => source => {
+	const o = create(initialValue)
+	let value
+	source.subscribe(newValue => value = newValue)
+	o.emitters.changeOpportunity.subscribe(change => change(value))
+	// awkwardly, this must be after the above subscriptions because the order of the subscriptions going on is important
+	o.dependOn([ observablizeEmitter(source) ])
+	return o
+}
+const fromObservable = initialValue => source => create(initialValue).dependOn([ source ])
 const fromPromise = initialValue => promise => fromEmitter (initialValue) (Emitter.fromPromise(promise))
 const from = initialValue => source =>
 	(Emitter.isEmitter(source)
@@ -112,7 +135,7 @@ const filter = predicate => source => {
 
 const lift = fn => observables => {
 	const getValue = () => fn(...observables.map(o => o.get()))
-	const observable = create({ initialValue: getValue(), dependencies: observables })
+	const observable = create(getValue()).dependOn(observables)
 	observable.emitters.changeOpportunity.subscribe(change => change(getValue()))
 	return observable
 }
@@ -123,32 +146,33 @@ const lift3 = fn => a => b => c => lift (fn) ([ a, b, c ])
 
 const map = fn => observable => lift (fn) ([ observable ])
 
-const ap => observableOfFn => observable => lift (identity) ([ observableOfFn, observable ])
+const ap = observableOfFn => observable => lift (identity) ([ observableOfFn, observable ])
 
 const get = observable => observable.get()
 
-/* observable contract:
-	emits pendingChange (when its change is pending, which is when any of its dependencies emit pendingChange)
-	maybe emits changeOpportunity (when all dependencies resolved, if dependencies have changed since pending)
-		maybe emits the change (if the change occurred)
-	and then emits pendingChangeResolution
-*/
-/*
-  pending when `source` is pending or any value of source is pending
-	emits change opportunity 
-*/
-
 const flatten = source => {
-	map (get) (source)
+	const getValue = source.get().get()
+	const observable = of(getValue())
+	const dependencyEmitter = Emitter.scan (v => acc => acc.concat(v)) ([ source ]) (source)
+	map (observable.dependOn) (dependencyEmitter)
+	observable.emitters.changeOpportunity.subscribe(change => change(getValue()))
+	return observable
 }
 
-const flatMap = () => {}
+const switchTo = source => {
+	const getValue = source.get().get()
+	const observable = of(getValue())
+	const dependencyEmitter = Emitter.scan (v => acc => [ source, v ]) ([ source ]) (source)
+	map (observable.dependOn) (dependencyEmitter)
+	observable.emitters.changeOpportunity.subscribe(change => change(getValue()))
+	return observable
+}
+
+const flatMap = source => flatten(map(source))
 
 const chain = flatMap
 
-const switchTo = () => {}
-
-const switchMap = () => {}
+const switchMap = source => switchTo(map(source))
 
 export {
 	ap,
