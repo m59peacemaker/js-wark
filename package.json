@@ -2,7 +2,7 @@
   "name": "wark",
   "version": "0.0.0",
   "description": "An FRP observable/stream library similar to flyd, named after a chocobo sound.",
-  "main": "dist/index.js",
+  "main": "",
   "scripts": {
     "build": "tsc",
     "build-no-type-check": "(tsc || true)",
@@ -10,10 +10,10 @@
     "lint-fix": "tslint --force --fix -c tslint.yaml --project tsconfig.json 'src/**/*.ts'",
     "prebuild": "npm run lint",
     "prebuild-no-type-check": "npm run lint",
-    "test": "glob-module-file --pattern './dist/**/*.{spec,test}.js' | node -r reify",
+    "test": "glob-module-file --pattern './src/**/*.{spec,test}.js' | node -r reify",
     "build:test": "npm run build && npm run test",
     "build-no-type-check:test": "npm run build-no-type-check && npm run test",
-    "dev": "onchange 'src/**/*' -i -- npm run build:test",
+    "dev": "onchange 'src/**/*' -i -- npm run test",
     "prototype": "onchange 'src/**/*' -i -- npm run build-no-type-check:test"
   },
   "keywords": [
