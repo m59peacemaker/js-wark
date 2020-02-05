@@ -108,14 +108,14 @@ const fromEmitter = initialValue => source => {
 	o.dependOn([ observablizeEmitter(source) ])
 	return o
 }
-const fromObservable = initialValue => source => create(initialValue).dependOn([ source ])
+const fromDynamic = initialValue => source => create(initialValue).dependOn([ source ])
 const fromPromise = initialValue => promise => fromEmitter (initialValue) (Emitter.fromPromise(promise))
 const from = initialValue => source =>
 	(Emitter.isEmitter(source)
 		? fromEmitter
 		: isPromise(source)
 			? fromPromise
-			: fromObservable
+			: fromDynamic
 	)
 	(initialValue)
 	(source)
@@ -123,7 +123,7 @@ const from = initialValue => source =>
 const of = create
 
 const filter = predicate => source => {
-	const filtered = fromObservable (source.get()) (source)
+	const filtered = fromDynamic (source.get()) (source)
 	filtered.emitters.changeOpportunity.subscribe(change => {
 		if (predicate(source.get())) {
 			change(source.get())
@@ -181,7 +181,7 @@ export {
 	flatMap,
 	flatten,
 	from,
-	fromObservable,
+	fromDynamic,
 	fromPromise,
 	fromEmitter,
 	lift,

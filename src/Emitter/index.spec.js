@@ -149,7 +149,7 @@ test('Emitter.chain maps and flattens', t => {
 
 test('Emitter.scan accumulates', t => {
 	const expected = [
-	  [ 1 ],
+		[ 1 ],
 		[ 1, 2 ],
 		[ 1, 2, 3 ]
 	]
@@ -160,7 +160,105 @@ test('Emitter.scan accumulates', t => {
 
 	b.subscribe(value => t.deepEqual(value, expected.shift()))
 
-	a.emit(1)
-	a.emit(2)
-	a.emit(3)
+	;[ 1, 2, 3 ].forEach(a.emit)
+})
+
+test('Emitter.recentN', t => {
+	const expected = [
+		[ 1 ],
+		[ 1, 2 ],
+		[ 1, 2, 3 ],
+		[ 1, 2, 3, 4 ],
+		[ 2, 3, 4, 5 ],
+		[ 3, 4, 5, 6 ]
+	]
+	t.plan(expected.length)
+
+	const a = Emitter.create()
+	const b = Emitter.recentN (4) (a)
+
+	b.subscribe(value => t.deepEqual(value, expected.shift()))
+
+	;[ 1, 2, 3, 4, 5, 6 ].forEach(a.emit)
+})
+
+test('Emitter.bufferN', t => {
+	t.test('bufferN (4) (1)', t => {
+		const expected = [
+			[ 1, 2, 3, 4 ],
+			[ 2, 3, 4, 5 ],
+			[ 3, 4, 5, 6 ]
+		]
+		t.plan(expected.length)
+
+		const a = Emitter.create()
+		const b = Emitter.bufferN (4) (1) (a)
+
+		b.subscribe(value => t.deepEqual(value, expected.shift()))
+
+		;[ 1, 2, 3, 4, 5, 6 ].forEach(a.emit)
+	})
+
+	t.test('bufferN (3) (3)', t => {
+		const expected = [
+			[ 1, 2, 3 ],
+			[ 4, 5, 6 ],
+			[ 7, 8, 9 ]
+		]
+		t.plan(expected.length)
+
+		const a = Emitter.create()
+		const b = Emitter.bufferN (3) (3) (a)
+
+		b.subscribe(value => t.deepEqual(value, expected.shift()))
+
+		;[ 1, 2, 3, 4, 5, 6, 7, 8, 9 ].forEach(a.emit)
+	})
+
+	t.test('bufferN (3) (2)', t => {
+		const expected = [
+			[ 1, 2, 3 ],
+			[ 3, 4, 5 ],
+			[ 5, 6, 7 ]
+		]
+		t.plan(expected.length)
+
+		const a = Emitter.create()
+		const b = Emitter.bufferN (3) (2) (a)
+
+		b.subscribe(value => t.deepEqual(value, expected.shift()))
+
+		;[ 1, 2, 3, 4, 5, 6, 7, 8 ].forEach(a.emit)
+	})
+
+	t.test('bufferN (2) (4)', t => {
+		const expected = [
+			[ 1, 2 ],
+			[ 5, 6 ],
+			[ 9, 10 ]
+		]
+		t.plan(expected.length)
+
+		const a = Emitter.create()
+		const b = Emitter.bufferN (2) (4) (a)
+
+		b.subscribe(value => t.deepEqual(value, expected.shift()))
+
+		;[ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 ].forEach(a.emit)
+	})
+})
+
+test('Emitter.pairwise', t => {
+	const expected = [
+		[ 1, 2 ],
+		[ 2, 3 ],
+		[ 3, 4 ]
+	]
+	t.plan(expected.length)
+	const a = Emitter.create()
+	const b = Emitter.pairwise(a)
+
+	b.subscribe(value => t.deepEqual(value, expected.shift()))
+
+	;[ 1, 2, 3, 4 ].forEach(a.emit)
 })
