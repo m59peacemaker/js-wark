@@ -120,8 +120,7 @@ const from = initialValue => source =>
 	(initialValue)
 	(source)
 
-const of = value => create({ initialValue: value })
-const constant = of
+const of = create
 
 const filter = predicate => source => {
 	const filtered = fromObservable (source.get()) (source)
