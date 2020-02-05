@@ -22,7 +22,7 @@ const Monad = ({ of, get, flatten }) => {
 // type dependencies as array of States
 const State = ({ computation, dependencies = [] }) => {
 	const state = {
-		value,
+		value
 		// stale pull/stale based stuff can probably be added last, if it remains a sound idea
 	}
 
@@ -54,13 +54,13 @@ export default State
 export {
 	lift
 }
-//const sample = moment => state => Event({ state, moment })
+// const sample = moment => state => Event({ state, moment })
 
 /* const Moment = () => { */
 /* 	const moment = State() */
 
 /* 	const emitter = Emitter() */
-	
+
 /* 	const occur = () => { */
 /* 		++moment.index */
 /* 		emitter.emit ('occurrence') (moment.index) */

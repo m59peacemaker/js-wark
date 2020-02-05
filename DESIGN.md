@@ -490,4 +490,59 @@ const c = Event.withValue (b) (a)
 
 const withValue = value => Event.map (value.get())
 
+what exactly is the "time" of a stream? What is it modeling?
+when the value changes
+	- easy to understand
+	- but what is equality?
+	- and it prevents passing the same value twice... which may or may not be desired, depending on what is being modeled
+	- but maybe this makes sense, if talking about how one thing's value affects something else, as it would only have an influence on something by changing. So, perhaps there is a time relationship of changing values (changesWhen), which is different from mere events. Perhaps even events can be expressed this way if they are indexed, so that "duplicates" are possible because the index increases (changes).
 
+I like the idea of a "variable" type that can change over time, but does push its value out when changed.
+
+var = mutex, pushy, pushed
+{ set, get }
+Emitter = pushy, pushed
+{ emit }
+
+maybe I need a "variable" type that is passive, set, get, pull
+and observable type that is set, get, push
+variable is just the IO type or a function, I think
+so.. maybe only pushy thing is needed after all?
+
+value "change" is the right idea for stream's time composition, but what "change" is is difficult. I would say the theory is changed based and a "change" is a call to "set" (even if the 'same' value is set).
+
+what if `set` is totally an anti-pattern!?
+`set` happens at a time/tick/whatever
+If it' on the same tick, it isn't needed / redundant to just have an initial value
+if it isn't, then it is acting as an alias to an event/emit
+Perhaps all there are is initialValues, current value, events/emits
+
+Observables:
+implement Emitter
+always have a value
+depend on other observables, the emits of which introduce a new value and lead to the opportunity for an observable's value to change accordingly
+change value atomically - one top level change causes no more than one change opportunity for each downstream observable
+only given change opportunity if any dependencies changed
+have `get()` that returns the value
+can be created directly from an emitter, using the emitter as the value introducer
+
+must work with transducers, tranformations must be implemented in terms of transduce
+particularly flatten (concatting?)
+
+flatten = reduce (flattening(reduce)) (Emitter.create()) (emitterEmitter)
+
+reduce iterates, calling the stepping fn on each step reduce (step) (
+the transformer is a transformation with a builder passed in
+
+rich hickey mentioned a function `transducer => observable => transducedObservable`
+any aggregated type has a "step" somewhere inside of it. That's where it can apply the transducer
+
+// transducer creator
+map => fn =>
+// this part is the transducer!
+nextStep => v => nextStep (fn(v))
+
+a transducer is: nextStep => v => acc => acc
+transducers take and return reducers (v => acc => acc)
+
+Perhaps the transducer protocol is to handle the special stuff like completion. Rich hickey makes init sound good, too. However, I don't like optional arguments or extra complexity
