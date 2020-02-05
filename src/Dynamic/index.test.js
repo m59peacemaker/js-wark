@@ -26,7 +26,7 @@ test('Dynamic.fromEmitter dynamic observer gets dynamic values', t => {
 
 	const e = Emitter.create()
 	const o = Dynamic.fromEmitter ('foo') (e)
-	o.observe(value => t.equal(value, expected.shift()))
+	o.subscribe(value => t.equal(value, expected.shift()))
 	e.emit('bar')
 	e.emit('baz')
 })
