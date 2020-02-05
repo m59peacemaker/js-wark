@@ -2,7 +2,7 @@ import * as Emitter from '../Emitter'
 
 import { noop, identity, pipe, add, isPromise } from '../utils'
 
-/* observable contract:
+/* dynamic contract:
 	emits pendingChange (when its change is pending, which is when any of its dependencies emit pendingChange)
 	maybe emits changeOpportunity (when all dependencies resolved, if dependencies have changed since pending)
 		maybe emits the change (if the change occurred)
@@ -12,7 +12,9 @@ import { noop, identity, pipe, add, isPromise } from '../utils'
 const create = initialValue => {
 	let value = initialValue
 
-	const observable = Emitter.create()
+	const dynamic = {
+		emitter: Emitter.create()
+	}
 
 	const emitters = {
 		changeOpportunity: Emitter.create(),
@@ -24,12 +26,12 @@ const create = initialValue => {
 
 	const change = newValue => {
 		value = newValue
-		observable.emit(value)
+		dynamic.emitter.emit(value)
 	}
 
-	const observe = observerFn => {
-		observerFn(get())
-		return observable.subscribe(observerFn)
+	const subscribe = subscriberFn => {
+		subscriberFn(get())
+		return dynamic.emitter.subscribe(subscriberFn)
 	}
 
 	let unsubscribeFromDependencies = noop
@@ -67,20 +69,20 @@ const create = initialValue => {
 				(canChange)
 		])
 
-		return observable
+		return dynamic
 	}
 
 	Object.assign(
-		observable,
+		dynamic,
 		{
-			observe,
+			subscribe,
 			get,
 			emitters,
 			dependOn
 		}
 	)
 
-	return observable
+	return dynamic
 }
 
 const observablizeEmitter = emitter => {
@@ -132,39 +134,39 @@ const filter = predicate => source => {
 	return filtered
 }
 
-const lift = fn => observables => {
-	const getValue = () => fn(...observables.map(o => o.get()))
-	const observable = create(getValue()).dependOn(observables)
-	observable.emitters.changeOpportunity.subscribe(change => change(getValue()))
-	return observable
+const lift = fn => dynamics => {
+	const getValue = () => fn(...dynamics.map(o => o.get()))
+	const dynamic = create(getValue()).dependOn(dynamics)
+	dynamic.emitters.changeOpportunity.subscribe(change => change(getValue()))
+	return dynamic
 }
 
 const lift2 = fn => a => b => lift (fn) ([ a, b ])
 
 const lift3 = fn => a => b => c => lift (fn) ([ a, b, c ])
 
-const map = fn => observable => lift (fn) ([ observable ])
+const map = fn => dynamic => lift (fn) ([ dynamic ])
 
-const ap = observableOfFn => observable => lift (identity) ([ observableOfFn, observable ])
+const ap = dynamicOfFn => dynamic => lift (identity) ([ dynamicOfFn, dynamic ])
 
-const get = observable => observable.get()
+const get = dynamic => dynamic.get()
 
 const flatten = source => {
 	const getValue = source.get().get()
-	const observable = of(getValue())
+	const dynamic = of(getValue())
 	const dependencyEmitter = Emitter.scan (v => acc => acc.concat(v)) ([ source ]) (source)
-	map (observable.dependOn) (dependencyEmitter)
-	observable.emitters.changeOpportunity.subscribe(change => change(getValue()))
-	return observable
+	map (dynamic.dependOn) (dependencyEmitter)
+	dynamic.emitters.changeOpportunity.subscribe(change => change(getValue()))
+	return dynamic
 }
 
 const switchTo = source => {
 	const getValue = source.get().get()
-	const observable = of(getValue())
+	const dynamic = of(getValue())
 	const dependencyEmitter = Emitter.scan (v => acc => [ source, v ]) ([ source ]) (source)
-	map (observable.dependOn) (dependencyEmitter)
-	observable.emitters.changeOpportunity.subscribe(change => change(getValue()))
-	return observable
+	map (dynamic.dependOn) (dependencyEmitter)
+	dynamic.emitters.changeOpportunity.subscribe(change => change(getValue()))
+	return dynamic
 }
 
 const flatMap = source => flatten(map(source))
