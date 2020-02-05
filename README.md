@@ -4,6 +4,10 @@
 
 ![Wark!](https://user-images.githubusercontent.com/4369247/33407500-42f7d608-d537-11e7-9754-1ef262f9d6ad.png)
 
+## THIS STUFF IS NOT RELEVANT TO THIS BRANCH
+
+It's old the library is not like this anymore.
+
 ## install
 
 ```sh
