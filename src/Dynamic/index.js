@@ -12,9 +12,7 @@ import { noop, identity, pipe, add, isPromise } from '../utils'
 const create = initialValue => {
 	let value = initialValue
 
-	const dynamic = {
-		emitter: Emitter.create()
-	}
+	const emitter = Emitter.create()
 
 	const emitters = {
 		changeOpportunity: Emitter.create(),
@@ -22,24 +20,30 @@ const create = initialValue => {
 		pendingChangeResolution: Emitter.create()
 	}
 
-	const get = () => value
+	const dynamic = {
+		emitter,
+		emitters,
+		get: () => value,
+		set: newValue => {
+			emitters.pendingChange.emit()
+			change(newValue)
+			emitters.pendingChangeResolution.emit()
+		},
+		subscribe: subscriberFn => {
+			subscriberFn(value)
+			return emitter.subscribe(subscriberFn)
+		}
+	}
 
 	const change = newValue => {
 		value = newValue
-		dynamic.emitter.emit(value)
-	}
-
-	const subscribe = subscriberFn => {
-		subscriberFn(get())
-		return dynamic.emitter.subscribe(subscriberFn)
+		emitter.emit(value)
 	}
 
 	let unsubscribeFromDependencies = noop
 
-	const stopDepending = () => unsubscribeFromDependencies()
-
 	const dependOn = dependencies => {
-		stopDepending()
+		unsubscribeFromDependencies()
 
 		const dependencyChange = Emitter.combine(dependencies)
 		const dependencyPendingChange = Emitter.combine(dependencies.map(dependency => dependency.emitters.pendingChange))
@@ -72,43 +76,33 @@ const create = initialValue => {
 		return dynamic
 	}
 
-	Object.assign(
-		dynamic,
-		{
-			subscribe,
-			get,
-			emitters,
-			dependOn
-		}
-	)
-
-	return dynamic
+	return Object.assign(dynamic, {
+		dependOn,
+	})
 }
 
-const observablizeEmitter = emitter => {
-	const observablized = Emitter.from(emitter)
-	return Object.assign(
-		observablized,
-		{
-			get: noop,
-			observe: observablized.subscribe,
-			emitters: {
-				changeOpportunity: observablized,
-				pendingChange: observablized,
-				pendingChangeResolution: observablized
-			}
+const emitterToPseudoDynamic = emitter => {
+	const e = Emitter.from(emitter)
+	return {
+		get: noop,
+		subscribe: e.subscribe,
+		emitter: e,
+		emitters: {
+			changeOpportunity: e,
+			pendingChange: e,
+			pendingChangeResolution: e
 		}
-	)
+	}
 }
 
 const fromEmitter = initialValue => source => {
-	const o = create(initialValue)
+	const d = create(initialValue)
 	let value
 	source.subscribe(newValue => value = newValue)
-	o.emitters.changeOpportunity.subscribe(change => change(value))
+	d.emitters.changeOpportunity.subscribe(change => change(value))
 	// awkwardly, this must be after the above subscriptions because the order of the subscriptions going on is important
-	o.dependOn([ observablizeEmitter(source) ])
-	return o
+	d.dependOn([ emitterToPseudoDynamic (source) ])
+	return d
 }
 const fromDynamic = initialValue => source => create(initialValue).dependOn([ source ])
 const fromPromise = initialValue => promise => fromEmitter (initialValue) (Emitter.fromPromise(promise))
