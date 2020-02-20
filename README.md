@@ -82,7 +82,7 @@ The rules so far are true for `Emitter`. `Event` is better and solves the nested
 
 An Event is an Emitter, but enhanced with semantics of [event simultaneity](#event-simultaneity). Events are a list across time of occurrences, where an occurrence is a value at a time.
 The name `Event` is chosen because it can represent the abstract idea of a thing which may happen, such as `fallFlatOnFace`, which may have many concrete occurrences.
-It's easy to get tripped up and say event where you mean occurrence, or think `event` refers to the value passed to the subscriber (which is the occurrence value), so to put it another way, `Event` is t`occurrence` what `Class` is to `object`.
+It's easy to get tripped up and say event where you mean occurrence, or think `event` refers to the value passed to the subscriber (which is the occurrence value), so to put it another way, `Event` is to `occurrence` what `Class` is to `object`.
 
 #### event simultaneity
 
