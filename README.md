@@ -76,7 +76,7 @@ Note that you can get into some fascinating insanity if you `emit` inside of a m
 
 #### correction
 
-The rules so far are true for `Emitter`. `Event` is better and solves the nested emit/moment issue. When speaking of `Event` (which will usually be the case!), a moment of times means an `emit` being called and all of its subscribers being called, **unless already within a moment of time**. In such a case, the nested emit joins in the same moment already occurring and does not do the madness of generating a new moment of time, nested within another.
+The rules so far are true for `Emitter`. `Event` is better and solves the nested emit/moment issue. When speaking of `Event` (which will usually be the case!), a moment of time means an `emit` being called and all of its subscribers being called, **unless already within a moment of time**. In such a case, the nested emit joins in the same moment already occurring and does not do the madness of generating a new moment of time, nested within another.
 
 ### Event
 
