@@ -129,7 +129,7 @@ const c = Event.map (add(1)) (a)
 	in that we know `b` and `c` will always occur at the same time,
 	so if we want a value of `1`, we may as well not merge these.
 	However, `b` and `c` could be other compositions of emitters,
-	such a `filter`, where they may not always occur together (if ever).
+	such as `filter`, so that the events may not always occur together (if ever).
 */
 const d = Event.merge (([ b, c ]) => b) ([ b, c ])
 d.subscribe(console.log)
