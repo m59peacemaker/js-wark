@@ -92,8 +92,10 @@ Consider the following composition and result from emitters:
 
 ```js
 const map = fn => emitter => {
-	const mappedEmitter = Emitter.create() // creates a new emitter and returns it
-	emitter.subscribe(value => mappedEmitter.emit(fn(value))) // subscribes to the input emitter and emits when it emits
+	// creates a new emitter and returns it
+	const mappedEmitter = Emitter.create()
+	// subscribes to the input emitter and emits when it emits
+	emitter.subscribe(value => mappedEmitter.emit(fn(value)))
 	return mappedEmitter
 }
 
@@ -123,8 +125,11 @@ const a = Event.create()
 const b = Event.map (add(1)) (a)
 const c = Event.map (add(1)) (a)
 /*
-	Note that this example is silly, in that we know `b` and `c` will always occur at the same time, so if we want a value of `1`, we may as well not merge these.
-	However, `b` and `c` could be other compositions of emitters, such a `filter`, where they may not always occur together (if ever).
+	Note that this example is silly,
+	in that we know `b` and `c` will always occur at the same time,
+	so if we want a value of `1`, we may as well not merge these.
+	However, `b` and `c` could be other compositions of emitters,
+	such a `filter`, where they may not always occur together (if ever).
 */
 const d = Event.merge (([ b, c ]) => b) ([ b, c ])
 d.subscribe(console.log)
@@ -159,7 +164,8 @@ The relationship of the event and behavior composing the dynamic is not arbitrar
 NOTE: and TODO:
 All the needed information is available here in merge, but it does feel in need of much sugar. This API will hopefully improve.
 
-// This example returns all the simultaneous occurrence values if they all occurred, otherwise just takes the first value, regardless of which event it was from
+This example returns all the simultaneous occurrence values if they all occurred, otherwise just takes the first value, regardless of which event it was from.
+```js
 Event.merge
 	(possibleOccurrences => {
 		const occurred = possibleOccurrences.filter(o => o !== Event.didNotOccur) // Event.occurred(possibleOccurrences)
@@ -169,3 +175,4 @@ Event.merge
 			: occurred[0]
 	})
 	[ ...someEvents ]
+```
