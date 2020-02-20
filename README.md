@@ -168,7 +168,7 @@ This example returns all the simultaneous occurrence values if they all occurred
 ```js
 Event.merge
 	(possibleOccurrences => {
-		const occurred = possibleOccurrences.filter(o => o !== Event.didNotOccur) // Event.occurred(possibleOccurrences)
+		const occurred = possibleOccurrences.filter(o => o !== Event.didNotOccur)
 		const allOccurred = possibleOccurrences.length === occurred.length
 		return allOccurred
 			? occurred
