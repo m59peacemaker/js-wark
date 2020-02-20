@@ -1,264 +1,342 @@
-import test from 'tape'
-import * as Emitter from './'
+// import { test } from 'zora'
+// import * as Emitter from './'
+// import * as Behavior from '../Behavior'
+// import delay from 'delay'
 
-test('Emitter.create can emit/subscribe', t => {
-	t.plan(2)
 
-	const emitter = Emitter.create()
-	emitter.subscribe(v => t.equal(v, 123))
-	t.equal(t.assertCount, 0)
-	emitter.emit(123)
-})
+// const a = Emitter.create(emit => {
+// 	setInterval(() => {
+// 		emit(Date.now())
+// 	}, 1000)
+// })
 
-test('emitter.subscribe returns unsubscribe that unsubscribes', t => {
-	t.plan(1)
-	const emitter = Emitter.create()
-	const unsubscribe = emitter.subscribe(v => t.equal(v, 123))
-	emitter.emit(123)
-	unsubscribe()
-	emitter.emit(456)
-})
+// const b = Behavior.hold (Date.now()) (a)
+// a.subscribe(a => console.log({ a, b: b.sample() }))
+// //a.actualize()
 
-test('emitter.unsubscribeAll unsubscribes all', t => {
-	t.plan(2)
-	const emitter = Emitter.create()
-	emitter.subscribe(v => t.equal(v, 123))
-	emitter.subscribe(v => t.equal(v, 123))
-	emitter.emit(123)
-	emitter.unsubscribeAll()
-	emitter.emit(456)
-})
+// ;(() => {
+// 	const em1 = Emitter.create(emit => {
+// 		let n = 0
+// 		setInterval(() => {
+// 			emit(++n)
+// 		}, 1000)
+// 	})
 
-test('emitter() can be used to emit', t => {
-	t.plan(1)
+// 	const bh1 = Behavior.fold ((a, b) => a + b) (0) (em1)
+// 	const bh2 = Behavior.bufferN (3) (3) (em1)
+// 	const em2 = Emitter.bufferN (3) (3) (em1)
+// 	em1.subscribe(em1 => {
+// 		//console.log({ em1, bh1: bh1.sample(), bh2: bh2.sample() })
+// 		console.log({ bh2: bh2.sample() })
+// 	})
+// 	em2.subscribe(em2 => console.log({ em2 }))
+// 	em1.actualize()
+// })()
 
-	const emitter = Emitter.create()
-	emitter.subscribe(v => t.equal(v, 123))
-	emitter(123)
-})
+// const emitter = Emitter.create(emit => {
+// 	emit(123)
+// })
+// emitter.subscribe()
+// emitter.subscribe()
+// emitter.subscribe()
 
-test('Emitter.map emits with mapped value', t => {
-	const expected = [ 4, 9 ]
-	t.plan(expected.length)
+// test(
+// 	`Emitter.create fn can emit and subscribers can subscribe'`,
+// 	async t => {
+// 		let pass = false
+// 		const emitter = Emitter.create(async emit => emit(true))
+// 		emitter.subscribe(value => pass = value)
+// 		await Promise.resolve()
+// 		t.equal(pass, true)
+// 	}
+// )
 
-	const n = Emitter.create()
-	const nSquared = Emitter.map (n => n * n) (n)
-	nSquared.subscribe(value => t.equal(value, expected.shift()))
-	n.emit(2)
-	n.emit(3)
-})
+// test(`emitter.complete is a promise that resolves when the constructor param fn resolves`, async t => {
+// 	let x
+// 	const emitter = Emitter.create(async emit => {
+// 		await delay(1000)
+// 		x = 123
+// 	})
+// 	await emitter.complete
+// 	t.equal(x, 123)
+// })
 
-test('Emitter.alt makes an emitter that emits when either given emitter emits', t => {
-	const expected = [ 'foo', 'bar' ]
-	t.plan(expected.length)
+// test('Emitter.of(...values) emits each given value', async t => {
+// 	const emitter = Emitter.of(1, 2, 3 )
+// 	const expected =  [ 1, 2, 3 ]
+// 	emitter.subscribe(value => t.equal(value, expected.shift()))
+// })
 
-	const a = Emitter.create()
-	const b = Emitter.create()
-	const c = Emitter.alt (a) (b)
-	c.subscribe(value => t.equal(value, expected.shift()))
-	b.emit('foo')
-	a.emit('bar')
-})
+// test('Emitter.emit emits to subscriber', async t => {
+// 	const emitter = Emitter.create()
+// 	emitter.subscribe(v => t.equal(v, 1))
+// 	emitter.subscribe(v => t.equal(v, 1))
+// 	await emitter.emit(1)
+// })
 
-test('Emitter.combine makes an emitter that emits when any of the given emitters emit', t => {
-	const expected = [ 'foo', 'bar', 'baz', 'qux' ]
-	t.plan(expected.length)
+// test('emitter.subscribe returns unsubscribe that unsubscribes', async t => {
+// 	const emitter = Emitter.create()
+// 	const unsubscribe = emitter.subscribe(v => t.equal(v, 123))
+// 	await emitter.emit(123)
+// 	unsubscribe()
+// 	await emitter.emit(456)
+// })
 
-	const a = Emitter.create()
-	const b = Emitter.create()
-	const c = Emitter.create()
-	const d = Emitter.combine([ a, b, c ])
-	d.subscribe(value => t.equal(value, expected.shift()))
-	b.emit('foo')
-	a.emit('bar')
-	c.emit('baz')
-	a.emit('qux')
-})
+// test('emitter.unsubscribeAll unsubscribes all', async t => {
+// 	const emitter = Emitter.create()
+// 	emitter.subscribe(v => t.equal(v, 123))
+// 	emitter.subscribe(v => t.equal(v, 123))
+// 	await emitter.emit(123)
+// 	emitter.unsubscribeAll()
+// 	await emitter.emit(456)
+// })
 
-test('Emitter.combine returns new emitter even if given only one emitter', t => {
-	const a = Emitter.create()
-	const d = Emitter.combine([ a ])
-	t.false(Object.is(a, d))
+// test('emitter() can be used to emit', async t => {
+// 	const emitter = Emitter.create()
+// 	emitter.subscribe(v => t.equal(v, 123))
+// 	await emitter(123)
+// })
 
-	t.end()
-})
+// test('Emitter.map emits with mapped value', async t => {
+// 	const expected = [ 4, 9 ]
+// 	const n = Emitter.create()
+// 	const nSquared = Emitter.map (n => n * n) (n)
+// 	nSquared.subscribe(value => t.equal(value, expected.shift()))
+// 	await n.emit(2)
+// 	await n.emit(3)
+// })
 
-test('Emitter.combine returns new emitter even if given empty array', t => {
-	const expected = [ 123 ]
-	t.plan(expected.length)
+// test('Emitter.alt makes an emitter that emits when either given emitter emits', async t => {
+// 	const expected = [ 'foo', 'bar' ]
+// 	const a = Emitter.create()
+// 	const b = Emitter.create()
+// 	const c = Emitter.alt (a) (b)
+// 	c.subscribe(value => t.equal(value, expected.shift()))
+// 	await b.emit('foo')
+// 	await a.emit('bar')
+// })
 
-	const d = Emitter.combine([])
-	d.subscribe(value => t.equal(value, expected.shift()))
-	d.emit(123)
-})
+// test('Emitter.combine makes an emitter that emits when any of the given emitters emit', async t => {
+// 	const expected = [ 'foo', 'bar', 'baz', 'qux' ]
+// 	const actual = []
 
-test('Emitter.filter makes an emitter that emits when then given emitter emits with a value passing the given predicate', t => {
-	const expected = [ 'foo', 'bar' ]
-	t.plan(expected.length)
+// 	const a = Emitter.create()
+// 	const b = Emitter.create()
+// 	const c = Emitter.create()
+// 	const d = Emitter.combine([ a, b, c ])
 
-	const word = Emitter.create()
-	const shortWord = Emitter.filter (v => v.length <= 3) (word)
-	shortWord.subscribe(value => t.equal(value, expected.shift()))
-	word.emit('things')
-	word.emit('stuff')
-	word.emit('foo')
-	word.emit('whatever')
-	word.emit('bar')
-})
+// 	d.subscribe(value => actual.push(value))
 
-test('Emitter.flatten makes an emitter that emits when emitters emited from the given emitter (inner emitters) emit', t => {
-	const expected = [ 'foo', 'bar', 'baz', 'qux', 'fooz', 'fooz' ]
-	t.plan(expected.length)
+// 	await b.emit('foo')
+// 	await a.emit('bar')
+// 	await c.emit('baz')
+// 	await a.emit('qux')
 
-	const emitterEmitter = Emitter.create()
-	const a = Emitter.create()
-	const b = Emitter.create()
+// 	t.deepEqual(actual, expected)
+// })
 
-	const flattenedEmitter = Emitter.flatten(emitterEmitter)
-	flattenedEmitter.subscribe(value => t.equal(value, expected.shift()))
-	emitterEmitter.emit(a)
-	a.emit('foo')
-	emitterEmitter.emit(b)
-	a.emit('bar')
-	b.emit('baz')
-	a.emit('qux')
-	emitterEmitter.emit(a)
-	a.emit('fooz')
-})
+// test('Emitter.combine returns new emitter even if given only one emitter', t => {
+// 	const a = Emitter.create()
+// 	const d = Emitter.combine([ a ])
+// 	t.equal(Object.is(a, d), false)
+// })
 
-test('Emitter.chain maps and flattens', t => {
-	const expected = [ 'foo', 'bar', 'baz', 'qux', 'fooz', 'fooz' ]
-	t.plan(expected.length)
+// // TODO: type checking should disallow this altogether
+// test('Emitter.combine returns new emitter even if given empty array', async t => {
+// 	const expected = [ 123 ]
+// 	const d = Emitter.combine([])
+// 	d.subscribe(value => t.equal(value, expected.shift()))
+// 	await d.emit(123)
+// })
 
-	const emitterNameEmitter = Emitter.create()
-	const a = Emitter.create()
-	const b = Emitter.create()
-	const emitters = { a, b }
+// test('Emitter.filter makes an emitter that emits when then given emitter emits with a value passing the given predicate', async t => {
+// 	const expected = [ 'foo', 'bar' ]
 
-	const flattenedEmitter = Emitter.chain (name => emitters[name]) (emitterNameEmitter)
-	flattenedEmitter.subscribe(value => t.equal(value, expected.shift()))
-	emitterNameEmitter.emit('a')
-	a.emit('foo')
-	emitterNameEmitter.emit('b')
-	a.emit('bar')
-	b.emit('baz')
-	a.emit('qux')
-	emitterNameEmitter.emit('a')
-	a.emit('fooz')
-})
+// 	const word = Emitter.create()
+// 	const shortWord = Emitter.filter (v => v.length <= 3) (word)
+// 	shortWord.subscribe(value => t.equal(value, expected.shift()))
 
-test('Emitter.scan accumulates', t => {
-	const expected = [
-		[ 1 ],
-		[ 1, 2 ],
-		[ 1, 2, 3 ]
-	]
-	t.plan(expected.length)
+// 	await word.emit('things')
+// 	await word.emit('stuff')
+// 	await word.emit('foo')
+// 	await word.emit('whatever')
+// 	await word.emit('bar')
+// })
 
-	const a = Emitter.create()
-	const b = Emitter.scan (v => acc => acc.concat(v)) ([]) (a)
+// test('Emitter.flatten makes an emitter that emits when emitters emited from the given emitter (inner emitters) emit', async t => {
+// 	const expected = [ 'foo', 'bar', 'baz', 'qux', 'fooz', 'fooz' ]
+// 	const actual = []
 
-	b.subscribe(value => t.deepEqual(value, expected.shift()))
+// 	const emitterEmitter = Emitter.create()
+// 	const a = Emitter.create()
+// 	const b = Emitter.create()
 
-	;[ 1, 2, 3 ].forEach(a.emit)
-})
+// 	const flattenedEmitter = Emitter.flatten(emitterEmitter)
+// 	flattenedEmitter.subscribe(value => actual.push(value))
 
-test('Emitter.recentN', t => {
-	const expected = [
-		[ 1 ],
-		[ 1, 2 ],
-		[ 1, 2, 3 ],
-		[ 1, 2, 3, 4 ],
-		[ 2, 3, 4, 5 ],
-		[ 3, 4, 5, 6 ]
-	]
-	t.plan(expected.length)
+// 	await Promise.all([
+// 		emitterEmitter.emit(a),
+// 		a.emit('foo'),
+// 		emitterEmitter.emit(b),
+// 		a.emit('bar'),
+// 		b.emit('baz'),
+// 		a.emit('qux'),
+// 		emitterEmitter.emit(a),
+// 		a.emit('fooz')
+// 	])
 
-	const a = Emitter.create()
-	const b = Emitter.recentN (4) (a)
+// 	t.deepEqual(actual, expected)
+// })
 
-	b.subscribe(value => t.deepEqual(value, expected.shift()))
+// test('Emitter.chain maps and flattens', async t => {
+// 	const expected = [ 'foo', 'bar', 'baz', 'qux', 'fooz', 'fooz' ]
+// 	const actual = []
 
-	;[ 1, 2, 3, 4, 5, 6 ].forEach(a.emit)
-})
+// 	const emitterNameEmitter = Emitter.create()
+// 	const a = Emitter.create()
+// 	const b = Emitter.create()
+// 	const emitters = { a, b }
 
-test('Emitter.bufferN', t => {
-	t.test('bufferN (4) (1)', t => {
-		const expected = [
-			[ 1, 2, 3, 4 ],
-			[ 2, 3, 4, 5 ],
-			[ 3, 4, 5, 6 ]
-		]
-		t.plan(expected.length)
+// 	const flattenedEmitter = Emitter.chain (name => emitters[name]) (emitterNameEmitter)
+// 	flattenedEmitter.subscribe(value => actual.push(value))
 
-		const a = Emitter.create()
-		const b = Emitter.bufferN (4) (1) (a)
+// 	await Promise.all([
+// 		emitterNameEmitter.emit('a'),
+// 		a.emit('foo'),
+// 		emitterNameEmitter.emit('b'),
+// 		a.emit('bar'),
+// 		b.emit('baz'),
+// 		a.emit('qux'),
+// 		emitterNameEmitter.emit('a'),
+// 		a.emit('fooz')
+// 	])
 
-		b.subscribe(value => t.deepEqual(value, expected.shift()))
+// 	t.deepEqual(actual, expected)
+// })
 
-		;[ 1, 2, 3, 4, 5, 6 ].forEach(a.emit)
-	})
+// test('Emitter.scan accumulates', async t => {
+// 	const expected = [
+// 		[ 1 ],
+// 		[ 1, 2 ],
+// 		[ 1, 2, 3 ]
+// 	]
+// 	const actual = []
 
-	t.test('bufferN (3) (3)', t => {
-		const expected = [
-			[ 1, 2, 3 ],
-			[ 4, 5, 6 ],
-			[ 7, 8, 9 ]
-		]
-		t.plan(expected.length)
+// 	const a = Emitter.create()
+// 	const b = Emitter.scan (v => acc => acc.concat(v)) ([]) (a)
 
-		const a = Emitter.create()
-		const b = Emitter.bufferN (3) (3) (a)
+// 	b.subscribe(value => actual.push(value))
 
-		b.subscribe(value => t.deepEqual(value, expected.shift()))
+// 	await Promise.all([
+// 		a.emit(1),
+// 		a.emit(2),
+// 		a.emit(3)
+// 	])
 
-		;[ 1, 2, 3, 4, 5, 6, 7, 8, 9 ].forEach(a.emit)
-	})
+// 	t.deepEqual(actual, expected)
+// })
 
-	t.test('bufferN (3) (2)', t => {
-		const expected = [
-			[ 1, 2, 3 ],
-			[ 3, 4, 5 ],
-			[ 5, 6, 7 ]
-		]
-		t.plan(expected.length)
+// test('Emitter.recentN', async t => {
+// 	const expected = [
+// 		[ 1 ],
+// 		[ 1, 2 ],
+// 		[ 1, 2, 3 ],
+// 		[ 1, 2, 3, 4 ],
+// 		[ 2, 3, 4, 5 ],
+// 		[ 3, 4, 5, 6 ]
+// 	]
+// 	const actual = []
 
-		const a = Emitter.create()
-		const b = Emitter.bufferN (3) (2) (a)
+// 	const a = Emitter.create()
+// 	const b = Emitter.recentN (4) (a)
 
-		b.subscribe(value => t.deepEqual(value, expected.shift()))
+// 	b.subscribe(value => actual.push(value))
 
-		;[ 1, 2, 3, 4, 5, 6, 7, 8 ].forEach(a.emit)
-	})
+// 	await Promise.all([ 1, 2, 3, 4, 5, 6 ].map(a.emit))
 
-	t.test('bufferN (2) (4)', t => {
-		const expected = [
-			[ 1, 2 ],
-			[ 5, 6 ],
-			[ 9, 10 ]
-		]
-		t.plan(expected.length)
+// 	t.deepEqual(actual, expected)
+// })
 
-		const a = Emitter.create()
-		const b = Emitter.bufferN (2) (4) (a)
+// test('Emitter.bufferN', async t => {
+// 	await t.test('bufferN (4) (1)', async t => {
+// 		const expected = [
+// 			[ 1, 2, 3, 4 ],
+// 			[ 2, 3, 4, 5 ],
+// 			[ 3, 4, 5, 6 ]
+// 		]
+// 		const actual = []
 
-		b.subscribe(value => t.deepEqual(value, expected.shift()))
+// 		const a = Emitter.create()
+// 		const b = Emitter.bufferN (4) (1) (a)
 
-		;[ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 ].forEach(a.emit)
-	})
-})
+// 		b.subscribe(value => actual.push(value))
 
-test('Emitter.pairwise', t => {
-	const expected = [
-		[ 1, 2 ],
-		[ 2, 3 ],
-		[ 3, 4 ]
-	]
-	t.plan(expected.length)
-	const a = Emitter.create()
-	const b = Emitter.pairwise(a)
+// 		await Promise.all([ 1, 2, 3, 4, 5, 6 ].map(a.emit))
 
-	b.subscribe(value => t.deepEqual(value, expected.shift()))
+// 		t.deepEqual(actual, expected)
+// 	})
 
-	;[ 1, 2, 3, 4 ].forEach(a.emit)
-})
+// 	t.test('bufferN (3) (3)', async t => {
+// 		const expected = [
+// 			[ 1, 2, 3 ],
+// 			[ 4, 5, 6 ],
+// 			[ 7, 8, 9 ]
+// 		]
+// 		const actual = []
+
+// 		const a = Emitter.create()
+// 		const b = Emitter.bufferN (3) (3) (a)
+
+// 		b.subscribe(value => actual.push(value))
+
+// 		await Promise.all([ 1, 2, 3, 4, 5, 6, 7, 8, 9 ].map(a.emit))
+		
+// 		t.deepEqual(actual, expected)
+// 	})
+// 	return
+// 	t.test('bufferN (3) (2)', async t => {
+// 		const expected = [
+// 			[ 1, 2, 3 ],
+// 			[ 3, 4, 5 ],
+// 			[ 5, 6, 7 ]
+// 		]
+
+// 		const a = Emitter.create()
+// 		const b = Emitter.bufferN (3) (2) (a)
+
+// 		b.subscribe(value => t.deepEqual(value, expected.shift()))
+
+// 		;[ 1, 2, 3, 4, 5, 6, 7, 8 ].forEach(a.emit)
+// 	})
+
+// 	t.test('bufferN (2) (4)', t => {
+// 		const expected = [
+// 			[ 1, 2 ],
+// 			[ 5, 6 ],
+// 			[ 9, 10 ]
+// 		]
+// 		t.plan(expected.length)
+
+// 		const a = Emitter.create()
+// 		const b = Emitter.bufferN (2) (4) (a)
+
+// 		b.subscribe(value => t.deepEqual(value, expected.shift()))
+
+// 		;[ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 ].forEach(a.emit)
+// 	})
+// })
+
+// // test('Emitter.pairwise', t => {
+// // 	const expected = [
+// // 		[ 1, 2 ],
+// // 		[ 2, 3 ],
+// // 		[ 3, 4 ]
+// // 	]
+// // 	t.plan(expected.length)
+// // 	const a = Emitter.create()
+// // 	const b = Emitter.pairwise(a)
+
+// // 	b.subscribe(value => t.deepEqual(value, expected.shift()))
+
+// // 	;[ 1, 2, 3, 4 ].forEach(a.emit)
+// // })
