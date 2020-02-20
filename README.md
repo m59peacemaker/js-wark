@@ -86,7 +86,7 @@ It's easy to get tripped up and say event where you mean occurrence, or think `e
 
 #### event simultaneity
 
-Being that moments of [time](#time) are introduced by `emit`, and no two calls to `emit` can be executed at the same instant (as even synchronous code is still executed in order), there can never be two simultaneous moments in time. However, [emitting within a subscription](#nested-moments) to an emitter is possible and necessary for composing emitters, and it is a semantic nightmare.
+Being that moments of [time](#time) are introduced by `emit`, and no two calls to `emit` can be executed at the same instant (as even synchronous code is still executed in order), there can never be two simultaneous moments in time. However, [emitting within a subscription](#nested-moments) to an emitter is possible and necessary for composing emitters, though it is a semantic nightmare.
 
 Consider the following composition and result from emitters:
 
