@@ -1,7 +1,7 @@
 import * as Emitter from '../Emitter'
 import { add, identity, noop } from '../utils'
 
-function Event (fn = noop) {
+function AtemporalEvent () {
 	const emitter = Emitter.create()
 	const emit = value => {
 		occurrence_pending.emit()
@@ -10,22 +10,39 @@ function Event (fn = noop) {
 	}
 	const occurrence_pending = Emitter.create()
 	const occurrence_settled = Emitter.create()
+
 	return {
 		emit,
 		occurrence_pending,
 		occurrence_settled,
-		subscribe: emitter.subscribe,
-		actualize: () => fn(emit)
+		subscribe: emitter.subscribe
 	}
 }
 
-// TODO: take static array of dependencies or emitter and create the dependency_occurrence* emitters accordingly. No need to switchTo(map( for dependencies that won't ever change
-function DerivedEvent (fn, dependencies_emitter = Emitter.create()) {
-	const combine_dependency_emitters = getEmitterForDependency => Emitter.switchTo(
-		Emitter.map
-			(dependencies => Emitter.combine(dependencies.map(getEmitterForDependency)))
-			(dependencies_emitter)
-	)
+function Event (time, fn = noop) {
+	const e = AtemporalEvent()
+
+	const emit = value => {
+		time.forward()
+		e.emit(value)
+	}
+
+	time.start.subscribe(() => fn(emit))
+
+	return {
+		...e,
+		emit,
+		time
+	}
+}
+
+function DerivedEvent (time, dependencies_source, fn) {
+	const emitter = Emitter.create()
+
+	const combine_dependency_emitters = getEmitterForDependency => {
+		const concat_dependencies = dependencies => Emitter.concatAll(dependencies.map(getEmitterForDependency))
+		return Array.isArray(dependencies_source) ? concat_dependencies(dependencies_source) : Emitter.switchMap (concat_dependencies) (dependencies_source)
+	}
 
 	const dependency_occurrence_settled = combine_dependency_emitters(dependency => dependency.occurrence_settled)
 	const dependency_occurrence = combine_dependency_emitters((dependency, index) => Emitter.map (value => ({ [index]: value  })) (dependency))
@@ -34,7 +51,7 @@ function DerivedEvent (fn, dependencies_emitter = Emitter.create()) {
 	const count_of_dependencies_pending_occurrence = Emitter.scan
 		(add)
 		(0)
-		(Emitter.combine([
+		(Emitter.concatAll([
 			Emitter.constant (1) (dependency_occurrence_pending),
 			Emitter.constant (-1) (dependency_occurrence_settled)
 		]))
@@ -48,45 +65,48 @@ function DerivedEvent (fn, dependencies_emitter = Emitter.create()) {
 		(dependency_occurrences => dependency_occurrences.length > 0)
 		(dependency_occurrences_now)
 	const occurrence_opportunity = Emitter.map
-		(dependency_occurrences => fn(event_emitter.emit, Object.assign(...dependency_occurrences)))
+		(dependency_occurrences => fn(emitter.emit, Object.assign(...dependency_occurrences)))
 		(occurrence_opportunity_event)
 
-	const event_emitter = Event()
-
-	// TODO: remove this mess and just pass either an array or emitter when creating
-	const depend_on = dependencies => {
-		dependencies_emitter.emit(dependencies)
-		return event
-	}
-
-	const event = {
-		depend_on,
+	return {
+		time,
 		occurrence_pending: dependency_occurrence_pending,
 		occurrence_settled: occurrence_opportunity,
-		subscribe: event_emitter.subscribe,
+		subscribe: emitter.subscribe,
 	}
-
-	return event
 }
 
 const create = Event
 
-const of = (...values) => Event(emit => values.forEach(value => emit(value)))
+const of = time => (...values) => Event(time, emit => values.forEach(value => emit(value)))
 
-const map = f => e => {
-	return DerivedEvent((emit, dependency_occurrences) => emit(f(dependency_occurrences[0]))).depend_on([ e ])
-}
+const map = f => e => DerivedEvent(e.time, [ e ], (emit, o) => emit(f(o[0])))
 
-const merge = emitters => DerivedEvent((emit, dependency_occurrences) => emit(Object.values(dependency_occurrences))).depend_on(emitters)
+const merge = emitters => DerivedEvent(emitters[0].time, emitters, (emit, o) => emit(Object.values(o)))
 
-const switchMap = f => e => DerivedEvent((emit, o) => emit(f(Object.values(o)[0])), Emitter.map (Array.of) (e))
+const switchMap = f => e => DerivedEvent(e.time, Emitter.map (v => [ f(v) ]) (e), (emit, o) => emit((o)[0]))
 
-const filter = f => e => DerivedEvent((emit, o) => f(o[0]) && emit(o[0])).dependOn([ e ])
+const filter = f => e => DerivedEvent(e.time, [ e ], (emit, o) => f(o[0]) && emit(o[0]))
 
-const tag = behavior => event => map (() => behavior.sample()) (event)
-const attach = behavior => event => map (v => [ v, behavior.sample() ]) (event)
+// to solve the loop/hold/snapshot issue, this may need to be redone on top of DerivedEvent where if the Behavior has a .event (is an event derived behavior), take it as a dependency or something
+// compose with it some kind of way anyway. Maybe map (() => behavior.sample) (switchMap(() => behavior.event))
+// what if the snapshot lets the behavior know what time it is asking for a value, and then the behavior can emit 
+// snapshot event occurs, subscribes to behavior sample emitter, behavior 
+// behavior.sample = fn => update.subscribe
+const snapshotDiscreteBehavior = fn => behavior => event => DerivedEvent(event.time, [ event, behavior.update ], (emit, o) => o[0] && emit(o.hasOwnProperty[1] ? o[1] : behavior.sample()))
+// the discrete behavior really is a derivedEvent and needs to be depended upon alongside the snapshot event
+const snapshotBehavior = fn => behavior => event => map (value => fn(behavior.sample()) (value)) (event)
+const snapshot = fn => behavior => (behavior.update ? snapshotDiscreteBehavior : snapshotBehavior)(fn)(behavior)
+
+//const tag = behavior => event => map (v => behavior.sample()) (event)
+const tag = snapshot (b => a => b)
+
+//const attach = behavior => event => map (v => [ v, behavior.sample() ]) (event)
+const attach = snapshot (b => a => [ a, b ])
+
 
 export {
+	AtemporalEvent,
 	attach,
 	create,
 	DerivedEvent,
@@ -95,12 +115,13 @@ export {
 	map,
 	merge,
 	of,
+	snapshot,
 	switchMap,
 	tag
 }
 
 // TODO: solve the issue of whether Event is a list of occurrences across time or a list across time of a list of simultaneous occurrences
-// if the latter, then flatMap, concat, etc work naturally in cases where there are simultaneous events... otherwise, you have a list of occurrences where only a single value makes sense here
+// if the latter, then flatMap, etc work naturally in cases where there are simultaneous events... otherwise, you have a list of occurrences where only a single value makes sense here
 // const flatMap = f => e => {
 // 	const dependencies_emitter = Emitter.scan (v => acc => acc.concat(v)) ([ ]) (e)
 // 	const event = DerivedEvent((emit, occurrences) => {

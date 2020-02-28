@@ -12,7 +12,7 @@ const of = (...values) => {
 }
 
 const hold = value => event => Dynamic(
-	Event.merge (([ a ]) => a) ([ Event.of(value),  event ]),
+	event,
 	Behavior.hold (value) (event)
 )
 
@@ -23,7 +23,7 @@ const map = f => dynamic => {
 
 const filter = f => dynamic => {
 	const event = Event.filter (f) (dynamic)
-	return Dynamic(event, Behavior.hold(dynamic.sample(), event))
+	return Dynamic(event, Behavior.hold(dynamic.sample()) (event))
 }
 
 export {

@@ -1,58 +1,104 @@
 import * as Emitter from '../Emitter'
-import { call } from '../utils'
+import * as Event from '../Event'
+import { call, noop } from '../utils'
+import { Always } from '../Time'
 
-const Behavior = sample => {
+const Behavior = (time, f) => {
+	const cache = { t: null, value: null }
 	return {
-		sample
+		time,
+		sample: () => {
+			console.log('behavior time current', time.current())
+			console.log('behavior cache (s)', JSON.stringify(cache))
+			const t = time.current()
+			cache.t === t || Object.assign(cache, { t, value: f() })
+			console.log('behavior cache (e)', JSON.stringify(cache))
+			return cache.value
+		}
+	}
+}
+
+const DiscreteBehavior = (value, update) => {
+	update.subscribe(v => value = v)
+	return {
+		...Behavior(update.time, () => value),
+		update
 	}
 }
 
 const create = Behavior
 
-const of = value => create(() => value)
+//const cacheBustingTime = (n => ({ current: () => ++n, forward: noop }))(0)
+
+const findTime = behaviors => (behaviors.find(b => b.time !== Always) || behaviors[0]).time
+
+const of = value => create(Always, () => value)
 
 const join = b => b.sample()
 
-const flatMap = f => b => create(() => f(join(join(b))))
+const map = f => b => create(b.time, () => f(b.sample()))
 
-const map = f => b => flatMap (f) (of(b))
+const chain = f => b => create(b.time, () => join(f(b.sample())))
 
-const lift = fn => behaviors => create(t => fn(behaviors.map(b => b.sample(t))))
+const lift = f => behaviors => create(findTime(behaviors), () => f(...behaviors.map(b => b.sample())))
 
 const apply = bf => bv => lift (call) ([ bf, bv ])
 
-// TODO: name `fn` better
-const loop = fn => {
-	const b = fn(create(t => b.sample(t)))
+// ?
+const feedback = time => initialValue => fn => {
+	const b = fn(create(time, () => initialValue))
+	return create(time, () => b.sample())
+}
+
+// what happens if you try to sample the loop inside the loop fn? probably bad. The proxy shouldn't be sample-able. Maybe make a new type for the loopable thing, where 
+// This eventually leads to another question: what's the current state of `Event.flatMap (() => Event.of(0)) (event)` ? Does it tick time forward? Does it need to take time or is it better to not somehow?
+const loop = time => fn => {
+	const b = fn(create(time, () => {
+		console.log('loop sample')
+		return b.sample()
+	}))
 	return b
 }
 
-const hold = value => event => {
-	event.subscribe(v => {
-		value = v
-	})
-	return create(() => value)
-}
+const hold = value => event => DiscreteBehavior(value, event)
 
-const fold = reducer => initialValue => emitter => loop(behavior =>
-	hold
-		(initialValue)
-		(Emitter.snapshot (reducer) (behavior) (emitter))
-)
+const fold = reducer => initialValue => event => loop
+	(event.time)
+	(behavior =>
+		hold
+			(initialValue)
+			(Event.snapshot (reducer) (behavior) (event))
+	)
 
-const bufferN = n => startEvery => emitter =>
+const bufferN = n => startEvery => event =>
 	fold
 		((buffer, v) => [ ...(buffer.length === Math.max(n, startEvery) ? buffer.slice(startEvery) : buffer), v ])
 		([])
-		(emitter)
-
+		(event)
 
 export {
 	create,
 	bufferN,
-	of,
-	hold,
+	feedback,
 	fold,
+	hold,
+	lift,
 	loop,
-	map
+	map,
+	of
 }
+
+/* for docs:
+
+on Behavior vs IO, what is a behavior
+const click = Event()
+const random = Behavior.create(Math.random)
+const randWhenClickedA = Event.tag (random) (click)
+const rameWhenClickedB = Event.tag (random) (click)
+
+// not positive this idea will be used, but it is super cool
+// Behavior(Behavior) means all the behaviors that could be derived from the expression
+// Behavior(Behavior) means all the accumulations that could be derived from the expression / that could possibly come about to be due to the expression
+// an accumulation of [ 1, 2, 3, 4, 5 ] if you sampled it at the time of 1, or an accumulation of [ 4, 5 ] if you sampled at the time of 4, etc
+// the outer behavior represents the inner changing behavior, so sampling the outer one gives you one specific accumulation behavior out of the many possible behaviors
+*/

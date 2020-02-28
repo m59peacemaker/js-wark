@@ -15,56 +15,42 @@ test('Dynamic', t => {
 
 	t.test('Dynamic.hold', t => {
 		const actual = rightNow(({ eventOf, dynamicOf }) => {
-			const event = eventOf(1, 2, 3)
+			const event = eventOf( 1, 2, 3)
 			const dynamic = Dynamic.hold (0) (event)
+			t.equal(dynamic.sample(), 0)
 			return valuesOf(dynamic)
 		})
-		t.equal(actual(), [ 0, 1, 2, 3 ])
+		t.equal(actual(), [ 1, 2, 3 ])
 	})
 
 	t.test('Dynamic.filter', t => {
-		//const event = Event.create()
-		//const dynamic = Dynamic.hold(0) (event)
-		//const filtered = Dynamic.filter (v => v > 2) (dynamic)
+		const event = Event.create()
+		const dynamic = Dynamic.hold (0) (event)
+		const filtered = Dynamic.filter (v => v > 2) (dynamic)
 
-		//const dynamicActual = valuesOf(dynamic)
-		//const filteredActual = valuesOf(filtered)
+		const dynamicActual = valuesOf(dynamic)
+		const filteredActual = valuesOf(filtered)
 
-		// event.emit(1)
-		// event.emit(2)
-		// event.emit(3)
-		// event.emit(4)
+		t.equal(dynamic.sample(), 0)
+		t.equal(filtered.sample(), 0)
 
-		// t.equal(dynamicActual(), [ 0, 1, 2, 3, 4 ])
-		// t.equal(filteredActual(), [ 3, 4 ])
+		event.emit(1)
+		t.equal(dynamic.sample(), 1)
+		t.equal(filtered.sample(), 0)
+
+		event.emit(2)
+		t.equal(dynamic.sample(), 2)
+		t.equal(filtered.sample(), 0)
+
+		event.emit(3)
+		t.equal(dynamic.sample(), 3)
+		t.equal(filtered.sample(), 3)
+
+		event.emit(4)
+		t.equal(dynamic.sample(), 4)
+		t.equal(filtered.sample(), 4)
+
+		t.equal(dynamicActual(), [ 1, 2, 3, 4 ])
+		t.equal(filteredActual(), [ 3, 4 ])
 	})
 })
-
-// test('Dynamic.fromEmitter dynamic has initial value', t => {
-// 	const e = Emitter.create()
-// 	const o = Dynamic.fromEmitter ('foo') (e)
-// 	t.equal(o.get(), 'foo')
-// 	t.end()
-// })
-
-// test('Dynamic.fromEmitter dynamic gets new value from emitter', t => {
-// 	const e = Emitter.create()
-// 	const o = Dynamic.fromEmitter ('foo') (e)
-// 	t.equal(o.get(), 'foo')
-// 	e.emit('bar')
-// 	t.equal(o.get(), 'bar')
-// 	e.emit('baz')
-// 	t.equal(o.get(), 'baz')
-// 	t.end()
-// })
-
-// test('Dynamic.fromEmitter dynamic observer gets dynamic values', t => {
-// 	const expected = [ 'foo', 'bar', 'baz' ]
-// 	t.plan(expected.length)
-
-// 	const e = Emitter.create()
-// 	const o = Dynamic.fromEmitter ('foo') (e)
-// 	o.subscribe(value => t.equal(value, expected.shift()))
-// 	e.emit('bar')
-// 	e.emit('baz')
-// })
