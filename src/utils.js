@@ -10,7 +10,7 @@ const add = a => b => a + b
 
 const isPromise = v => typeof v.then === 'function'
 
-const valuesOf = emitter => {
+const collectValues = emitter => {
 	const values = []
 	emitter.subscribe(value => values.push(value))
 	return () => values
@@ -23,5 +23,5 @@ export {
 	isPromise,
 	noop,
 	pipe,
-	valuesOf
+	collectValues
 }
