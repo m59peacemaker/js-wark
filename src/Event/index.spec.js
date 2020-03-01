@@ -1,5 +1,6 @@
 import { test } from 'zora'
 import * as Event from './'
+import * as Behavior  from '../Behavior'
 import { AtemporalEvent as AEvent } from './'
 import { add, identity, collectValues } from '../utils'
 import { Time } from '../Time'
@@ -9,17 +10,135 @@ import { Time } from '../Time'
 // const a = Event.of([ 1, 2, 3 ])
 // const b = Event.chain (list => Event.of(...list)) (a)
 // const c = Event.bufferN (3) (1) (b)
-// const d = Event.concatAll ([ a, c ]) // should tick once with [ [ 1, 2, 3 ], [ 1, 2, 3 ] ]
+// const d = Event.concatAll ([ a, c ]) { time: 1, value: [ 1, 2, 3 ] }, { time: 4, value: [ 1, 2, 3 ] }
+
 test('Event', t => {
-	t.test('', t => {
+	t.test('Event.snapshot', t => {
+		t.test('continuous behavior', t => {
+			const time = Time()
+			const values = [ 1, 2, 3 ]
+			const a = Event.of (time) (0, 0, 0)
+			const b = Behavior.create(time, () => values.shift())
+			const c = Event.snapshot (b => a => [ b, a ]) (b) (a)
+			const actual = collectValues(c)
+			time.start()
+			t.deepEqual(actual(), [ [ 1, 0 ], [ 2, 0 ], [ 3, 0 ] ])
+		})
+		t.test('discrete behavior snapshotted by same event', t => {
+			const time = Time()
+			const a = Event.of (time) (1, 2, 3)
+			const b = Behavior.hold (0) (a)
+			const c = Event.snapshot (b => a => [ b, a ]) (b) (a)
+			const actual = collectValues(c)
+			time.start()
+			t.deepEqual(actual(), [ [ 1, 1 ], [ 2, 2 ], [ 3, 3 ] ])
+		})
+		t.test('discrete behavior snapshotted by different event', t => {
+			const time = Time()
+			const a = Event.create(time)
+			const b = Event.create(time)
+			const c = Behavior.hold (0) (a)
+			const d = Event.snapshot (b => a => [ b, a ]) (c) (b)
+			const actual = collectValues(d)
+			time.start()
+			a.emit(1)
+			t.equal(c.sample(), 1)
+			a.emit(2)
+			t.equal(c.sample(), 2)
+			b.emit(5)
+			b.emit(10)
+			a.emit(3)
+			a.emit(4)
+			b.emit(15)
+			t.deepEqual(actual(), [ [ 2, 5 ], [ 2, 10 ], [ 4, 15 ] ])
+		})
+	})
+	t.test('generate multiple new moments from one moment and buffer them back to one moment', t => {
 		const time = Time()
-		const a = Event.create(time)
-		const b = Event.switchMap (v => Event.of (time) (v)) (a)
-		const actual = collectValues(b)
+		// Event(List(Occurrence(List(1, 2, 3)))) event with list of one occurrence with a list of 3 values
+		const a = Event.of (time) ([ 1, 2, 3 ])
+		// Event(List(Occurrence(1), Occurrence(2), Occurrence(3))) Event with a list of 3 occurrences each with one value
+		const b = Event.switchMap (list => Event.of (time) (...list)) (a)
+		const c = Event.concatAll([ a, b ])
+		const d = Event.bufferN (3) (1) (b)
+		const e = Event.concatAll ([ a, d ])
+		const f = Event.concatAllWith (v => v) ([ a, b, d ])
+		const actualB = collectValues(b)
+		const actualC = collectValues(c)
+		const actualD = collectValues(d)
+		const actualE = collectValues(e)
+		const actualF = collectValues(f)
+
 		time.start()
-		a.emit(1)
-		console.log(time.current())
-		t.deepEqual(actual(), [ 1 ])
+
+		t.deepEqual(actualB(), [ 1, 2, 3 ])
+		t.deepEqual(actualC(), [ [ 1, 2, 3 ], 1, 2, 3 ])
+		t.deepEqual(actualD(), [ [ 1, 2, 3 ] ])
+		t.deepEqual(actualE(), [ [ 1, 2, 3 ], [ 1, 2, 3 ] ])
+		t.deepEqual(actualF(), [
+			{ 0: [ 1, 2, 3 ] },
+			{ 1: 1 },
+			{ 1: 2 },
+			{ 1: 3, 2: [ 1, 2, 3 ] },
+		])
+	})
+
+	t.test('Event.concatAllWith', t => {
+		t.test('concatting events that always occur together', t => {
+			const a = AEvent()
+			const b = Event.map (add(1)) (a)
+			const c = Event.map (add(2)) (a)
+			const d = Event.concatAllWith (o => ({ occurrences : o })) ([ b, a, c ])
+			const actual = collectValues(d)
+			a.emit(10)
+			t.deepEqual(actual(), [ { occurrences: { 0: 11, 1: 10, 2: 12 } } ])
+		})
+		t.test('concatting events that sometimes occur together', t => {
+			const a = AEvent()
+			const b = Event.map (add(1)) (a)
+			const c = Event.filter (v => v > 9) (a)
+			const d = Event.concatAllWith (o => ({ occurrences : o })) ([ b, a, c ])
+			const actual = collectValues(d)
+			a.emit(9)
+			a.emit(10)
+			t.deepEqual(actual(), [ { occurrences: { 0: 10, 1: 9 } }, { occurrences: { 0: 11, 1: 10, 2: 10} } ])
+		})
+	})
+
+	t.test('Event.concatAll', t => {
+		t.test('concatting events that never occur together emits the value of each event occurrence', t => {
+			const a = AEvent()
+			const b = AEvent()
+			const c = Event.concatAll ([ a, b ])
+			const actual = collectValues(c)
+			b.emit(10)
+			a.emit(20)
+			a.emit(30)
+			b.emit(40)
+			t.deepEqual(actual(), [ 10, 20, 30, 40 ])
+		})
+		t.test('concatting events that sometimes occur together always emits the value of the first given event', t => {
+			const a = AEvent()
+			const b = Event.filter (v => v < 10 || (v !== 10 && v % 2 === 0)) (a)
+			const c = Event.filter (v => v > 10 || (v !== 10 && v % 2 === 0)) (a)
+			const d = Event.concatAll ([ b, c ])
+			const actual = collectValues(d)
+			a.emit(9)  // b, < 10
+			a.emit(10)
+			a.emit(11) // c, > 10
+			a.emit(12) // b, c % 2 === 0
+			a.emit(13) // c > 10
+			t.deepEqual(actual(), [ 9, 11, 12, 13 ])
+		})
+		t.test('concatting events that always occur together always emits the value of the first given event', t => {
+			const a = AEvent()
+			const b = Event.map (add(1)) (a)
+			const c = Event.concatAll ([ a, b ])
+			const actual = collectValues(c)
+			a.emit(20)
+			a.emit(30)
+			t.deepEqual(actual(), [ 20, 30 ])
+		})
 	})
 
 	t.test('Event.map', t => {
@@ -124,6 +243,7 @@ test('Event', t => {
 			t.deepEqual(actual(), [ 5, 10, 15, 20, 25, 30 ])
 		})
 	})
+
 })
 
 	// test('Event.flatMap', async t => {

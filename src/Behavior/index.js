@@ -8,11 +8,8 @@ const Behavior = (time, f) => {
 	return {
 		time,
 		sample: () => {
-			console.log('behavior time current', time.current())
-			console.log('behavior cache (s)', JSON.stringify(cache))
 			const t = time.current()
 			cache.t === t || Object.assign(cache, { t, value: f() })
-			console.log('behavior cache (e)', JSON.stringify(cache))
 			return cache.value
 		}
 	}
@@ -21,14 +18,15 @@ const Behavior = (time, f) => {
 const DiscreteBehavior = (value, update) => {
 	update.subscribe(v => value = v)
 	return {
-		...Behavior(update.time, () => value),
+		...Behavior(cacheBustingTime, () => value),
+		time: update.time,
 		update
 	}
 }
 
 const create = Behavior
 
-//const cacheBustingTime = (n => ({ current: () => ++n, forward: noop }))(0)
+const cacheBustingTime = (n => ({ current: () => ++n, forward: noop }))(0)
 
 const findTime = behaviors => (behaviors.find(b => b.time !== Always) || behaviors[0]).time
 
@@ -44,24 +42,42 @@ const lift = f => behaviors => create(findTime(behaviors), () => f(...behaviors.
 
 const apply = bf => bv => lift (call) ([ bf, bv ])
 
-// ?
-const feedback = time => initialValue => fn => {
-	const b = fn(create(time, () => initialValue))
-	return create(time, () => b.sample())
+const duplicateMirror = () => {
+	throw new Error('Behavior proxy is already mirrored!')
+}
+const proxySample = () => {
+	throw new Error('Behavior proxy should not be sampled before being mirrored!')
+}
+function BehaviorProxy () {
+	let b = create(Always, proxySample)
+	const updateProxy = Event.AtemporalEvent()
+	const mirror = behavior => {
+		const { update, sample } = behavior
+		if (update) {
+			update.subscribe(v => console.log({ v }) || updateProxy.emit(v))
+		}
+		Object.assign(b, { sample, mirror: duplicateMirror })
+		return behavior
+	}
+	return Object.assign(b, { mirror, update: updateProxy })
 }
 
-// what happens if you try to sample the loop inside the loop fn? probably bad. The proxy shouldn't be sample-able. Maybe make a new type for the loopable thing, where 
-// This eventually leads to another question: what's the current state of `Event.flatMap (() => Event.of(0)) (event)` ? Does it tick time forward? Does it need to take time or is it better to not somehow?
 const loop = time => fn => {
-	const b = fn(create(time, () => {
-		console.log('loop sample')
-		return b.sample()
-	}))
+	const b = fn(create(time, () => b.sample()))
 	return b
 }
 
 const hold = value => event => DiscreteBehavior(value, event)
 
+// const fold = reducer => initialValue => event => {
+// 	const proxy = BehaviorProxy()
+
+// 	return proxy.mirror(
+// 		hold
+// 			(initialValue)
+// 			(Event.snapshot (reducer) (proxy) (event))
+// 	)
+// }
 const fold = reducer => initialValue => event => loop
 	(event.time)
 	(behavior =>
@@ -77,6 +93,7 @@ const bufferN = n => startEvery => event =>
 		(event)
 
 export {
+	BehaviorProxy,
 	create,
 	bufferN,
 	feedback,
