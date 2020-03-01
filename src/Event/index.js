@@ -2,32 +2,45 @@ import * as Emitter from '../Emitter'
 import { add, identity, noop } from '../utils'
 
 function AtemporalEvent () {
-	const emitter = Emitter.create()
-	const emit = value => {
-		occurrence_pending.emit()
-		emitter.emit(value)
-		occurrence_settled.emit()
-	}
+	const occurrence = Emitter.create()
 	const occurrence_pending = Emitter.create()
 	const occurrence_settled = Emitter.create()
+
+	const emit = value => {
+		occurrence_pending.emit()
+		occurrence.emit(value)
+		occurrence_settled.emit()
+	}
 
 	return {
 		emit,
 		occurrence_pending,
 		occurrence_settled,
-		subscribe: emitter.subscribe
+		subscribe: occurrence.subscribe
 	}
+}
+
+const once = emitter => f => {
+	const u = emitter.subscribe((...args) => {
+		u()
+		f(...args)
+	})
+	return u
 }
 
 function Event (time, fn = noop) {
 	const e = AtemporalEvent()
 
-	const emit = value => {
-		time.forward()
-		e.emit(value)
-	}
+	const emit = value => time.forward(() => e.emit(value))
 
-	time.start.subscribe(() => fn(emit))
+	const start = () => fn(emit)
+
+	if (time.current() > 0) {
+		//once (time.momentEnd) (start)
+		time.forward(start)
+	} else {
+		time.start.subscribe(start)
+	}
 
 	return {
 		...e,
@@ -55,6 +68,10 @@ function DerivedEvent (time, dependencies_source, fn) {
 			Emitter.constant (1) (dependency_occurrence_pending),
 			Emitter.constant (-1) (dependency_occurrence_settled)
 		]))
+	// dependency_occurrence_pending.subscribe(v => console.log('dependency pending', v))
+	// dependency_occurrence_settled.subscribe(v => console.log('dependency settled', v))
+	// dependency_occurrence.subscribe(v => console.log('dependency occurence', v))
+	// count_of_dependencies_pending_occurrence.subscribe(count => console.log({ count }))
 
 	const all_dependencies_settled = Emitter.filter
 		(count_pending => count_pending === 0)
@@ -78,42 +95,63 @@ function DerivedEvent (time, dependencies_source, fn) {
 
 const create = Event
 
-const of = time => (...values) => Event(time, emit => values.forEach(value => emit(value)))
+const of = time => (...values) => Event(time, emit => console.log('of emit', ...values) || values.forEach(value => emit(value)))
 
 const map = f => e => DerivedEvent(e.time, [ e ], (emit, o) => emit(f(o[0])))
 
-const merge = emitters => DerivedEvent(emitters[0].time, emitters, (emit, o) => emit(Object.values(o)))
+const concatAllWith = f => emitters => DerivedEvent(emitters[0].time, emitters, (emit, o) => emit(f(o)))
+const concatAll = concatAllWith (o => Object.values(o)[0])
 
 const switchMap = f => e => DerivedEvent(e.time, Emitter.map (v => [ f(v) ]) (e), (emit, o) => emit((o)[0]))
 
 const filter = f => e => DerivedEvent(e.time, [ e ], (emit, o) => f(o[0]) && emit(o[0]))
 
-// to solve the loop/hold/snapshot issue, this may need to be redone on top of DerivedEvent where if the Behavior has a .event (is an event derived behavior), take it as a dependency or something
-// compose with it some kind of way anyway. Maybe map (() => behavior.sample) (switchMap(() => behavior.event))
-// what if the snapshot lets the behavior know what time it is asking for a value, and then the behavior can emit 
-// snapshot event occurs, subscribes to behavior sample emitter, behavior 
-// behavior.sample = fn => update.subscribe
-const snapshotDiscreteBehavior = fn => behavior => event => DerivedEvent(event.time, [ event, behavior.update ], (emit, o) => o[0] && emit(o.hasOwnProperty[1] ? o[1] : behavior.sample()))
-// the discrete behavior really is a derivedEvent and needs to be depended upon alongside the snapshot event
-const snapshotBehavior = fn => behavior => event => map (value => fn(behavior.sample()) (value)) (event)
+const snapshotDiscreteBehavior = fn => behavior => event => DerivedEvent(
+	event.time,
+	[ event, behavior.update ],
+	(emit, o) =>
+		o.hasOwnProperty(0)
+			&& emit(
+				console.log(o) ||
+				fn (o.hasOwnProperty(1) ? o[1] : behavior.sample()) (o[0])
+			)
+)
+const snapshotBehavior = fn => behavior => event => map (value => fn (behavior.sample()) (value)) (event)
 const snapshot = fn => behavior => (behavior.update ? snapshotDiscreteBehavior : snapshotBehavior)(fn)(behavior)
 
-//const tag = behavior => event => map (v => behavior.sample()) (event)
 const tag = snapshot (b => a => b)
 
-//const attach = behavior => event => map (v => [ v, behavior.sample() ]) (event)
 const attach = snapshot (b => a => [ a, b ])
+
+// TODO: this fold and bufferN are probably bad because they both have memory and should be behaviors/dynamics. Just temporary.
+const fold = reducer => value => e => map
+	(v => {
+		value = reducer(v) (value)
+		return value
+	})
+	(e)
+
+const bufferN = n => startEvery => event =>
+	filter
+		(buffer => buffer.length === n)
+		(fold
+			(v => buffer => [ ...(buffer.length === Math.max(n, startEvery) ? buffer.slice(startEvery) : buffer), v ])
+			([])
+			(event)
+		)
 
 
 export {
 	AtemporalEvent,
 	attach,
+	bufferN,
 	create,
+	concatAll,
+	concatAllWith,
 	DerivedEvent,
 	Event,
 	filter,
 	map,
-	merge,
 	of,
 	snapshot,
 	switchMap,
