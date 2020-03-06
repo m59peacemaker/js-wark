@@ -170,7 +170,7 @@ a.occur(0)
 
 Event simultaneity solves not only the aforementioned issues pertaining to events, but provides the foundation for reactive values (behavior/dynamic) to be implemented without suffering the common glitching/dirty-read issue, which some libraries handle at the reactive value level, and some libraries do not handle at all.
 
-# glitch
+#### glitch
 
 A glitch is when a reactive value is observed having a value not consistent with its composition.
 
