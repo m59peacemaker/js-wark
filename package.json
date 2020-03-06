@@ -1,7 +1,7 @@
 {
   "name": "wark",
   "version": "0.0.0",
-  "description": "An FRP observable/stream library similar to flyd, named after a chocobo sound.",
+  "description": "Simple and tiny FRP library of the classic-ish event/behavior variety, named after a chocobo sound.",
   "main": "",
   "scripts": {
     "build": "tsc",
@@ -17,13 +17,16 @@
     "prototype": "onchange 'src/**/*' -i -- npm run build-no-type-check:test"
   },
   "keywords": [
+    "frp",
+    "functional",
+    "reactive",
+    "event",
+    "behavior",
+    "dynamic",
+    "emitter",
     "observable",
     "stream",
     "computed",
-    "property",
-    "functional",
-    "frp",
-    "fp",
     "state"
   ],
   "repository": {
@@ -42,6 +45,7 @@
     "ts-node": "^7.0.1",
     "tslint": "^5.11.0",
     "tslint-eslint-rules": "^5.4.0",
-    "typescript": "^3.1.6"
+    "typescript": "^3.1.6",
+    "zora": "^3.1.8"
   }
 }
