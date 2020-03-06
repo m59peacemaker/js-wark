@@ -169,6 +169,8 @@ The above example refers to the idea of an Event being a list across time, but h
 
 This creates an event object that you can you use to push values out to subscribers and more commonly, through reactive expressions composed from it.
 
+The event created here could more specifically be known as a *Source Event* - as its `.occur()` function introduces an occurrence to the expressions composed from it, whereas events composed from other events do not have this function. Events composed from other events are *Derived Events*.
+
 ##### `event.occur(occurrenceValue)`
 
 This is the equivalent on emitters of `emit`. It introduces a moment of time into the reactive graph you've composed from this event, sending the occurrence value along. In some cases the occurrence value would intuitively be called a *description* of the event occurrence and other times it is a more arbitrary seeming value, such as a number, if any value at all. *Occurrence value*, or just *value* for short, seems a good term to use in general, though I still find *occurrence description* and *occurrence information* to be worth mentioning.
@@ -176,6 +178,22 @@ This is the equivalent on emitters of `emit`. It introduces a moment of time int
 ##### `event.subscribe(occurrenceValue => {})`
 
 Any event may be subscribed to, and the given subscriber function will be called with the occurrence value of the event when it occurs.
+
+##### `event.t()`
+
+This is a property of event bound to confuse some and anger other folks. It exists for some purposes of practicality and possibly is not needed other than for debugging, testing, and internal implementation details.
+
+*Caution: low-level, possibly dangerous, possibly irrelevant stuff ahead.*
+
+The value returned from `event.t()` is a Symbol. When a source event occurs, it creates a new Symbol, stores it internally, and all compositions resulting from also update their internal `t` value to the `t` value from the source event *if* they occur at that moment. This means that for every source occurrence, there is a single, unique value for `t` that is shared by every event that occurred from that source occurrence. `event.t()` returns that value, so in a sense, it acts as a timestamp (albeit arbitrary) for events.
+
+This unique `t` serves one purpose for the functionality of the library - it is used to bust a behavior's cache when its value is checked at a different time, so that the behavior's computation will run again. To say it another way - Behaviors have (and conceptually are) a function that takes time (our arbitrary `t`) and returns a value for that time. Internally, the behavior keeps a cache of the latest return value from its function and the value of `t` when it called that function, and so long as it keeps getting the same `t`, it returns the cached value. When it gets a different `t`, the function is called, and the result is cached.
+
+Again, you probably never need to and should never directly deal with `event.t()`, except for testing or debugging. If you do, then realize it is possible to pass a semantically insane `t` value to a behavior's sample function, and at least cause unnecessary computation, if not much worse things such as inconsistent values for things sampling the behavior in the same moment.
+
+Up to this point, the `t` value has been discussed only in terms of how it operates within the library - a topic in which we only care that `t` is a Symbol and so always unique. The library never examines the description value of the Symbol in anyway, as no internal or application code should. But, it can be useful for testing and debugging to know that the description value of `t` is a number, and all source event occurrences get this number from the same incrementing source. Therefore, in **most** cases, this number is the global index of source occurrences - if `t` is a timestamp, then you could say each source occurrence gets its `t` by checking a shared clock. You must **never, ever, everest** depend on this value for some kind of application semantics. It's a totally arbitrary incrementing index that can't actually mean something to your application, as it is relative to unrelated events occurring. Moreover, it is possible that this library could be bundled into some module used in application code where this library is also used, and so two instances of it appear in the same application, and should that module expose any of this libraries reactive values, they could be composed together such that the number inside of the `t` value does not even reliably increment. The library will work fine because it only cares that a unique Symbol is passed around appropriately, but should you depend on the number inside of the `t` Symbol, and this scenario should come about, your application **will** break and I shudder to think of how nigh impossible it will be to discover the cause. **Do not depend on the description value of the `t` Symbol.** But for tests, it could be cool to form assertions such as "at `t` `0`, `fooEvent` occurred with a value of `'foo'`" and such.
+
+Feel free to help improve the library to do this (and anything else) better.
 
 #### Basics
 
@@ -455,7 +473,17 @@ randomInt.sample(keyEvent.t()) // 3
 keyEvent.occur('foo') // tagEvent occurs with 3
 ```
 
+### Behavior
+
+Behaviors in this library are simply wrappers around impure functions, modeling the concept of [*continuous time*](#continuous-time) or *resolution-independent* values. At some point (aka time) such a value has to be sampled, the result being a time/resolution dependent value. In the event-relative-time world of FRP, any time that you would 
+
+#### Continuous Time
+
+[Why program with continuous time?](http://conal.net/blog/posts/why-program-with-continuous-time)
+
 ## Concepts
+
+TODO: this is currently a big information dump, with some coherent order and flow, but needs work. Ideas here may be redundant with ideas explained in the API section, but this has a lot of additional detailthat some may find helpful.
 
 ### Emitter
 
