@@ -13,7 +13,7 @@ $ npm install wark
 - [Goals](#goals)
 - [Concepts](#concepts)
 - [API](#API)
-- [Comparing approaches to reactivity](#comparing-approaches-to-reactivity)
+- [Comparing approaches to reactive programming](#comparing-approaches-to-reactive-programming)
 
 ## Goals
 
@@ -54,6 +54,19 @@ barEmitter.subscribe(handleBar)
 fooEmitter.emit(123)
 barEmitter.emit(456)
 ```
+
+Transforming emitters:
+```js
+const numberEmitter = Emitter.create()
+const doubledEmitter = Emitter.map (v => v * 2) (numberEmitter)
+doubledEmitter.subscribe(console.log)
+numberEmitter.emit(2)
+// -> 4
+numberEmitter.emit(10)
+// -> 20
+```
+
+You can do many cool things, like combining emitters so that you get an emitter that emits when any of the given emitter emit, filter an emitter so that the resulting emitter only emits when the emitted value passes the predicate function, fold/reduce an emitter, and more.
 
 #### propagation
 
@@ -239,7 +252,15 @@ Functions will be documented from lower level to higher level unless inapplicabl
 
 ### Event
 
-#### combining events
+#### The Basics
+
+##### `Event.create()`
+
+##### `event.occur(occurrenceValue)`
+
+##### `event.subscribe(occurrenceValue => {})`
+
+#### Combining
 
 ##### `Event.combineAllWith (occurrences => combinedValue) ([ ...events ])`
 
@@ -320,4 +341,154 @@ Combines events such that the resulting event will have the occurrence value of 
 
 `Event.leftmost ([ eventA, eventB, eventC ])` will occur with the occurrence value of `eventA` if `eventA` occurs, disregarding any simultaneous occurrence of `eventB` and/or `eventC`. Similarly, if `eventA` did not occur and `eventB` did occur, then the value of `eventB` will be used. And lastly, if neither `eventA` or `eventB` occurred, then the occurrence value of `eventC` will be used when it occurs.
 
-## Comparison
+
+#### Forward References
+
+##### `Event.proxy()`
+
+Returns an event proxy that can be passed to functions that take an event, for cases where the actual event you'd like to pass has not yet been created. When the event reference that the proxy represents is available, call `proxy.mirror(thatEvent)` to make the proxy behave as though it is that event.
+
+```js
+// pointless example for the sake of a concise demonstration
+const proxy = Event.proxy()
+proxy.subscribe(console.log)
+
+const eventPlusOne = Event.map (add(1)) (proxy)
+eventPlusOne.subscribe(console.log)
+
+const event = Event.create()
+proxy.mirror(event)
+
+event.occur(1)
+// -> logs 1
+// -> logs 2
+```
+
+`proxy.mirror(event)` returns the given event for convenience and readability. The previous example could have been written like this:
+
+```js
+const event = proxy.mirror(Event.create())
+```
+
+#### Transforming
+
+##### Event.map (a => b) (event)
+
+Takes an event and returns an event whose occurrence value is transformed by the given function.
+
+```js
+const numberEvent = Event.create()
+const doubledEvent = Event.map (v => v * 2) (numberEvent)
+numberEvent.occur(2) // doubledEvent occurs with a value of 4
+```
+
+##### Event.constant (value) (event)
+
+Takes an event and returns an event whose occurence value is always the given value.
+
+```js
+const fooEvent = Event.create()
+const barEvent = Event.map ('bar') (fooEvent)
+fooEvent.occur('foo') // barEvent occurs with value 'bar'
+fooEvent.occur('whatever') // barEvent occurs with value 'bar'
+```
+
+##### Event.filter (predicate) (event)
+
+Takes an event and returns an event that will not occur unless the occurence value of the given event passes the predicate function.
+
+```js
+const numberEvent = Event.create()
+const evenNumberEvent = Event.filter (v => v % 2 === 0) (numberEvent)
+numberEvent.occur(2) // evenNumberEvent occurs with value of 2
+numberEvent.occur(3) // evenNumberEvent does not occur
+```
+
+
+#### Flattening
+
+Flattening functions are for the case that the occurence value of an event is itself an event. In the same way that an array may contain values which are also arrays and you may flatten such an array to move the inner array values out as direct values of the outer array, you may flatten an event into a new event that occurs when the otherwise nested events occur.
+
+The reason such composition is helpful and necessary is that it means reactive compositions can themselves be reactively created and used and switched out - reactive expressions can construct reactive expressions reactively.
+
+##### Event.switchMap (v => event) (event)
+
+`Event.switcMap` takes a function and an event, and like `Event.map`, passes the function the occurrence value of the input event. The function must return an event. The resulting event will occur with the occurrences of the event returned from the function, always switching to the returned event each time the input event occurs.
+
+```js
+const a = Event.create()
+const b = Event.create()
+const someEvents = { a, b }
+const eventSelectedByName = Event.create()
+const selectedEvent = Event.switchMap (eventName => someEvents[eventName]) (eventSelectedByName)
+
+eventSelectedByName.occur('b')
+a.occur(1)
+b.occur(1) // selectedEvent occurs with a value of 1
+eventSelectedByName.occur('a')
+a.occur(5) // selectedEvent occurs with a value of 5
+b.occur(7)
+a.occur(4) // selectedEvent occurs with a value of 4
+```
+
+##### Event.switchLatest (event)
+
+Convenience function for `switchMap (identity)`. It would be simply called `switch`, but that is a reserved word in JavaScript. `swoosh`, `sandwich`, and `$witch` were considered.
+
+```js
+const a = Event.create()
+const b = Event.create()
+const eventSelected = Event.create()
+const selectedEvent = Event.switchLatest (eventSelected)
+
+eventSelected.occur(b)
+a.occur(1)
+b.occur(1) // selectedEvent occurs with a value of 1
+eventSelected.occur(a)
+a.occur(5) // selectedEvent occurs with a value of 5
+b.occur(7)
+a.occur(4) // selectedEvent occurs with a value of 4
+```
+
+#### Composing with Behaviors
+
+##### `Event.snapshot (behaviorValue => occurrenceValue => newOccurrenceValue) (behavior) (event)`
+
+This is the lowest level way that you should associate a behavior's value with an event occurrence. Snapshot means deriving an event from a behavior at the time of a given event.
+Takes a function, a behavior, and an event, and returns an event that occurs when the input event occurs. The given behavior's current value and the given event's occurrence value are passed to the function and it returns the occurrence value for the derived event.
+
+```js
+const randomInt = Behavior.create(() => randomInt(0, 5))
+const keyEvent = Event.create()
+const snapshotEvent = Event.snapshot (int => key => ({ [key]: int })) (randomInt) (keyEvent)
+keyEvent.occur('foo')
+// for the sake of demonstration, let's sample randomInt at the same time that keyEvent just occurred
+randomInt.sample(keyEvent.t()) // 3
+// so when keyEvent occured, snapshotEvent occurred with a value of { foo: 3 }
+```
+
+##### `Event.attach (behavior) (event)`
+
+This is a convenience for snapshotting a behavior using a function that returns the event occurrence value and the behavior value in an array.
+
+```js
+const randomInt = Behavior.create(() => randomInt(0, 5))
+const keyEvent = Event.create()
+const attachEvent = Event.attach (randomInt) (keyEvent)
+randomInt.sample(keyEvent.t()) // 3
+keyEvent.occur('foo') // attachEvent occurs with [ 'foo', 3 ]
+```
+
+##### `Event.tag (behavior) (event)`
+
+This is a convenience for snapshotting a behavior using a function that just returns the behavior's value. In other words, it takes an event and a behavior and makes an event that occurs with the value of the behavior.
+
+```js
+const randomInt = Behavior.create(() => randomInt(0, 5))
+const keyEvent = Event.create()
+const tagEvent = Event.tag (randomInt) (keyEvent)
+randomInt.sample(keyEvent.t()) // 3
+keyEvent.occur('foo') // tagEvent occurs with 3
+```
+
+## Comparing approaches to reactive programming
