@@ -106,15 +106,19 @@ const reset = Event.create()
 // this event should occur with a number that is to limit how low the counter value can be
 const minimumChange = Event.create()
 
-// turn the event into a dynamic (reactive value) whose value starts as the given value and updates with the event value
-// `hold` holds onto the value from the event so that we can use it in compositions that occur at other times
+// Turn the event into a dynamic (reactive value) whose value starts as the given value
+// and updates with the event value.
+// `hold` holds onto the value from the event so that we can use it in compositions
+// that occur at other times.
 const minimum = Dynamic.hold (-Infinity) (minimumChange)
 
 const counterOperations = compose // (read this from the bottom up)
 	(
 		// snapshot lets you associate a reactive value with an event.
-		// The function gets the dynamic's value, the event occurrence value, and returns a new value for the occurrence.
-		// Here, out function receives the current value of `minimum`, the event's value, which is an operation to apply to the the counter,
+		// The function gets the dynamic's value, the event occurrence value,
+		// and returns a new value for the occurrence.
+		// Here, out function receives the current value of `minimum`, the event's value,
+		// which is an operation to apply to the the counter,
 		// and we return a function to apply to the counter that wraps the counter operation to limit it to `minimum`.
 		Event.snapshot (minimum => operation => v => Math.max(minimum, operation(v))) (minimum),
 		// combine an array of events into a single event that occurs when one of the events occur
