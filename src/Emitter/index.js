@@ -1,4 +1,4 @@
-import { identity, noop, pipe } from '../utils'
+import { identity, noop, pipe } from '../util'
 
 function Emitter () {
 	const subscribers = new Map()
@@ -33,7 +33,6 @@ const DerivedEmitter = (dependencies_source, fn = forward) => {
 		unsubscribe_from_dependencies = pipe(dependencies.map((dependency, index) => dependency.subscribe(value => fn(emit, { index, value }))))
 	}
 
-	//console.log(!!dependencies_source, Array.isArray(dependencies_source))
 	Array.isArray(dependencies_source) ? subscribe_to_dependencies(dependencies_source) : dependencies_source.subscribe(subscribe_to_dependencies)
 
 	return {
@@ -55,7 +54,7 @@ const map = f => emitter => DerivedEmitter([ emitter ], (emit, { value }) => emi
 
 const constant = v => map (() => v)
 
-const scan = reducer => acc => emitter => DerivedEmitter(
+const fold = reducer => acc => emitter => DerivedEmitter(
 	[ emitter ],
 	(emit, { value }) => {
 		acc = reducer (value) (acc)
@@ -65,15 +64,15 @@ const scan = reducer => acc => emitter => DerivedEmitter(
 
 const filter = predicate => emitter => DerivedEmitter([ emitter ], (emit, { value }) => predicate(value) && emit(value))
 
-const flatMap = f => emitter => DerivedEmitter(scan (v => acc => acc.concat(f(v))) ([]) (emitter))
+const flatMap = f => emitter => DerivedEmitter(fold (v => acc => acc.concat(f(v))) ([]) (emitter))
 
-const flatten = flatMap(identity)
+const flatten = flatMap (identity)
 
 const switchMap = f => emitter => DerivedEmitter(map (v => [ f(v) ]) (emitter))
 
 const switchLatest = switchMap (identity)
 
-const recentN = n => scan
+const recentN = n => fold
 	(v => acc => [ ...acc.slice(Math.max(0, acc.length - n + 1)), v ])
 	([])
 
@@ -90,6 +89,18 @@ const bufferTo = notifier => source => {
 	return DerivedEmitter(dependencies, (emit, { index, value }) => handlers[index](value, emit))
 }
 
+const createProxy = ({ create, switchLatest, push }) => {
+	const dependency = create()
+	const e = switchLatest (dependency)
+	const mirror = me => {
+		dependency[push](me)
+		return me
+	}
+	return Object.assign(e, { mirror })
+}
+
+const proxy = () => createProxy ({ create, switchLatest, push: 'emit' })
+
 // const bufferN = n => startEvery => source => {
 // 	return filter
 // 		(buffer => buffer.length === n)
@@ -105,12 +116,14 @@ export {
 	concatAll,
 	constant,
 	create,
+	createProxy,
 	filter,
 	flatMap,
 	flatten,
 	map,
+	proxy,
 	recentN,
-	scan,
+	fold,
 	switchMap,
 	switchLatest,
 	bufferTo

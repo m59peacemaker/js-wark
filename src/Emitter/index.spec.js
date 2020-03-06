@@ -1,7 +1,7 @@
 import { test } from 'zora'
 import * as Emitter from './'
 import delay from 'delay'
-import { collectValues } from '../utils'
+import { add, collectValues } from '../utils'
 
 // test(
 // 	`Emitter.create fn can emit and subscribers can subscribe'`,
@@ -19,7 +19,7 @@ import { collectValues } from '../utils'
 // 	const expected =  [ 1, 2, 3 ]
 // 	emitter.subscribe(value => t.equal(value, expected.shift()))
 // })
-
+//
 test('Emitter.emit emits to subscriber', t => {
 	const emitter = Emitter.create()
 	const actual1 = collectValues(emitter)
@@ -101,9 +101,9 @@ test('Emitter.filter makes an emitter that emits when then given emitter emits w
 	t.deepEqual(actual(), [ 'foo', 'bar' ])
 })
 
-test('Emitter.scan accumulates', t => {
+test('Emitter.fold accumulates', t => {
 	const a = Emitter.create()
-	const b = Emitter.scan (v => acc => acc.concat(v)) ([]) (a)
+	const b = Emitter.fold (v => acc => acc.concat(v)) ([]) (a)
 	const actual = collectValues(b)
 
 	a.emit(1),
@@ -234,6 +234,16 @@ test('Emitter.switchLatest', t => {
 	a.emit('fooz')
 
 	t.deepEqual(actual(), [ 'foo', 'baz', 'fooz' ])
+})
+
+test('Emitter.proxy', t => {
+	const a = Emitter.proxy()
+	const b = Emitter.map (add(1)) (a)
+	const c = a.mirror (Emitter.create())
+	const actual = collectValues(b)
+	c.emit(1)
+	c.emit(2)
+	t.deepEqual(actual(), [ 2, 3 ])
 })
 
 // test('Emitter.bufferN', async t => {

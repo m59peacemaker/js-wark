@@ -1,101 +1,89 @@
 import * as Event from '../Event'
 import * as Behavior from '../Behavior'
-//import { noop, identity, pipe, add, isPromise } from '../utils'
 
-const Dynamic = (event, behavior) => ({ ...event, ...behavior })
+const Dynamic = (event, behavior) => {
+	const subscribe = f => {
+		f(behavior.sample(event.t))
+		return event.subscribe(f)
+	}
+	return { updates: event, ...behavior, subscribe }
+}
 
-const create = Dynamic
+const DiscreteBehavior = (value, updates) => {
+	updates.subscribe(v => value = v)
+	return {
+		sample: () => value
+	}
+}
 
-const of = (...values) => {
+// TODO: maybe make this not ducky?
+export const isDynamic = v => v.updates && v.sample
+
+export const create = Dynamic
+
+export const of = (...values) => {
 	const event = Event.of(...values)
-	return Dynamic(event, Behavior.hold (values[0]) (event))
+	return Dynamic(event, hold (values[0]) (event))
 }
 
-const hold = value => event => Dynamic(
-	event,
-	Behavior.hold (value) (event)
-)
+export const updates = dynamic => dynamic.updates
 
-const map = f => dynamic => {
-	const behavior = Behavior.map (f) (dynamic)
-	return Dynamic(Event.tag (behavior) (dynamic), behavior)
+export const transformEvent = f => dynamic => {
+	const event = f(dynamic.updates)
+	return hold (dynamic.sample(dynamic.t)) (event)
 }
 
-const filter = f => dynamic => {
-	const event = Event.filter (f) (dynamic)
-	return Dynamic(event, Behavior.hold(dynamic.sample()) (event))
+export const transformBehavior = f => dynamic => {
+	const behavior = f(dynamic)
+	return Dynamic(Event.tag (behavior) (dynamic.updates), behavior)
 }
 
-export {
-	create,
-	Dynamic,
-	filter,
-	hold,
-	map,
-	of
+export const hold = value => event => Dynamic(event, DiscreteBehavior(value, event))
+
+export const lift = f => transformBehavior (Behavior.lift (f))
+
+export const lift2 = f => d => transformBehavior (Behavior.lift2 (f) (d))
+
+export const map = f => transformBehavior (Behavior.map (f))
+
+export const filter = f => TransformEvent (Event.filter (f))
+
+export const proxy = () => {
+	const e_proxy = Event.proxy()
+	const b_proxy = Behavior.createProxy({ pre_mirror_sample_error_message: 'Dynamic proxy should not be sampled before being mirrored!' })
+
+	const mirror = dynamic => {
+		e_proxy.mirror(dynamic.updates)
+		b_proxy.mirror(dynamic)
+		return dynamic
+	}
+
+	return Object.assign(Dynamic(e_proxy, b_proxy), { mirror })
 }
 
-// const fromDynamic = initialValue => source => create(initialValue).dependOn([ source ])
-// const fromPromise = initialValue => promise => fromEmitter (initialValue) (Emitter.fromPromise(promise))
-// const from = initialValue => source =>
-// 	(Emitter.isEmitter(source)
-// 		? fromEmitter
-// 		: isPromise(source)
-// 			? fromPromise
-// 			: fromDynamic
-// 	)
-// 	(initialValue)
-// 	(source)
+export const fold = reducer => initialValue => event => {
+	const p = proxy()
+	return p.mirror(
+		hold
+			(initialValue)
+			(Event.snapshot (b => a => reducer (a) (b)) (p) (event))
+	)
+}
 
-// const of = create
+// TODO: maybe a pattern will emerge for creating functions that do `isDynamic(v) ? [ v ] : []` (in whatever generic/reusable way) Maybe something about monoids and empty, or just a wrapper around fold
+// having a recentN transducer and a reduction for Event and a different one for Dynamic  would probably settle everything like this
+export const recentN = n => v =>
+	fold
+		(v => acc => [ ...acc.slice(Math.max(0, acc.length - n + 1)), v ])
+		(isDynamic(v) ? [ v.sample() ] : [ ])
+		(isDynamic(v) ? v.updates : v) // TODO: yikes, these checks are annoying
 
-// const filter = predicate => source => {
-// 	const filtered = fromDynamic (source.get()) (source)
-// 	filtered.emitters.changeOpportunity.subscribe(change => {
-// 		if (predicate(source.get())) {
-// 			change(source.get())
-// 		}
-// 	})
-// 	return filtered
-// }
+export const bufferN = n => startEvery => event =>
+	filter
+		(buffer => buffer.length === n)
+		(fold
+			(v => buffer => [ ...(buffer.length === Math.max(n, startEvery) ? buffer.slice(startEvery) : buffer), v ])
+			([])
+			(event)
+		)
 
-// const lift = fn => dynamics => {
-// 	const getValue = () => fn(...dynamics.map(o => o.get()))
-// 	const dynamic = create(getValue()).dependOn(dynamics)
-// 	dynamic.emitters.changeOpportunity.subscribe(change => change(getValue()))
-// 	return dynamic
-// }
-
-// const lift2 = fn => a => b => lift (fn) ([ a, b ])
-
-// const lift3 = fn => a => b => c => lift (fn) ([ a, b, c ])
-
-// const map = fn => dynamic => lift (fn) ([ dynamic ])
-
-// const ap = dynamicOfFn => dynamic => lift (identity) ([ dynamicOfFn, dynamic ])
-
-// const get = dynamic => dynamic.get()
-
-// const flatten = source => {
-// 	const getValue = source.get().get()
-// 	const dynamic = of(getValue())
-// 	const dependencyEmitter = Emitter.scan (v => acc => acc.concat(v)) ([ source ]) (source)
-// 	map (dynamic.dependOn) (dependencyEmitter)
-// 	dynamic.emitters.changeOpportunity.subscribe(change => change(getValue()))
-// 	return dynamic
-// }
-
-// const switchTo = source => {
-// 	const getValue = source.get().get()
-// 	const dynamic = of(getValue())
-// 	const dependencyEmitter = Emitter.scan (v => acc => [ source, v ]) ([ source ]) (source)
-// 	map (dynamic.dependOn) (dependencyEmitter)
-// 	dynamic.emitters.changeOpportunity.subscribe(change => change(getValue()))
-// 	return dynamic
-// }
-
-// const flatMap = source => flatten(map(source))
-
-// const chain = flatMap
-
-// const switchMap = source => switchTo(map(source))
