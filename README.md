@@ -17,7 +17,9 @@ $ npm install wark
 
 ## Goals
 
-### simple, practical, and accurate expression of event and reactive relationships
+- simple, practical, and accurate grammar for the expression of event and reactive value and computation relationships
+- minimal implementation code so that the frp library can be depended on by UI components and other reusable modules where saving bytes is a priority
+- performant enough for most use cases, including complex DOM UIs, games, webgl, canvas, etc, never compromising on the goal of expressive grammar, some wiggle room on byte size, and some reasonable compromise on the clean, expressive internal implementation if it is truly necessary for dramatic performance gains. My opinion is that accurate, expressive code can also be performant code in many cases. *Considerable work ***may*** need to done in the implementation to accomplish this - performance has not yet been measured and explored.*
 
 ## Concepts
 
