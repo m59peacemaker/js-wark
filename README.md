@@ -57,8 +57,12 @@ const countChanges = Event.concatAll ([
 // fold the countChanges across time by adding them to the current value
 const count = Dynamic.fold (add) (0) (countChanges)
 
-count.subscribe(console.log) // called immediately with the current value (0) and when the value is updated.
-count.updates.subscribe(console.lg) // called only when the value is updated
+// called immediately with the current value (0) and when the value is updated.
+count.subscribe(console.log)
+
+// called only when the value is updated
+count.updates.subscribe(console.lg)
+
 count.sample() // 0
 increment.occur()
 count.sample() // 1
@@ -119,15 +123,18 @@ const counterOperations = compose // (read this from the bottom up)
 		// and returns a new value for the occurrence.
 		// Here, out function receives the current value of `minimum`, the event's value,
 		// which is an operation to apply to the the counter,
-		// and we return a function to apply to the counter that wraps the counter operation to limit it to `minimum`.
+		// and we return a function to apply to the counter that wraps the counter operation
+		// to limit it to `minimum`.
 		Event.snapshot (minimum => operation => v => Math.max(minimum, operation(v))) (minimum),
 		// combine an array of events into a single event that occurs when one of the events occur
 		Event.concatAll
 	)
 	([
-		// make an event from `increment` whose occurrence value is always a function that adds 1 to its input
+		// Make an event from `increment` whose occurrence value
+		// is always a function that adds 1 to its input.
 		Event.constant (add(1)) (increment),
-		// make an event from `decreremt` whose occurrence value is always a function that adds -1 to its input
+		// Make an event from `decreremt` whose occurrence value
+		// is always a function that adds -1 to its input.
 		Event.constant (add(-1)) (decrement),
 	])
 
