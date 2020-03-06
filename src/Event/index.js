@@ -82,10 +82,14 @@ function DerivedEvent (dependencies_source, fn) {
 	return event
 }
 
+//--- Creating
+
 export const create = Event
 
 // TODO: not currently usable
 export const of = (...values) => Event(emit => values.forEach(value => emit(value)))
+
+//--- Combining
 
 export const combineAllWith = f => emitters => DerivedEvent(emitters, (emit, o) => emit(f(o)))
 
@@ -102,17 +106,25 @@ export const concat = combine (identity) (identity) (() => throw new Error('conc
 
 export const leftmost = combineAllWith (o => Object.values(o)[0])
 
+//--- Forward References
+
+export const proxy = () => Emitter.createProxy({ create, switchLatest, push: 'occur' })
+
+//--- Transforming
+
 export const map = f => e => DerivedEvent([ e ], (emit, o) => emit(f(o[0])))
 
 export const constant = v => map (() => v)
+
+export const filter = f => e => DerivedEvent([ e ], (emit, o) => f(o[0]) && emit(o[0]))
+
+//--- Flattening
 
 export const switchMap = f => e => DerivedEvent(Emitter.map (v => [ f(v) ]) (e), (emit, o) => emit((o)[0]))
 
 export const switchLatest = switchMap (identity)
 
-export const proxy = () => Emitter.createProxy({ create, switchLatest, push: 'occur' })
-
-export const filter = f => e => DerivedEvent([ e ], (emit, o) => f(o[0]) && emit(o[0]))
+//--- Composing with Behaviors
 
 export const snapshot = fn => behavior => event => map (value => fn (behavior.sample(event.t())) (value)) (event)
 
