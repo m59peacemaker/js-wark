@@ -1,56 +1,40 @@
-import * as Emitter from '../Emitter'
-import { add, identity, noop } from '../utils'
+import * as Emitter from './Emitter'
+import { add, identity } from '../util'
 
-function AtemporalEvent () {
+/*
+	This is shared, but always unique due to Symbol. It would not cause any difference in behavior if two instances of the library came into contact.
+	The number inside the symbol arbitrary and just for debugging and testing. The library never examines it and no application could should ever examine it.
+	The symbol acts as a unique identifier to the propagation from a source event and is used to interact with the cache in behaviors so that the behavior can be sampled multiple times within a propagation and return the same value each time.
+*/
+const nextTime = (n => () => Symbol(n++))(0)
+
+function Event () {
 	const occurrence = Emitter.create()
 	const occurrence_pending = Emitter.create()
 	const occurrence_settled = Emitter.create()
+	let t = null
 
-	const emit = value => {
+	const occur = value => {
+		t = nextTime()
 		occurrence_pending.emit()
 		occurrence.emit(value)
 		occurrence_settled.emit()
 	}
 
-	return {
-		emit,
+	function event (v) { return occur(v) }
+
+	return Object.assign(event, {
+		t: () => t,
+		occur,
 		occurrence_pending,
 		occurrence_settled,
 		subscribe: occurrence.subscribe
-	}
-}
-
-const once = emitter => f => {
-	const u = emitter.subscribe((...args) => {
-		u()
-		f(...args)
 	})
-	return u
 }
 
-function Event (time, fn = noop) {
-	const e = AtemporalEvent()
-
-	const emit = value => time.forward(() => e.emit(value))
-
-	const start = () => fn(emit)
-
-	if (time.current() > 0) {
-		//once (time.momentEnd) (start)
-		time.forward(start)
-	} else {
-		time.start.subscribe(start)
-	}
-
-	return {
-		...e,
-		emit,
-		time
-	}
-}
-
-function DerivedEvent (time, dependencies_source, fn) {
+function DerivedEvent (dependencies_source, fn) {
 	const emitter = Emitter.create()
+	let t = null
 
 	const combine_dependency_emitters = getEmitterForDependency => {
 		const concat_dependencies = dependencies => Emitter.concatAll(dependencies.map(getEmitterForDependency))
@@ -58,20 +42,16 @@ function DerivedEvent (time, dependencies_source, fn) {
 	}
 
 	const dependency_occurrence_settled = combine_dependency_emitters(dependency => dependency.occurrence_settled)
-	const dependency_occurrence = combine_dependency_emitters((dependency, index) => Emitter.map (value => ({ [index]: value  })) (dependency))
+	const dependency_occurrence = combine_dependency_emitters((dependency, index) => Emitter.map (value => ({ [index]: value, moment_t: dependency.t() })) (dependency))
 	const dependency_occurrence_pending = combine_dependency_emitters(dependency => dependency.occurrence_pending)
 
-	const count_of_dependencies_pending_occurrence = Emitter.scan
+	const count_of_dependencies_pending_occurrence = Emitter.fold
 		(add)
 		(0)
 		(Emitter.concatAll([
 			Emitter.constant (1) (dependency_occurrence_pending),
 			Emitter.constant (-1) (dependency_occurrence_settled)
 		]))
-	// dependency_occurrence_pending.subscribe(v => console.log('dependency pending', v))
-	// dependency_occurrence_settled.subscribe(v => console.log('dependency settled', v))
-	// dependency_occurrence.subscribe(v => console.log('dependency occurence', v))
-	// count_of_dependencies_pending_occurrence.subscribe(count => console.log({ count }))
 
 	const all_dependencies_settled = Emitter.filter
 		(count_pending => count_pending === 0)
@@ -82,96 +62,60 @@ function DerivedEvent (time, dependencies_source, fn) {
 		(dependency_occurrences => dependency_occurrences.length > 0)
 		(dependency_occurrences_now)
 	const occurrence_opportunity = Emitter.map
-		(dependency_occurrences => fn(emitter.emit, Object.assign(...dependency_occurrences)))
+		(dependency_occurrences => {
+			const { moment_t, ...o } = Object.assign(...dependency_occurrences)
+			const occur = v => {
+				t = moment_t
+				return emitter.emit(v)
+			}
+			fn(occur, o, moment_t)
+		})
 		(occurrence_opportunity_event)
 
 	return {
-		time,
+		t: () => t,
 		occurrence_pending: dependency_occurrence_pending,
 		occurrence_settled: occurrence_opportunity,
 		subscribe: emitter.subscribe,
 	}
+
+	return event
 }
 
-const create = Event
+export const create = Event
 
-const of = time => (...values) => Event(time, emit => console.log('of emit', ...values) || values.forEach(value => emit(value)))
+// TODO: not currently usable
+export const of = (...values) => Event(emit => values.forEach(value => emit(value)))
 
-const map = f => e => DerivedEvent(e.time, [ e ], (emit, o) => emit(f(o[0])))
+export const combineAllWith = f => emitters => DerivedEvent(emitters, (emit, o) => emit(f(o)))
 
-const concatAllWith = f => emitters => DerivedEvent(emitters[0].time, emitters, (emit, o) => emit(f(o)))
-const concatAll = concatAllWith (o => Object.values(o)[0])
-
-const switchMap = f => e => DerivedEvent(e.time, Emitter.map (v => [ f(v) ]) (e), (emit, o) => emit((o)[0]))
-
-const filter = f => e => DerivedEvent(e.time, [ e ], (emit, o) => f(o[0]) && emit(o[0]))
-
-const snapshotDiscreteBehavior = fn => behavior => event => DerivedEvent(
-	event.time,
-	[ event, behavior.update ],
-	(emit, o) =>
-		o.hasOwnProperty(0)
-			&& emit(
-				console.log(o) ||
-				fn (o.hasOwnProperty(1) ? o[1] : behavior.sample()) (o[0])
-			)
-)
-const snapshotBehavior = fn => behavior => event => map (value => fn (behavior.sample()) (value)) (event)
-const snapshot = fn => behavior => (behavior.update ? snapshotDiscreteBehavior : snapshotBehavior)(fn)(behavior)
-
-const tag = snapshot (b => a => b)
-
-const attach = snapshot (b => a => [ a, b ])
-
-// TODO: this fold and bufferN are probably bad because they both have memory and should be behaviors/dynamics. Just temporary.
-const fold = reducer => value => e => map
-	(v => {
-		value = reducer(v) (value)
-		return value
-	})
-	(e)
-
-const bufferN = n => startEvery => event =>
-	filter
-		(buffer => buffer.length === n)
-		(fold
-			(v => buffer => [ ...(buffer.length === Math.max(n, startEvery) ? buffer.slice(startEvery) : buffer), v ])
-			([])
-			(event)
-		)
-
-
-export {
-	AtemporalEvent,
-	attach,
-	bufferN,
-	create,
-	concatAll,
-	concatAllWith,
-	DerivedEvent,
-	Event,
-	filter,
-	map,
-	of,
-	snapshot,
-	switchMap,
-	tag
+export const mergeAllWith = f => emitters => {
+	const keys = Object.keys(emitters)
+	return combineAllWith (o => f(Object.entries(o).reduce((acc, [ k, v ]) => Object.assign(acc, { [keys[k]]: v })))) (Object.values(emitters))
 }
 
-// TODO: solve the issue of whether Event is a list of occurrences across time or a list across time of a list of simultaneous occurrences
-// if the latter, then flatMap, etc work naturally in cases where there are simultaneous events... otherwise, you have a list of occurrences where only a single value makes sense here
-// const flatMap = f => e => {
-// 	const dependencies_emitter = Emitter.scan (v => acc => acc.concat(v)) ([ ]) (e)
-// 	const event = DerivedEvent((emit, occurrences) => {
-// 		const values = Object.values(occurrences)
-// 		emit(f(values.length > 1 ? values : values[0]))
-// 		onsole.log({ occurrences: Object.values(dependency_occurrences) })
-// 		Object.values(dependency_occurrences).forEach((v, index) => {
-// 			console.log({ v })
-// 				if (index === 0) event.occurrence_pending.emit()
-// 			emit(f(v))
-// 		})
-// 		values.slice(1).forEach(() => event.occurrence_settled.emit())
-// 	}, dependencies_emitter)
-// 	return event
-// }
+export const mergeAll = mergeAllWith (identity)
+
+export const combine = whenA => whenB => whenAB => a => b => combineAllWith (o => o.hasOwnProperty(0) ? (o.hasOwnProperty(1) ? whenAB (o[0]) (o[1]) : whenA(o[0])) : whenB(o[1])) ([ a, b ])
+
+export const concat = combine (identity) (identity) (() => throw new Error('concat must not be called on events that can occur simultaneously!'))
+
+export const leftmost = combineAllWith (o => Object.values(o)[0])
+
+export const map = f => e => DerivedEvent([ e ], (emit, o) => emit(f(o[0])))
+
+export const constant = v => map (() => v)
+
+export const switchMap = f => e => DerivedEvent(Emitter.map (v => [ f(v) ]) (e), (emit, o) => emit((o)[0]))
+
+export const switchLatest = switchMap (identity)
+
+export const proxy = () => Emitter.createProxy({ create, switchLatest, push: 'occur' })
+
+export const filter = f => e => DerivedEvent([ e ], (emit, o) => f(o[0]) && emit(o[0]))
+
+export const snapshot = fn => behavior => event => map (value => fn (behavior.sample(event.t())) (value)) (event)
+
+export const tag = snapshot (b => a => b)
+
+export const attach = snapshot (b => a => [ a, b ])

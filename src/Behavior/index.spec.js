@@ -21,16 +21,18 @@ test('Behavior', async t => {
 		t.equal(b.sample(), 'c')
 	})
 
-	await t.test('BehaviorProxy', t => {
+	await t.test('Behavior.proxy', t => {
 		const time = Time()
 		const event = Event.create(time)
-		const proxy = Behavior.BehaviorProxy()
-		const tagged = Event.tag (proxy) (event)
-		const held = proxy.mirror (Behavior.hold (0) (tagged))
+		const proxy = Behavior.proxy(time)
+		const snapshot = Event.snapshot (b => a => [ ...b, a ]) (proxy) (event)
+		const hold = proxy.mirror (Behavior.hold ([]) (snapshot))
 		time.start()
-		t.equal(held.sample(), 0)
+		t.deepEqual(hold.sample(), [])
 		event.emit(1)
-		t.equal(held.sample(), 1)
+		t.deepEqual(hold.sample(), [ 1 ])
+		event.emit(2)
+		t.deepEqual(hold.sample(), [ 1, 2 ])
 	})
 	await t.test('Behavior.of creates a constant', t => {
 		const b = Behavior.of(0)
@@ -59,15 +61,15 @@ test('Behavior', async t => {
 	await t.test('Behavior.fold', t => {
 		const time = Time()
 		const e = Event.create(time)
-		const b = Behavior.fold (a => b => [ a, b ]) (0) (e)
+		const b = Behavior.fold (a => b => [ ...a, b ]) ([]) (e)
 		time.start()
-		t.equal(b.sample(), 0)
+		t.equal(b.sample(), [])
 		e.emit(1)
-		t.equal(b.sample(), 1)
+		t.equal(b.sample(), [ 1 ])
 		e.emit(4)
-		t.equal(b.sample(), 5)
+		t.equal(b.sample(), [ 1, 4 ])
 		e.emit(10)
-		t.equal(b.sample(), 15)
+		t.equal(b.sample(), [ 1, 4, 10 ])
 	})
 
 	await t.test('two events occurring at the same time and tagged with the same behavior have the same value', t => {

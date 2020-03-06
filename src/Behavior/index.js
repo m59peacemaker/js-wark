@@ -1,121 +1,36 @@
-import * as Emitter from '../Emitter'
-import * as Event from '../Event'
-import { call, noop } from '../utils'
-import { Always } from '../Time'
+import { call } from '../util'
 
-const Behavior = (time, f) => {
-	const cache = { t: null, value: null }
+const Behavior = f => {
+	const cache = { time: Symbol(), value: null }
 	return {
-		time,
-		sample: () => {
-			const t = time.current()
-			cache.t === t || Object.assign(cache, { t, value: f() })
+		sample: time => {
+			cache.time === time || Object.assign(cache, { time, value: f() })
 			return cache.value
 		}
 	}
 }
 
-const DiscreteBehavior = (value, update) => {
-	update.subscribe(v => value = v)
-	return {
-		...Behavior(cacheBustingTime, () => value),
-		time: update.time,
-		update
-	}
-}
+export const create = Behavior
 
-const create = Behavior
+export const of = value => create(() => value)
 
-const cacheBustingTime = (n => ({ current: () => ++n, forward: noop }))(0)
+export const chain = f => b => create(t => f(b.sample(t)).sample(t))
 
-const findTime = behaviors => (behaviors.find(b => b.time !== Always) || behaviors[0]).time
+export const lift = f => behaviors => create(t => f(...behaviors.map(b => b.sample(t))))
 
-const of = value => create(Always, () => value)
+export const lift2 = f => a => b => lift (f) ([ a, b ])
 
-const join = b => b.sample()
+export const apply = bf => bv => lift (call) ([ bf, bv ])
 
-const map = f => b => create(b.time, () => f(b.sample()))
+export const map = f => b => create(t => f(b.sample(t)))
 
-const chain = f => b => create(b.time, () => join(f(b.sample())))
-
-const lift = f => behaviors => create(findTime(behaviors), () => f(...behaviors.map(b => b.sample())))
-
-const apply = bf => bv => lift (call) ([ bf, bv ])
-
-const duplicateMirror = () => {
-	throw new Error('Behavior proxy is already mirrored!')
-}
-const proxySample = () => {
-	throw new Error('Behavior proxy should not be sampled before being mirrored!')
-}
-function BehaviorProxy () {
-	let b = create(Always, proxySample)
-	const updateProxy = Event.AtemporalEvent()
+export const createProxy = ({ pre_mirror_sample_error_message }) => {
+	let sample = () => { throw new Error(pre_mirror_sample_error_message) }
 	const mirror = behavior => {
-		const { update, sample } = behavior
-		if (update) {
-			update.subscribe(v => console.log({ v }) || updateProxy.emit(v))
-		}
-		Object.assign(b, { sample, mirror: duplicateMirror })
+		sample = behavior.sample
 		return behavior
 	}
-	return Object.assign(b, { mirror, update: updateProxy })
+	return { sample: () => sample(), mirror }
 }
 
-const loop = time => fn => {
-	const b = fn(create(time, () => b.sample()))
-	return b
-}
-
-const hold = value => event => DiscreteBehavior(value, event)
-
-// const fold = reducer => initialValue => event => {
-// 	const proxy = BehaviorProxy()
-
-// 	return proxy.mirror(
-// 		hold
-// 			(initialValue)
-// 			(Event.snapshot (reducer) (proxy) (event))
-// 	)
-// }
-const fold = reducer => initialValue => event => loop
-	(event.time)
-	(behavior =>
-		hold
-			(initialValue)
-			(Event.snapshot (reducer) (behavior) (event))
-	)
-
-const bufferN = n => startEvery => event =>
-	fold
-		((buffer, v) => [ ...(buffer.length === Math.max(n, startEvery) ? buffer.slice(startEvery) : buffer), v ])
-		([])
-		(event)
-
-export {
-	BehaviorProxy,
-	create,
-	bufferN,
-	feedback,
-	fold,
-	hold,
-	lift,
-	loop,
-	map,
-	of
-}
-
-/* for docs:
-
-on Behavior vs IO, what is a behavior
-const click = Event()
-const random = Behavior.create(Math.random)
-const randWhenClickedA = Event.tag (random) (click)
-const rameWhenClickedB = Event.tag (random) (click)
-
-// not positive this idea will be used, but it is super cool
-// Behavior(Behavior) means all the behaviors that could be derived from the expression
-// Behavior(Behavior) means all the accumulations that could be derived from the expression / that could possibly come about to be due to the expression
-// an accumulation of [ 1, 2, 3, 4, 5 ] if you sampled it at the time of 1, or an accumulation of [ 4, 5 ] if you sampled at the time of 4, etc
-// the outer behavior represents the inner changing behavior, so sampling the outer one gives you one specific accumulation behavior out of the many possible behaviors
-*/
+export const proxy = () => create_proxy({ pre_mirror_sample_error_message: 'Behavior proxy should not be sampled before being mirrored!' })
