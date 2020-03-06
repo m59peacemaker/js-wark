@@ -10,11 +10,22 @@
 $ npm install wark
 ```
 
-## Glossary
+- [Goals](#goals)
+- [Concepts](#concepts)
+- [API](#API)
+- [Comparing approaches to reactivity](#comparing-approaches-to-reactivity)
+
+## Goals
+
+### simple, practical, and accurate expression of event and reactive relationships
+
+## Concepts
 
 ### Emitter
 
-An Emitter is a lower-level building block for `Event`. This is an emitter of the typical variety - `{ emit, subscribe }`, except `emit` only takes on argument, the value to emit, and `subscribe` only takes one argument, the function to receive the emitted values. This moves the concern of naming out to the calling code, such as in variable or property names. More importantly, this makes it feasible to create operators that derive transformed emitters from other emitters.
+*Note: Emitter is a low level building block for `Event`, and is not directly part of the FRP system. Discussion of Emitter is solely for building up to higher level concepts of the library.*
+
+This is an emitter of the typical variety - `{ emit, subscribe }`, except `emit` only takes on argument, the value to emit, and `subscribe` only takes one argument, the function to receive the emitted values. This moves the concern of naming out to the calling code, such as in variable or property names. More importantly, this makes it feasible to create operators that derive transformed emitters from other emitters.
 
 For comparison:
 ```js
@@ -74,19 +85,37 @@ emitterB.emit(2)
 
 Note that you can get into some fascinating insanity if you `emit` inside of a moment in time, because a whole moment of time would complete within the outer moment of time, meaning that, for example, the second moment of time could occur completely within the first moment of time, and the moment of time after the first moment of time would actually be the third moment of time. This is not a problem you should actually encounter using this library, but you should be aware of this to better understand what this library is and how it works.
 
+```js
+// Yet again, this is contrived and only serves to clarify the concept.
+const emitterA = Emitter.create()
+const emitterB = Emitter.create()
+
+let time = 0
+emitterA.subscribe(() => {
+	++time
+	emitterB.emit()
+})
+emitterB.subscribe(() => {
+	++time
+})
+time // 0
+emitterA.emit() // a moment in time
+time // 2, strange!
+```
+
 #### correction
 
-The rules so far are true for `Emitter`. `Event` is better and solves the nested emit/moment issue. When speaking of `Event` (which will usually be the case!), a moment of time means an `emit` being called and all of its subscribers being called, **unless already within a moment of time**. In such a case, the nested emit joins in the same moment already occurring and does not do the madness of generating a new moment of time, nested within another.
+The rules so far are true for `Emitter`. `Event` is better and solves the nested emit/moment issue. `Emitter` is a lower level building block for `Event` and should not be used directly unless departing from the frp style of the library is desirable. The `Event` equivalent of `emit` is `occur`. A moment of time for `Event` is when `occur` is called on an event, and the occurrence has propagated through the entire dependency graph from that source event, with dependant events also potentially occuring **within the same moment**.
 
 ### Event
 
 An Event is an Emitter, but enhanced with semantics of [event simultaneity](#event-simultaneity). Events are a list across time of occurrences, where an occurrence is a value at a time.
 The name `Event` is chosen because it can represent the abstract idea of a thing which may happen, such as `fallFlatOnFace`, which may have many concrete occurrences.
-It's easy to get tripped up and say event where you mean occurrence, or think `event` refers to the value passed to the subscriber (which is the occurrence value), so to put it another way, `Event` is to `occurrence` what `Class` is to `object`.
+It's easy to get tripped up and say event where you mean occurrence, or think `event` refers to the value passed to the subscriber (which is the occurrence value/description/information), so to put it another way, conceptually, `Event` is to `occurrence` what `Class` is to `object`.
 
 #### event simultaneity
 
-Being that moments of [time](#time) are introduced by `emit`, and no two calls to `emit` can be executed at the same instant (as even synchronous code is still executed in order), there can never be two simultaneous moments in time. However, [emitting within a subscription](#nested-moments) to an emitter is possible and necessary for composing emitters, though it is a semantic nightmare.
+Being that moments of [time](#time) are introduced by `occur`, and no two calls to `occur` can be executed at the same instant (as even synchronous code is still executed in order), there can never be two simultaneous moments in time. However, [emitting within a subscription](#nested-moments) to an emitter is possible and necessary for composing emitters, though it is a semantic nightmare.
 
 Consider the following composition and result from emitters:
 
@@ -117,7 +146,7 @@ a.emit(0)
 
 The issue is particularly that every emitter has an independent propagation to its subscribers. When an emitter emits within the subscribe function of another emitter, these are two independent propagations, and so in the above example `d` is composed from two indepedent propagation systems, which conceptually represent distinct moments in time. That means that, though `map` only expresses a transformation of the value of the given emitter, it implicitly generates a whole new moment in time as well. If you are into horrifying, but conceptually amazing implicit behavior, implicitly generating new time is pretty cool.
 
-The solution to the emitter implicit time generation problem is to make a better kind of emitter, where emitters derived from other emitters carry the same system of propagation so that emits within emits are all within the same moment. In this library, this type is called `Event`. Conceptually, and as it is implemented in this library, the moment a derived Event occurs is the moment its dependencies occur. Because derived events may occur at the same moment, events that are derived from multiple other events can have simultaneous occurrences. Operators that cause a dependency on multiple events are required to specify how to handle simultaneous occurrences.
+The solution to the emitter implicit time generation problem is to make a better kind of emitter, where emitters derived from other emitters carry the same system of propagation so that emits within emits are all within the same moment. In this library, this type is called `Event`. Conceptually, and as it is implemented in this library, the moment a derived Event occurs is the moment its dependencies occur. Because derived events may occur at the same moment, events that are derived from multiple other events can have simultaneous occurrences. Operators that cause a dependency on multiple events can specify how to handle simultaneous occurrences.
 
 Now to revisit the example, but using Event:
 ```js
@@ -134,45 +163,159 @@ const c = Event.map (add(1)) (a)
 const d = Event.merge (([ b, c ]) => b) ([ b, c ])
 d.subscribe(console.log)
 
-// `a.emit` introduces a moment of time, and `d` occurs in the same moment
-a.emit(0)
+// `a.occur` introduces a moment of time, and `d` occurs in the same moment
+a.occur(0)
 // 1
 ```
+
+Event simultaneity solves not only the aforementioned issues pertaining to events, but provides the foundation for reactive values (behavior/dynamic) to be implemented without suffering the common glitching/dirty-read issue, which some libraries handle at the reactive value level, and some libraries do not handle at all.
+
+# glitch
+
+A glitch is when a reactive value is observed having a value not consistent with its composition.
+
+```
+// read this as though all expressions update when any references change - all references are reactive
+a = 0
+b = a + 1
+c = a + 1
+d = b + c
+log(`value of d is ${d}`)
+-> value of d is 2
+
+a = 1
+-> value of d is 3 # this is a glitch!
+-> value of d is 4
+```
+
+[Reactive Progamming Glitches on Wikiepdia](https://en.wikipedia.org/wiki/Reactive_programming#Glitches)
 
 ### Behavior
 
 #### conceptually
 
-A Behavior is a function across time; simply `currentTime => valueForTheCurrentTime`. Because you call a function at some time, you can think of the function call as the "time" and so the function is `() => valueForTheCurrentTime`; a function that returns a changing value. However, if it were possible to call this function twice at the exact same time (as in 'event simultaneity') the result must be the same, because the time is the same, and a behavior is a function from time to value at that time. The same time must have the same value. It could be helpful to think of Behaviors as pull-based, whereas Events are push-based.
+A Behavior is a function across time; simply `currentTime => valueForTheCurrentTime`. Because you call a function at some time, you can think of the function call as the "time" and so the function is `() => valueForTheCurrentTime`; a function that returns a changing value. However, if it were possible to call this function twice at the exact same time (as in 'event simultaneity') the result must be the same, because the time is the same, and a behavior is a function from time to value at that time. The same time must have the same value.
+
+It could be helpful to think of a behavior as a pull-based value, whereas an event occurrence is push-based.
 
 #### practically
 
-A Behavior is just a type for composing around an impure function call, such as hanging on to an event occurrence value so that it can be used independent of the event, and to do this efficiently within the context of the FRP system. It is possible to ensure a behavior's value is only computed once per "moment" and, maybe only if actually needed by something in that moment. The efficiency topic could use some investigation. I'm not currently sure how inefficient this implementation is. Possibly very inefficient.
+A Behavior is just a type for composing an impure function call that operates efficiently and consistently within the FRP system. For example, if you create a behavior based on `Math.random` and its value is checked multiple times within a moment (propagation from an `event.occur`), the behavior will be passed the same unique value each time it is checked, so that its value can be cached and reused within that moment.
+
+```
+a = randomInt(0, 5)
+b = a
+c = a + 1
+d = a - 1
+
+a # 3
+b # 3
+c # 4 (3 + 1)
+d # 2 (3 - 1)
+```
+
+Without behavior computation caching, the computation would run each time the value is checked, potentially producing a different value for dependants in the same moment.
+
+```
+a # 3
+b # 5
+c # 2 (1 + 1)
+d # 1 (2 - 1)
+```
+
+Behaviors integrate with the frp system to avoid this kind of inconsistency.
 
 ### Dynamic
 
-A Dynamic is, in every sense, both an Event and a Behavior. The code that creates them is simply `(event, behavior) => ({ ...event, ...behavior })`. You can pass a dynamic to a function that takes an event, and it will work as an event, because it is one. You can pass a dynamic to a function that takes a behavior and it will work, because it is one. Just keep in mind that if a function takes an event and returns an event, if you pass a dynamic as the event, you will get back an event, not a dynamic, because the function doesn't know anything about dynamics. The same applies for functions that work with behaviors.
+A dynamic is a behavior that changes discretely with an event of its updates. It can be practical to think of it as an event with memory, though it would be more appropriate to think of a Dynamic as a reactive value. A `first_name_update` is an event, while a `first_name` is a reactive value and so should be modeled as a Dynamic. You can pass a dynamic to a function that takes a behavior and it will work, because it is a behavior. For functions that take an event, you can pass the `[updates](#Dynamic.updates)` property of the dynamic.
 
-The relationship of the event and behavior composing the dynamic is not arbitrary. The event should be occurring with the value of the behavior at the time of occurrence, and the value of the behavior can only change if the event occurs. Therefore, if transforming the behavior of a dynamic, the event must be [pointed to the transformed behavior](#tag) and if transforming the event of a dynamic, the behavior must [always reflect the latest value from the event](#hold).
+The relationship of the event and behavior composing the dynamic is not arbitrary. The event should be occurring with the value of the behavior at the time of occurrence, and the value of the behavior can only change if the update event occurs. Therefore, if transforming the behavior of a dynamic, the event must be [pointed to the transformed behavior](#Event.tag) and if transforming the event of a dynamic, the behavior must [always reflect the latest value from the event](#Dynamic.hold).
 
 ## API
 
+Functions will be documented from lower level to higher level unless inapplicable or for some reason impractical. This means you can read from the start of each section downward to best understand the higher level grammar and more convenient and useful functions, or start from the end of a section for functions that you may use more often.
+
 ### Event
 
-#### merge
+#### combining events
 
-NOTE: and TODO:
-All the needed information is available here in merge, but it does feel in need of much sugar. This API will hopefully improve.
+##### `Event.combineAllWith (occurrences => combinedValue) ([ ...events ])`
 
-This example returns all the simultaneous occurrence values if they all occurred, otherwise just takes the first value, regardless of which event it was from.
+This is the lowest level and least convenient way to combine events, but provides the most information and compositional possibilities. All other combining functions are derived from this. It takes a function and an array of events. The function receives an object desciribng what has occurred. The object keys correspond to the index of the events as given in the input array. If the event occurred at this moment, its index will be a key on the object, with its occurrence value as the value for that key. This allows you to examine the object to determine whether/what events occurred at the moment with what values and produce a single value for the combined event. If this is very confusing, you may want to refer back to the section about [event simultaneity](#event-simultaneity).
+
 ```js
-Event.merge
-	(possibleOccurrences => {
-		const occurred = possibleOccurrences.filter(o => o !== Event.didNotOccur)
-		const allOccurred = possibleOccurrences.length === occurred.length
-		return allOccurred
-			? occurred
-			: occurred[0]
+Event.combineAllWith
+	(o => {
+		o.hasOwnProperty(0) // true if eventA occurred
+		o.hasOwnProperty(1) // true if eventB occurred
+		o.hasOwnProperty(2) // true if eventC occurred
+		o[0] // value of eventA if it occurred
+		o[1] // value of eventB if it occurred
+		o[2] // value of eventC if it occurred
+		return Object.values(o) // just returning an array of all occurrences values
 	})
-	[ ...someEvents ]
+	([ eventA, eventB, eventC ])
 ```
+
+Do not assume that `o[0] === undefined` means the first given event did not occur - the event may have just occurred with the value `undefined`, so the object looks like `{ 0: undefined }` (not considering any other events that may have occurred simultaneously and would therefore have properties on the object as well). You must check whether the object has key `0` to know whether the event given at `0` occurred.
+
+##### `Event.mergeAllWith (occurrences => combinedValue) ({ ...events })`
+
+Like [`Event.combineAllWith`](#Event-combineAllWith), but takes an object of events, and passes an object of occurrences to the given function, where **occurrences of an event have the same key as the event in the input object**.
+
+```js
+Event.mergeAllWith
+	(o => {
+		o.hasOwnProperty('eventA') true if eventA occurred
+		o.eventA // value of eventA if it occurred
+		// etc (see combineAllWith)
+	})
+	({ eventA, eventB, eventC })
+```
+
+##### `Event.mergeAll ({ ...events })`
+
+Convenience for `[Event.mergeAllWith](#Event-mergeAllWith) (identity)`.
+
+```js
+Event
+	.mergeAll ({ eventA, eventB, eventC })
+	.subscribe(value => {
+		// indicates that eventA and eventC occurred simultaneously with values 'foo' and 'bar'
+		value // { eventA: 'foo', eventC: 'bar' }
+	})
+```
+
+##### `Event.combine (whenA) (whenB) (whenAB) (a) (b)`
+
+Combine two events using a function to determine the combined occurrence value for each possible scenario of event simultaneity.
+`whenA` will be used when event `a` occurs and event `b` does not. `(a => occurrenceValue)`
+`whenB` will be used when event `a` occurs and event `b` does not. `(b => occurrenceValue)`
+`whenAB` will be used when event `a` and event `b` occur simultaneously. `(a => b => occurrenceValue)`
+
+```js
+Event.combine
+	(aValue => aValue + 1) // when `eventA` occurs and `eventB` does not
+	(bValue => bValue + 2) // when `eventB` occurs and `eventA` does not
+	(aValue => bValue => aValue + bValue) // when both events occur simultaneously
+	(eventA)
+	(eventB)
+```
+
+##### `Event.concat (a) (b)`
+
+`Event.concat` simply combines the given events and will throw an error if they ever occur simultaneously. This provides a way to combine events that is semantically comparable to concat on lists, as an event is a list of occurrences across time, except for when events occur simultaneously, in which case the value of the event is a list of simultaenous occurrences, rather than the typical value just being a single occurrence. It is generally good to be able to compose events (or anything) without having to know the expressions that created them, for example, if you had an event `timeToEatLunch`, it has enough meaning on its own for you to compose it into the eating of a delicious sandwich without needing to know how `timeToEatLunch` came to be. Therefore, it is preferable when combining events if you don't need to know whether they may occur simultaneously, but that also means you can't truly acheive semantic parity with lists/arrays. The idea here is that you can attempt to concat events as though they will always be simply lists of occurrence, and should they in fact ever be the other type - lists of list of simultaneous occurrences, then an error will be thrown and you will discover that the events you used are not compatible with this operator. It's a bit awkward, but seems a reasonable compromise for the sake of being able to operate generically on events as lists.
+
+TODO: Further discuss list across time of a list of simultaenous occurrences vs list across time of occurrence somewhere in the docs, in improve the wording (and length, phew) above.
+
+##### `Event.leftmost ([ ...events ])`
+
+Lazy, practical description:
+Use this when you want combine events and don't care about the occurence value or are fine with the occurrence value being based on the order the events are given in the input array.
+
+Less fun technical description:
+Combines events such that the resulting event will have the occurrence value of the occurrence appearing first in the list of simultaneous occurrences, which are ordered the same as the input array.
+
+`Event.leftmost ([ eventA, eventB, eventC ])` will occur with the occurrence value of `eventA` if `eventA` occurs, disregarding any simultaneous occurrence of `eventB` and/or `eventC`. Similarly, if `eventA` did not occur and `eventB` did occur, then the value of `eventB` will be used. And lastly, if neither `eventA` or `eventB` occurred, then the occurrence value of `eventC` will be used when it occurs.
+
+## Comparison
