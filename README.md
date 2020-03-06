@@ -4,15 +4,11 @@
 
 ![Wark!](https://user-images.githubusercontent.com/4369247/33407500-42f7d608-d537-11e7-9754-1ef262f9d6ad.png)
 
-## install
-
-```sh
-$ npm install wark
-```
-
 - [Goals](#goals)
-- [Concepts](#concepts)
+- [Install](#install)
+- [Quick Start](#quick-start)
 - [API](#API)
+- [Concepts](#concepts)
 - [Comparing approaches to reactive programming](#comparing-approaches-to-reactive-programming)
 
 ## Goals
@@ -20,6 +16,368 @@ $ npm install wark
 - simple, practical, and accurate grammar for the expression of event and reactive value and computation relationships
 - minimal implementation code so that the frp library can be depended on by UI components and other reusable modules where saving bytes is a priority
 - performant enough for most use cases, including complex DOM UIs, games, webgl, canvas, etc, never compromising on the goal of expressive grammar, some wiggle room on byte size, and some reasonable compromise on the clean, expressive internal implementation if it is truly necessary for dramatic performance gains. My opinion is that accurate, expressive code can also be performant code in many cases. *Considerable work ***may*** need to done in the implementation to accomplish this - performance has not yet been measured and explored.*
+
+## Install
+
+```sh
+npm install wark
+```
+
+## Quick Start
+
+Here's a simple counter. The idea is that the counter is the result of folding (aka reducing) an event of changes, which are either the number 1 or -1, by adding them to the current value, starting from 0.
+
+```js
+import { Event, Behavior, Dynamic } from 'wark'
+import { add, compose } from 'ramda'
+
+const increment = Event.create()
+const decrement = Event.create()
+
+const countChanges = Event.concatAll ([ Event.constant (1) (increment), Event.constant (-1) (decrement) ])
+const count = Dynamic.fold (add) (0) (countChanges)
+```
+
+Explained:
+
+```js
+import { Event, Behavior, Dynamic } from 'wark'
+import { add } from 'ramda'
+
+const increment = Event.create()
+const decrement = Event.create()
+
+// combine the events of counter changes
+const countChanges = Event.concatAll ([
+	// make an event from `increment` whose value is always 1
+	Event.constant (1) (increment),
+	// make an event from `increment` whose value is always -1
+	Event.constant (-1) (decrement)
+])
+// fold the countChanges across time by adding them to the current value
+const count = Dynamic.fold (add) (0) (countChanges)
+
+count.subscribe(console.log) // called immediately with the current value (0) and when the value is updated.
+count.updates.subscribe(console.lg) // called only when the value is updated
+count.sample() // 0
+increment.occur()
+count.sample() // 1
+increment.occur()
+count.sample() // 2
+decrement.occur()
+count.sample() // 1
+```
+
+Here's a more complex counter. The idea is that the counter is the result of folding an event of change functions by calling the function with the current value. This example adds levels of difficulty over the simple counter. It has a `reset` event, which doesn't work with the idea of `fold (add)`, because reset is 'become 0' not just 'add 0 to the current value'. It also has a reactive value that is changed by an event, changed independently of counter changes, but whose value is needed to calculate a counter change event's function.
+
+```js
+import { Event, Behavior, Dynamic } from 'wark'
+import { add, compose } from 'ramda'
+
+const increment = Event.create()
+const decrement = Event.create()
+const reset = Event.create()
+const minimumChange = Event.create()
+
+const minimum = Dynamic.hold (-Infinity) (minimumChange)
+
+const counterOperations = compose
+	(
+		Event.snapshot ((minimum => operation) => v => Math.max(minimum, operation(v))) (minimum),
+		Event.concatAll
+	)
+	([
+		Event.constant (always(0)) (reset))
+		Event.constant (add(1)) (increment),
+		Event.constant (add(-1)) (decrement),
+	])
+const count = Dynamic.fold (call) (0) (counterOperations)
+```
+
+Explained:
+
+```js
+import { Event, Behavior, Dynamic } from 'wark'
+import { add, compose } from 'ramda'
+
+const increment = Event.create()
+const decrement = Event.create()
+const reset = Event.create()
+// this event should occur with a number that is to limit how low the counter value can be
+const minimumChange = Event.create()
+
+// turn the event into a dynamic (reactive value) whose value starts as the given value and updates with the event value
+// `hold` holds onto the value from the event so that we can use it in compositions that occur at other times
+const minimum = Dynamic.hold (-Infinity) (minimumChange)
+
+const counterOperations = compose // (read this from the bottom up)
+	(
+		// snapshot lets you associate a reactive value with an event.
+		// The function gets the dynamic's value, the event occurrence value, and returns a new value for the occurrence.
+		// Here, out function receives the current value of `minimum`, the event's value, which is an operation to apply to the the counter,
+		// and we return a function to apply to the counter that wraps the counter operation to limit it to `minimum`.
+		Event.snapshot (minimum => operation => v => Math.max(minimum, operation(v))) (minimum),
+		// combine an array of events into a single event that occurs when one of the events occur
+		Event.concatAll
+	)
+	([
+		// make an event from `increment` whose occurrence value is always a function that adds 1 to its input
+		Event.constant (add(1)) (increment),
+		// make an event from `decreremt` whose occurrence value is always a function that adds -1 to its input
+		Event.constant (add(-1)) (decrement),
+	])
+
+const count = Dynamic.fold (call) (0) (counterOperations)
+```
+
+## API
+
+Functions will be documented from lower level to higher level unless inapplicable or for some reason impractical. This means you can read from the start of each section downward to best understand the higher level grammar and more convenient and useful functions, or start from the end of a section for functions that you may use more often.
+
+### Event
+
+#### The Basics
+
+##### `Event.create()`
+
+##### `event.occur(occurrenceValue)`
+
+##### `event.subscribe(occurrenceValue => {})`
+
+#### Combining
+
+##### `Event.combineAllWith (occurrences => combinedValue) ([ ...events ])`
+
+This is the lowest level and least convenient way to combine events, but provides the most information and compositional possibilities. All other combining functions are derived from this. It takes a function and an array of events. The function receives an object desciribng what has occurred. The object keys correspond to the index of the events as given in the input array. If the event occurred at this moment, its index will be a key on the object, with its occurrence value as the value for that key. This allows you to examine the object to determine whether/what events occurred at the moment with what values and produce a single value for the combined event. If this is very confusing, you may want to refer back to the section about [event simultaneity](#event-simultaneity).
+
+```js
+Event.combineAllWith
+	(o => {
+		o.hasOwnProperty(0) // true if eventA occurred
+		o.hasOwnProperty(1) // true if eventB occurred
+		o.hasOwnProperty(2) // true if eventC occurred
+		o[0] // value of eventA if it occurred
+		o[1] // value of eventB if it occurred
+		o[2] // value of eventC if it occurred
+		return Object.values(o) // just returning an array of all occurrences values
+	})
+	([ eventA, eventB, eventC ])
+```
+
+Do not assume that `o[0] === undefined` means the first given event did not occur - the event may have just occurred with the value `undefined`, so the object looks like `{ 0: undefined }` (not considering any other events that may have occurred simultaneously and would therefore have properties on the object as well). You must check whether the object has key `0` to know whether the event given at `0` occurred.
+
+##### `Event.mergeAllWith (occurrences => combinedValue) ({ ...events })`
+
+Like [`Event.combineAllWith`](#Event-combineAllWith), but takes an object of events, and passes an object of occurrences to the given function, where **occurrences of an event have the same key as the event in the input object**.
+
+```js
+Event.mergeAllWith
+	(o => {
+		o.hasOwnProperty('eventA') true if eventA occurred
+		o.eventA // value of eventA if it occurred
+		// etc (see combineAllWith)
+	})
+	({ eventA, eventB, eventC })
+```
+
+##### `Event.mergeAll ({ ...events })`
+
+Convenience for `[Event.mergeAllWith](#Event-mergeAllWith) (identity)`.
+
+```js
+Event
+	.mergeAll ({ eventA, eventB, eventC })
+	.subscribe(value => {
+		// indicates that eventA and eventC occurred simultaneously with values 'foo' and 'bar'
+		value // { eventA: 'foo', eventC: 'bar' }
+	})
+```
+
+##### `Event.combine (whenA) (whenB) (whenAB) (a) (b)`
+
+Combine two events using a function to determine the combined occurrence value for each possible scenario of event simultaneity.
+`whenA` will be used when event `a` occurs and event `b` does not. `(a => occurrenceValue)`
+`whenB` will be used when event `a` occurs and event `b` does not. `(b => occurrenceValue)`
+`whenAB` will be used when event `a` and event `b` occur simultaneously. `(a => b => occurrenceValue)`
+
+```js
+Event.combine
+	(aValue => aValue + 1) // when `eventA` occurs and `eventB` does not
+	(bValue => bValue + 2) // when `eventB` occurs and `eventA` does not
+	(aValue => bValue => aValue + bValue) // when both events occur simultaneously
+	(eventA)
+	(eventB)
+```
+
+##### `Event.concat (a) (b)`
+
+`Event.concat` simply combines the given events and will throw an error if they ever occur simultaneously. This provides a way to combine events that is semantically comparable to concat on lists, as an event is a list of occurrences across time, except for when events occur simultaneously, in which case the value of the event is a list of simultaenous occurrences, rather than the typical value just being a single occurrence. It is generally good to be able to compose events (or anything) without having to know the expressions that created them, for example, if you had an event `timeToEatLunch`, it has enough meaning on its own for you to compose it into the eating of a delicious sandwich without needing to know how `timeToEatLunch` came to be. Therefore, it is preferable when combining events if you don't need to know whether they may occur simultaneously, but that also means you can't truly acheive semantic parity with lists/arrays. The idea here is that you can attempt to concat events as though they will always be simply lists of occurrence, and should they in fact ever be the other type - lists of list of simultaneous occurrences, then an error will be thrown and you will discover that the events you used are not compatible with this operator. It's a bit awkward, but seems a reasonable compromise for the sake of being able to operate generically on events as lists.
+
+TODO: Further discuss list across time of a list of simultaenous occurrences vs list across time of occurrence somewhere in the docs, in improve the wording (and length, phew) above.
+
+##### `Event.concatAll ([ ...events ])`
+
+`Event.concat` but takes an array of events to combine.
+
+##### `Event.leftmost ([ ...events ])`
+
+Lazy, practical description:
+Use this when you want combine events and don't care about the occurence value or are fine with the occurrence value being based on the order the events are given in the input array.
+
+Less fun technical description:
+Combines events such that the resulting event will have the occurrence value of the occurrence appearing first in the list of simultaneous occurrences, which are ordered the same as the input array.
+
+`Event.leftmost ([ eventA, eventB, eventC ])` will occur with the occurrence value of `eventA` if `eventA` occurs, disregarding any simultaneous occurrence of `eventB` and/or `eventC`. Similarly, if `eventA` did not occur and `eventB` did occur, then the value of `eventB` will be used. And lastly, if neither `eventA` or `eventB` occurred, then the occurrence value of `eventC` will be used when it occurs.
+
+
+#### Forward References
+
+##### `Event.proxy()`
+
+Returns an event proxy that can be passed to functions that take an event, for cases where the actual event you'd like to pass has not yet been created. When the event reference that the proxy represents is available, call `proxy.mirror(thatEvent)` to make the proxy behave as though it is that event.
+
+```js
+// pointless example for the sake of a concise demonstration
+const proxy = Event.proxy()
+proxy.subscribe(console.log)
+
+const eventPlusOne = Event.map (add(1)) (proxy)
+eventPlusOne.subscribe(console.log)
+
+const event = Event.create()
+proxy.mirror(event)
+
+event.occur(1)
+// -> logs 1
+// -> logs 2
+```
+
+`proxy.mirror(event)` returns the given event for convenience and readability. The previous example could have been written like this:
+
+```js
+const event = proxy.mirror(Event.create())
+```
+
+#### Transforming
+
+##### Event.map (a => b) (event)
+
+Takes an event and returns an event whose occurrence value is transformed by the given function.
+
+```js
+const numberEvent = Event.create()
+const doubledEvent = Event.map (v => v * 2) (numberEvent)
+numberEvent.occur(2) // doubledEvent occurs with a value of 4
+```
+
+##### Event.constant (value) (event)
+
+Takes an event and returns an event whose occurence value is always the given value.
+
+```js
+const fooEvent = Event.create()
+const barEvent = Event.map ('bar') (fooEvent)
+fooEvent.occur('foo') // barEvent occurs with value 'bar'
+fooEvent.occur('whatever') // barEvent occurs with value 'bar'
+```
+
+##### Event.filter (predicate) (event)
+
+Takes an event and returns an event that will not occur unless the occurence value of the given event passes the predicate function.
+
+```js
+const numberEvent = Event.create()
+const evenNumberEvent = Event.filter (v => v % 2 === 0) (numberEvent)
+numberEvent.occur(2) // evenNumberEvent occurs with value of 2
+numberEvent.occur(3) // evenNumberEvent does not occur
+```
+
+
+#### Flattening
+
+Flattening functions are for the case that the occurence value of an event is itself an event. In the same way that an array may contain values which are also arrays and you may flatten such an array to move the inner array values out as direct values of the outer array, you may flatten an event into a new event that occurs when the otherwise nested events occur.
+
+The reason such composition is helpful and necessary is that it means reactive compositions can themselves be reactively created and used and switched out - reactive expressions can construct reactive expressions reactively.
+
+##### Event.switchMap (v => event) (event)
+
+`Event.switcMap` takes a function and an event, and like `Event.map`, passes the function the occurrence value of the input event. The function must return an event. The resulting event will occur with the occurrences of the event returned from the function, always switching to the returned event each time the input event occurs.
+
+```js
+const a = Event.create()
+const b = Event.create()
+const someEvents = { a, b }
+const eventSelectedByName = Event.create()
+const selectedEvent = Event.switchMap (eventName => someEvents[eventName]) (eventSelectedByName)
+
+eventSelectedByName.occur('b')
+a.occur(1)
+b.occur(1) // selectedEvent occurs with a value of 1
+eventSelectedByName.occur('a')
+a.occur(5) // selectedEvent occurs with a value of 5
+b.occur(7)
+a.occur(4) // selectedEvent occurs with a value of 4
+```
+
+##### Event.switchLatest (event)
+
+Convenience function for `switchMap (identity)`. It would be simply called `switch`, but that is a reserved word in JavaScript. `swoosh`, `sandwich`, and `$witch` were considered.
+
+```js
+const a = Event.create()
+const b = Event.create()
+const eventSelected = Event.create()
+const selectedEvent = Event.switchLatest (eventSelected)
+
+eventSelected.occur(b)
+a.occur(1)
+b.occur(1) // selectedEvent occurs with a value of 1
+eventSelected.occur(a)
+a.occur(5) // selectedEvent occurs with a value of 5
+b.occur(7)
+a.occur(4) // selectedEvent occurs with a value of 4
+```
+
+#### Composing with Behaviors
+
+##### `Event.snapshot (behaviorValue => occurrenceValue => newOccurrenceValue) (behavior) (event)`
+
+This is the lowest level way that you should associate a behavior's value with an event occurrence. Snapshot means deriving an event from a behavior at the time of a given event.
+Takes a function, a behavior, and an event, and returns an event that occurs when the input event occurs. The given behavior's current value and the given event's occurrence value are passed to the function and it returns the occurrence value for the derived event.
+
+```js
+const randomInt = Behavior.create(() => randomInt(0, 5))
+const keyEvent = Event.create()
+const snapshotEvent = Event.snapshot (int => key => ({ [key]: int })) (randomInt) (keyEvent)
+keyEvent.occur('foo')
+// for the sake of demonstration, let's sample randomInt at the same time that keyEvent just occurred
+randomInt.sample(keyEvent.t()) // 3
+// so when keyEvent occured, snapshotEvent occurred with a value of { foo: 3 }
+```
+
+##### `Event.attach (behavior) (event)`
+
+This is a convenience for snapshotting a behavior using a function that returns the event occurrence value and the behavior value in an array.
+
+```js
+const randomInt = Behavior.create(() => randomInt(0, 5))
+const keyEvent = Event.create()
+const attachEvent = Event.attach (randomInt) (keyEvent)
+randomInt.sample(keyEvent.t()) // 3
+keyEvent.occur('foo') // attachEvent occurs with [ 'foo', 3 ]
+```
+
+##### `Event.tag (behavior) (event)`
+
+This is a convenience for snapshotting a behavior using a function that just returns the behavior's value. In other words, it takes an event and a behavior and makes an event that occurs with the value of the behavior.
+
+```js
+const randomInt = Behavior.create(() => randomInt(0, 5))
+const keyEvent = Event.create()
+const tagEvent = Event.tag (randomInt) (keyEvent)
+randomInt.sample(keyEvent.t()) // 3
+keyEvent.occur('foo') // tagEvent occurs with 3
+```
 
 ## Concepts
 
@@ -35,11 +393,7 @@ For comparison:
 emitter.subscribe('foo', handleFoo)
 emitter.subscribe('bar', handleBar)
 emitter.emit('foo', 123)
-emitter.emit('bar', 456)
-
-/* this emitter */
-// an example of giving meaning to the emitter by variable name
-fooEmitter.subscribe(handleFoo)
+emitter.emit('bar', 456) /* this emitter */ // an example of giving meaning to the emitter by variable name fooEmitter.subscribe(handleFoo)
 barEmitter.subscribe(handleBar)
 fooEmitter.emit(123)
 barEmitter.emit(456)
@@ -246,249 +600,5 @@ A dynamic is a behavior that changes discretely with an event of its updates. It
 
 The relationship of the event and behavior composing the dynamic is not arbitrary. The event should be occurring with the value of the behavior at the time of occurrence, and the value of the behavior can only change if the update event occurs. Therefore, if transforming the behavior of a dynamic, the event must be [pointed to the transformed behavior](#Event.tag) and if transforming the event of a dynamic, the behavior must [always reflect the latest value from the event](#Dynamic.hold).
 
-## API
-
-Functions will be documented from lower level to higher level unless inapplicable or for some reason impractical. This means you can read from the start of each section downward to best understand the higher level grammar and more convenient and useful functions, or start from the end of a section for functions that you may use more often.
-
-### Event
-
-#### The Basics
-
-##### `Event.create()`
-
-##### `event.occur(occurrenceValue)`
-
-##### `event.subscribe(occurrenceValue => {})`
-
-#### Combining
-
-##### `Event.combineAllWith (occurrences => combinedValue) ([ ...events ])`
-
-This is the lowest level and least convenient way to combine events, but provides the most information and compositional possibilities. All other combining functions are derived from this. It takes a function and an array of events. The function receives an object desciribng what has occurred. The object keys correspond to the index of the events as given in the input array. If the event occurred at this moment, its index will be a key on the object, with its occurrence value as the value for that key. This allows you to examine the object to determine whether/what events occurred at the moment with what values and produce a single value for the combined event. If this is very confusing, you may want to refer back to the section about [event simultaneity](#event-simultaneity).
-
-```js
-Event.combineAllWith
-	(o => {
-		o.hasOwnProperty(0) // true if eventA occurred
-		o.hasOwnProperty(1) // true if eventB occurred
-		o.hasOwnProperty(2) // true if eventC occurred
-		o[0] // value of eventA if it occurred
-		o[1] // value of eventB if it occurred
-		o[2] // value of eventC if it occurred
-		return Object.values(o) // just returning an array of all occurrences values
-	})
-	([ eventA, eventB, eventC ])
-```
-
-Do not assume that `o[0] === undefined` means the first given event did not occur - the event may have just occurred with the value `undefined`, so the object looks like `{ 0: undefined }` (not considering any other events that may have occurred simultaneously and would therefore have properties on the object as well). You must check whether the object has key `0` to know whether the event given at `0` occurred.
-
-##### `Event.mergeAllWith (occurrences => combinedValue) ({ ...events })`
-
-Like [`Event.combineAllWith`](#Event-combineAllWith), but takes an object of events, and passes an object of occurrences to the given function, where **occurrences of an event have the same key as the event in the input object**.
-
-```js
-Event.mergeAllWith
-	(o => {
-		o.hasOwnProperty('eventA') true if eventA occurred
-		o.eventA // value of eventA if it occurred
-		// etc (see combineAllWith)
-	})
-	({ eventA, eventB, eventC })
-```
-
-##### `Event.mergeAll ({ ...events })`
-
-Convenience for `[Event.mergeAllWith](#Event-mergeAllWith) (identity)`.
-
-```js
-Event
-	.mergeAll ({ eventA, eventB, eventC })
-	.subscribe(value => {
-		// indicates that eventA and eventC occurred simultaneously with values 'foo' and 'bar'
-		value // { eventA: 'foo', eventC: 'bar' }
-	})
-```
-
-##### `Event.combine (whenA) (whenB) (whenAB) (a) (b)`
-
-Combine two events using a function to determine the combined occurrence value for each possible scenario of event simultaneity.
-`whenA` will be used when event `a` occurs and event `b` does not. `(a => occurrenceValue)`
-`whenB` will be used when event `a` occurs and event `b` does not. `(b => occurrenceValue)`
-`whenAB` will be used when event `a` and event `b` occur simultaneously. `(a => b => occurrenceValue)`
-
-```js
-Event.combine
-	(aValue => aValue + 1) // when `eventA` occurs and `eventB` does not
-	(bValue => bValue + 2) // when `eventB` occurs and `eventA` does not
-	(aValue => bValue => aValue + bValue) // when both events occur simultaneously
-	(eventA)
-	(eventB)
-```
-
-##### `Event.concat (a) (b)`
-
-`Event.concat` simply combines the given events and will throw an error if they ever occur simultaneously. This provides a way to combine events that is semantically comparable to concat on lists, as an event is a list of occurrences across time, except for when events occur simultaneously, in which case the value of the event is a list of simultaenous occurrences, rather than the typical value just being a single occurrence. It is generally good to be able to compose events (or anything) without having to know the expressions that created them, for example, if you had an event `timeToEatLunch`, it has enough meaning on its own for you to compose it into the eating of a delicious sandwich without needing to know how `timeToEatLunch` came to be. Therefore, it is preferable when combining events if you don't need to know whether they may occur simultaneously, but that also means you can't truly acheive semantic parity with lists/arrays. The idea here is that you can attempt to concat events as though they will always be simply lists of occurrence, and should they in fact ever be the other type - lists of list of simultaneous occurrences, then an error will be thrown and you will discover that the events you used are not compatible with this operator. It's a bit awkward, but seems a reasonable compromise for the sake of being able to operate generically on events as lists.
-
-TODO: Further discuss list across time of a list of simultaenous occurrences vs list across time of occurrence somewhere in the docs, in improve the wording (and length, phew) above.
-
-##### `Event.leftmost ([ ...events ])`
-
-Lazy, practical description:
-Use this when you want combine events and don't care about the occurence value or are fine with the occurrence value being based on the order the events are given in the input array.
-
-Less fun technical description:
-Combines events such that the resulting event will have the occurrence value of the occurrence appearing first in the list of simultaneous occurrences, which are ordered the same as the input array.
-
-`Event.leftmost ([ eventA, eventB, eventC ])` will occur with the occurrence value of `eventA` if `eventA` occurs, disregarding any simultaneous occurrence of `eventB` and/or `eventC`. Similarly, if `eventA` did not occur and `eventB` did occur, then the value of `eventB` will be used. And lastly, if neither `eventA` or `eventB` occurred, then the occurrence value of `eventC` will be used when it occurs.
-
-
-#### Forward References
-
-##### `Event.proxy()`
-
-Returns an event proxy that can be passed to functions that take an event, for cases where the actual event you'd like to pass has not yet been created. When the event reference that the proxy represents is available, call `proxy.mirror(thatEvent)` to make the proxy behave as though it is that event.
-
-```js
-// pointless example for the sake of a concise demonstration
-const proxy = Event.proxy()
-proxy.subscribe(console.log)
-
-const eventPlusOne = Event.map (add(1)) (proxy)
-eventPlusOne.subscribe(console.log)
-
-const event = Event.create()
-proxy.mirror(event)
-
-event.occur(1)
-// -> logs 1
-// -> logs 2
-```
-
-`proxy.mirror(event)` returns the given event for convenience and readability. The previous example could have been written like this:
-
-```js
-const event = proxy.mirror(Event.create())
-```
-
-#### Transforming
-
-##### Event.map (a => b) (event)
-
-Takes an event and returns an event whose occurrence value is transformed by the given function.
-
-```js
-const numberEvent = Event.create()
-const doubledEvent = Event.map (v => v * 2) (numberEvent)
-numberEvent.occur(2) // doubledEvent occurs with a value of 4
-```
-
-##### Event.constant (value) (event)
-
-Takes an event and returns an event whose occurence value is always the given value.
-
-```js
-const fooEvent = Event.create()
-const barEvent = Event.map ('bar') (fooEvent)
-fooEvent.occur('foo') // barEvent occurs with value 'bar'
-fooEvent.occur('whatever') // barEvent occurs with value 'bar'
-```
-
-##### Event.filter (predicate) (event)
-
-Takes an event and returns an event that will not occur unless the occurence value of the given event passes the predicate function.
-
-```js
-const numberEvent = Event.create()
-const evenNumberEvent = Event.filter (v => v % 2 === 0) (numberEvent)
-numberEvent.occur(2) // evenNumberEvent occurs with value of 2
-numberEvent.occur(3) // evenNumberEvent does not occur
-```
-
-
-#### Flattening
-
-Flattening functions are for the case that the occurence value of an event is itself an event. In the same way that an array may contain values which are also arrays and you may flatten such an array to move the inner array values out as direct values of the outer array, you may flatten an event into a new event that occurs when the otherwise nested events occur.
-
-The reason such composition is helpful and necessary is that it means reactive compositions can themselves be reactively created and used and switched out - reactive expressions can construct reactive expressions reactively.
-
-##### Event.switchMap (v => event) (event)
-
-`Event.switcMap` takes a function and an event, and like `Event.map`, passes the function the occurrence value of the input event. The function must return an event. The resulting event will occur with the occurrences of the event returned from the function, always switching to the returned event each time the input event occurs.
-
-```js
-const a = Event.create()
-const b = Event.create()
-const someEvents = { a, b }
-const eventSelectedByName = Event.create()
-const selectedEvent = Event.switchMap (eventName => someEvents[eventName]) (eventSelectedByName)
-
-eventSelectedByName.occur('b')
-a.occur(1)
-b.occur(1) // selectedEvent occurs with a value of 1
-eventSelectedByName.occur('a')
-a.occur(5) // selectedEvent occurs with a value of 5
-b.occur(7)
-a.occur(4) // selectedEvent occurs with a value of 4
-```
-
-##### Event.switchLatest (event)
-
-Convenience function for `switchMap (identity)`. It would be simply called `switch`, but that is a reserved word in JavaScript. `swoosh`, `sandwich`, and `$witch` were considered.
-
-```js
-const a = Event.create()
-const b = Event.create()
-const eventSelected = Event.create()
-const selectedEvent = Event.switchLatest (eventSelected)
-
-eventSelected.occur(b)
-a.occur(1)
-b.occur(1) // selectedEvent occurs with a value of 1
-eventSelected.occur(a)
-a.occur(5) // selectedEvent occurs with a value of 5
-b.occur(7)
-a.occur(4) // selectedEvent occurs with a value of 4
-```
-
-#### Composing with Behaviors
-
-##### `Event.snapshot (behaviorValue => occurrenceValue => newOccurrenceValue) (behavior) (event)`
-
-This is the lowest level way that you should associate a behavior's value with an event occurrence. Snapshot means deriving an event from a behavior at the time of a given event.
-Takes a function, a behavior, and an event, and returns an event that occurs when the input event occurs. The given behavior's current value and the given event's occurrence value are passed to the function and it returns the occurrence value for the derived event.
-
-```js
-const randomInt = Behavior.create(() => randomInt(0, 5))
-const keyEvent = Event.create()
-const snapshotEvent = Event.snapshot (int => key => ({ [key]: int })) (randomInt) (keyEvent)
-keyEvent.occur('foo')
-// for the sake of demonstration, let's sample randomInt at the same time that keyEvent just occurred
-randomInt.sample(keyEvent.t()) // 3
-// so when keyEvent occured, snapshotEvent occurred with a value of { foo: 3 }
-```
-
-##### `Event.attach (behavior) (event)`
-
-This is a convenience for snapshotting a behavior using a function that returns the event occurrence value and the behavior value in an array.
-
-```js
-const randomInt = Behavior.create(() => randomInt(0, 5))
-const keyEvent = Event.create()
-const attachEvent = Event.attach (randomInt) (keyEvent)
-randomInt.sample(keyEvent.t()) // 3
-keyEvent.occur('foo') // attachEvent occurs with [ 'foo', 3 ]
-```
-
-##### `Event.tag (behavior) (event)`
-
-This is a convenience for snapshotting a behavior using a function that just returns the behavior's value. In other words, it takes an event and a behavior and makes an event that occurs with the value of the behavior.
-
-```js
-const randomInt = Behavior.create(() => randomInt(0, 5))
-const keyEvent = Event.create()
-const tagEvent = Event.tag (randomInt) (keyEvent)
-randomInt.sample(keyEvent.t()) // 3
-keyEvent.occur('foo') // tagEvent occurs with 3
-```
 
 ## Comparing approaches to reactive programming
