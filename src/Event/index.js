@@ -102,7 +102,7 @@ export const mergeAll = mergeAllWith (identity)
 
 export const combine = whenA => whenB => whenAB => a => b => combineAllWith (o => o.hasOwnProperty(0) ? (o.hasOwnProperty(1) ? whenAB (o[0]) (o[1]) : whenA(o[0])) : whenB(o[1])) ([ a, b ])
 
-export const concat = combine (identity) (identity) (() => throw new Error('concat must not be called on events that can occur simultaneously!'))
+export const concat = combine (identity) (identity) (() => { throw new Error('concat must not be called on events that can occur simultaneously!') })
 
 export const leftmost = combineAllWith (o => Object.values(o)[0])
 
