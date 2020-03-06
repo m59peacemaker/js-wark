@@ -147,13 +147,78 @@ Functions will be documented from lower level to higher level unless inapplicabl
 
 ### Event
 
-#### The Basics
+An Event represents a list of occurrences across time. Just as you may have an array of values right now, such as `[ 1, 2, 3 ]`, you may have a user clicking a button at some times, and if you were to listen for that event and put its occurrence values into an array, it would look like this:
+
+```js
+// when the app starts
+const clicks = []
+
+// later, the user clicks the button
+clicks // [ click ]
+
+// later, the user clicks the button again
+clicks // [ click, click ]
+
+// later, the user clicks the button again
+clicks // [ click, click, click ]
+```
+
+The above example refers to the idea of an Event being a list across time, but has no grammar for directly expressing and composing with it. In the same way that a `Promise` provides a reference to the idea of "a value later" that you can compose with now, `Event` provides a reference to the idea of "possibly an occurrence later, and again later, and again later" and so on, and you can compose that idea into other reactive ideas, such as keeping up with how many times the user has clicked the button. You may think of an Event as an emitter emitting values, but with some improved semantics for composition, and we prefer to talk of `occurrence` rather than `emit` because it accords with the higher level meaning of the application and not with the lower level implementation details.
 
 ##### `Event.create()`
 
+This creates an event object that you can you use to push values out to subscribers and more commonly, through reactive expressions composed from it.
+
 ##### `event.occur(occurrenceValue)`
 
+This is the equivalent on emitters of `emit`. It introduces a moment of time into the reactive graph you've composed from this event, sending the occurrence value along. In some cases the occurrence value would intuitively be called a *description* of the event occurrence and other times it is a more arbitrary seeming value, such as a number, if any value at all. *Occurrence value*, or just *value* for short, seems a good term to use in general, though I still find *occurrence description* and *occurrence information* to be worth mentioning.
+
 ##### `event.subscribe(occurrenceValue => {})`
+
+Any event may be subscribed to, and the given subscriber function will be called with the occurrence value of the event when it occurs.
+
+#### Basics
+
+This is a wrong, but possible use of an Event that treats it like a common and not powerful emitter, for the sake of demonstration:
+
+```js
+const click = Event.create()
+const clicks = []
+click.susbcribe(occurrenceValue => clicks.push(occurrenceValue))
+click.occur('click1')
+clicks // [ 'click1' ]
+click.occur('click2')
+clicks // [ 'click1', 'click2' ]
+click.occur('click3')
+clicks // [ 'click1', 'click2', 'click3' ]
+```
+
+The appropriate way to accomplish the above is to compose the event into a Dynamic (a reactive value) that can hold onto the event values:
+
+```js
+const click = Event.create()
+// fold (aka reduce) the event (list) across time
+const clicks = Dynamic.fold (click => acc => [ ...acc, click ]) ([ ]) (click)
+
+// called immediately with the current value of []
+// and called on each occurrence of click with the updated value i.e. [ 'click1' ]
+clicks.subscribe(console.log)
+
+// same as subscribing directly to the dynamic (as above),
+// except without the initial call with the current value of the dynamic
+clicks.updates.console.log)
+
+click.occur('click1')
+
+It is also possible to check the value of a dynamic any time:
+clicks.sample() // [ 'click1' ]
+
+click.occur('click2')
+clicks.sample() // [ 'click1', 'click2' ]
+
+click.occur('click3')
+clicks.sample() // [ 'click1', 'click3' ]
+```
 
 #### Combining
 
