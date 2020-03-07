@@ -59,7 +59,7 @@ Here is how the counter is expressed using the functional reactive style of this
 const count = accumulateFrom (0) (concatAll ([ constant (1) (increment), constant (-1) (decrement) ]))
 ```
 
-This is simply code derived from the words describing the goal and can be read similarly:
+This is code derived from the words describing the goal and can be read similarly:
 
 "Count is the accumulation from 0, the (combination) of: increment being 1 and decrement being -1"
 
