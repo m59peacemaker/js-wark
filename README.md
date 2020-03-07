@@ -73,6 +73,13 @@ Compositionality is the principle that the meaning of an expression is determine
 - minimal implementation code so that the frp library can be depended on by UI components and other reusable modules where saving bytes is a priority
 - performant enough for most use cases, including complex DOM UIs, games, webgl, canvas, etc, never compromising on the goal of expressive grammar, some wiggle room on byte size, and some reasonable compromise on the clean, expressive internal implementation if it is truly necessary for dramatic performance gains. My opinion is that accurate, expressive code can also be performant code in many cases. *Considerable work ***may*** need to done in the implementation to accomplish this - performance has not yet been measured and explored.*
 
+## TODO
+- more operators are needed asap, especially related to performing async functions
+- settle on an api/strategy for deriving new moments of time from a single moment  - i.e. Occurrence(List) into List(Occurrence)
+- examples for common real-life situations
+- probably document Emitter
+- performance benchmarking and optimization
+
 ## Install
 
 ```sh
@@ -725,11 +732,61 @@ const b3Again = Behavior.chain (v => v) (bb3)
 b3.sample === b3Again.sample() // true
 ```
 
+#### `Behavior.proxy`
+
+`Behavior.proxy()`
+
+Like [`Event.proxy`](#EventProxy), but for a behavior and must mirror a behavior.
+
 ### Dynamic
 
 A dynamic is a behavior that changes discretely with an event of its updates. It can be practical to think of it as an event with memory, though it would be more appropriate to think of a Dynamic as a reactive value. A `first_name_update` is an event, while a `first_name` is a reactive value and so should be modeled as a Dynamic. You can pass a dynamic to a function that takes a behavior and it will work, because it is a behavior. For functions that take an event, you can pass the [`updates`](#DynamicUpdates) property of the dynamic.
 
 The relationship of the event and behavior composing the dynamic is not arbitrary. The event should be occurring with the value of the behavior at the time of occurrence, and the value of the behavior can only change if the update event occurs. Therefore, if transforming the behavior of a dynamic, the event must be [pointed to the transformed behavior](#EventTag) and if transforming the event of a dynamic, the behavior must [always reflect the latest value from the event](#DynamicHold).
+
+#### `Dynamic.hold`
+
+`Dynamic.hold (initialValue) (event)`
+
+Turns an event into a dynamic whose value starts as `initialValue` and updates to the occurrence value of the event when it occurs.
+
+#### `Dynamic.updates`
+
+`Dynamic.updates (dynamic)`
+
+Returns the update event of the dynamic. You also also do this simply by accessing the `.updates` on a dynamic - `dynamic.updates`.
+
+#### `Dynamic.filter`
+
+`Dynamic.filter (predicate) (dynamic)`
+
+Like [`Event.filter`](#EventFilter), but takes a dynamic and returns a dynamic that will only update if the input dynamic's update occurrence value passes the predicate.
+
+#### `Dynamic.map`
+
+`Dynamic.map (a => b) (dynamic)`
+
+Like [`Behavior.map`](#BehaviorMap).
+
+#### `Dynamic.lift`
+
+`Dynamic.lift ((...values) => result) ([ ...behaviors ])`
+
+Like [`Behavior.lift`](#BehaviorLift).
+
+#### `Dynamic.lift2 (a => b => c) (a) (b)`
+
+Like [`Behavior.lift2`](#BehaviorLift2).
+
+#### `Dynamic.fold`
+
+`Dynamic.fold (currentValue => occurrenceValue => newValue) (initialValue) (event)`
+
+#### `Dynamic.proxy`
+
+`Dynamic.proxy()`
+
+Like [`Event.proxy`](#EventProxy) and [`Behavior.proxy`](#BehaviorProxy), but for a dynamic and must mirror a dynamic.
 
 ## Concepts
 
