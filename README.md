@@ -346,7 +346,7 @@ Event.mergeAllWith
 
 `Event.mergeAll ({ ...events })`
 
-Convenience for [`Event.mergeAllWith`](#EventMergeAllWith)` (identity)`.
+Convenience for [`Event.mergeAllWith`](#EventMergeAllWith)`(identity)`.
 
 ```js
 Event
@@ -727,9 +727,9 @@ b3.sample === b3Again.sample() // true
 
 ### Dynamic
 
-A dynamic is a behavior that changes discretely with an event of its updates. It can be practical to think of it as an event with memory, though it would be more appropriate to think of a Dynamic as a reactive value. A `first_name_update` is an event, while a `first_name` is a reactive value and so should be modeled as a Dynamic. You can pass a dynamic to a function that takes a behavior and it will work, because it is a behavior. For functions that take an event, you can pass the `[updates](#Dynamic.updates)` property of the dynamic.
+A dynamic is a behavior that changes discretely with an event of its updates. It can be practical to think of it as an event with memory, though it would be more appropriate to think of a Dynamic as a reactive value. A `first_name_update` is an event, while a `first_name` is a reactive value and so should be modeled as a Dynamic. You can pass a dynamic to a function that takes a behavior and it will work, because it is a behavior. For functions that take an event, you can pass the [`updates`](#DynamicUpdates) property of the dynamic.
 
-The relationship of the event and behavior composing the dynamic is not arbitrary. The event should be occurring with the value of the behavior at the time of occurrence, and the value of the behavior can only change if the update event occurs. Therefore, if transforming the behavior of a dynamic, the event must be [pointed to the transformed behavior](#EventTag) and if transforming the event of a dynamic, the behavior must [always reflect the latest value from the event](#Dynamic.hold).
+The relationship of the event and behavior composing the dynamic is not arbitrary. The event should be occurring with the value of the behavior at the time of occurrence, and the value of the behavior can only change if the update event occurs. Therefore, if transforming the behavior of a dynamic, the event must be [pointed to the transformed behavior](#EventTag) and if transforming the event of a dynamic, the behavior must [always reflect the latest value from the event](#DynamicHold).
 
 ## Concepts
 
