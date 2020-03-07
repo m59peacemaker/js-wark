@@ -63,9 +63,9 @@ This is code derived from the words describing the goal and can be read similarl
 
 "Count is the accumulation from 0, the (combination) of: increment being 1 and decrement being -1"
 
-But accurate and decent grammar aside - what I hope will come to be appreciated is that every word - **every expression** used is a value that can removed, replaced, passed around, and composed on, **independently** of every other value, anywhere, and all compositions can be understood fully according to their inputs and nothing else.
+Accurate and decent grammar aside - what I hope will come to be appreciated is that every word - **every expression** used is a value that can removed, replaced, passed around, and composed on, **independently** of every other value, anywhere, and all compositions can be understood fully according to their inputs and nothing else.
 
-Using not only understandable, meaningful grammar, but grammar with composable semantics, obeying the principle of [compositionality](#compositionality), is paramount for preventing ballooning complexity.
+Using understandable, meaningful grammar with composable semantics and obeying the principle of [compositionality](#compositionality) is paramount for preventing ballooning complexity.
 
 ### compositionality
 
