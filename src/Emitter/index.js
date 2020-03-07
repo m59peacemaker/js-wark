@@ -40,21 +40,17 @@ const DerivedEmitter = (dependencies_source, fn = forward) => {
 	}
 }
 
-const create = Emitter
+export const create = Emitter
 
-// TODO:
-// turn your push based types into a type implementing Observable, transduce it, convert back to your type. You could use a helper like `Emitter.asObservable(tranduceStuff)` that takes and returns an Emitter, but converts to and from Observable to interop with the given fn
-// const asObservable = fnOnObservable =>  emitter => fromObservable(fnOnObservable(toObservable(emitter)))
+export const concatAll = emitters => DerivedEmitter(emitters)
 
-const concatAll = emitters => DerivedEmitter(emitters)
+export const concat = a => b => concatAll([ a, b ])
 
-const concat = a => b => concatAll([ a, b ])
+export const map = f => emitter => DerivedEmitter([ emitter ], (emit, { value }) => emit(f(value)))
 
-const map = f => emitter => DerivedEmitter([ emitter ], (emit, { value }) => emit(f(value)))
+export const constant = v => map (() => v)
 
-const constant = v => map (() => v)
-
-const fold = reducer => acc => emitter => DerivedEmitter(
+export const fold = reducer => acc => emitter => DerivedEmitter(
 	[ emitter ],
 	(emit, { value }) => {
 		acc = reducer (value) (acc)
@@ -62,21 +58,21 @@ const fold = reducer => acc => emitter => DerivedEmitter(
 	}
 )
 
-const filter = predicate => emitter => DerivedEmitter([ emitter ], (emit, { value }) => predicate(value) && emit(value))
+export const filter = predicate => emitter => DerivedEmitter([ emitter ], (emit, { value }) => predicate(value) && emit(value))
 
-const flatMap = f => emitter => DerivedEmitter(fold (v => acc => acc.concat(f(v))) ([]) (emitter))
+export const flatMap = f => emitter => DerivedEmitter(fold (v => acc => acc.concat(f(v))) ([]) (emitter))
 
-const flatten = flatMap (identity)
+export const flatten = flatMap (identity)
 
-const switchMap = f => emitter => DerivedEmitter(map (v => [ f(v) ]) (emitter))
+export const switchMap = f => emitter => DerivedEmitter(map (v => [ f(v) ]) (emitter))
 
-const switchLatest = switchMap (identity)
+export const switchLatest = switchMap (identity)
 
-const recentN = n => fold
+export const recentN = n => fold
 	(v => acc => [ ...acc.slice(Math.max(0, acc.length - n + 1)), v ])
 	([])
 
-const bufferTo = notifier => source => {
+export const bufferTo = notifier => source => {
 	const bufferedValues = []
 	const dependencies = [
 		notifier,
@@ -89,7 +85,7 @@ const bufferTo = notifier => source => {
 	return DerivedEmitter(dependencies, (emit, { index, value }) => handlers[index](value, emit))
 }
 
-const createProxy = ({ create, switchLatest, push }) => {
+export const createProxy = ({ create, switchLatest, push }) => {
 	const dependency = create()
 	const e = switchLatest (dependency)
 	const mirror = me => {
@@ -99,32 +95,4 @@ const createProxy = ({ create, switchLatest, push }) => {
 	return Object.assign(e, { mirror })
 }
 
-const proxy = () => createProxy ({ create, switchLatest, push: 'emit' })
-
-// const bufferN = n => startEvery => source => {
-// 	return filter
-// 		(buffer => buffer.length === n)
-// 		(snapshot (identity) (Behavior.bufferN (n) (startEvery) (source)) (source))
-// }
-
-// const pairwise = bufferN (2) (1)
-
-// const snapshot = fn => behavior => emitter => map (value => fn(behavior.sample(), value)) (emitter)
-
-export {
-	concat,
-	concatAll,
-	constant,
-	create,
-	createProxy,
-	filter,
-	flatMap,
-	flatten,
-	map,
-	proxy,
-	recentN,
-	fold,
-	switchMap,
-	switchLatest,
-	bufferTo
-}
+export const proxy = () => createProxy ({ create, switchLatest, push: 'emit' })
