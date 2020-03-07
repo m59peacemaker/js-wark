@@ -12,7 +12,7 @@ const Behavior = f => {
 
 export const create = Behavior
 
-export const of = value => create(() => value)
+export const constant = value => create(() => value)
 
 export const chain = f => b => create(t => f(b.sample(t)).sample(t))
 
