@@ -39,7 +39,10 @@ Well, that was underwhelming! You could say we learned 'zero' about what a count
 Next is an approach using a currently popular style of state management, and represents a paradigm found through many libraries and frameworks:
 
 ```js
-const [count, dispatch] = useReducer((count, event) => add(count, { increment: 1, decrement: -1 }[event]), 0)
+const [count, dispatch] = useReducer(
+	(count, event) => add(count, { increment: 1, decrement: -1 }[event]),
+	0
+)
 ```
 
 There is certainly more information here - I would even say it does fully define the counter, and we are able to gain a complete (in a sense, anyway) understanding of this expression by reading it alone. These are good things. However, there are issues in how this is expressed. Words such as `dispatch` and `useReducer` may be things that you know how to use in this context, but they don't mean anything otherwise. I urge you to consider whether, when asked what a counter is, and remembering that you must be thoroughly accurate and technical, if any answer you'd ever give would say something like `useReducer` or `dispatch`. Moreover, consider how you could define what `useReducer` and `dispatch` mean, without saying something about how to write code using them.
@@ -110,7 +113,7 @@ const countChanges = Event.concatAll ([
 // fold the countChanges across time by adding them to the current value
 const count = Dynamic.fold (add) (0) (countChanges)
 
-// called immediately with the current value (0) and when the value is updated.
+// called immediately with the current value (0) and when the value is updated
 count.subscribe(console.log)
 
 // called only when the value is updated
@@ -218,21 +221,29 @@ clicks // [ click, click, click ]
 
 The above example refers to the idea of an Event being a list across time, but has no grammar for directly expressing and composing with it. In the same way that a `Promise` provides a reference to the idea of "a value later" that you can compose with now, `Event` provides a reference to the idea of "possibly an occurrence later, and again later, and again later" and so on, and you can compose that idea into other reactive ideas, such as keeping up with how many times the user has clicked the button. You may think of an Event as an emitter emitting values, but with some improved semantics for composition, and we prefer to talk of `occurrence` rather than `emit` because it accords with the higher level meaning of the application and not with the lower level implementation details.
 
-##### `Event.create()`
+##### `Event.create````
+
+`Event.create()`
 
 This creates an event object that you can you use to push values out to subscribers and more commonly, through reactive expressions composed from it.
 
 The event created here could more specifically be known as a *Source Event* - as its `.occur()` function introduces an occurrence to the expressions composed from it, whereas events composed from other events do not have this function. Events composed from other events are *Derived Events*.
 
-##### `event.occur(occurrenceValue)`
+##### `event.occur`
+
+`event.occur(occurrenceValue)`
 
 This is the equivalent on emitters of `emit`. It introduces a moment of time into the reactive graph you've composed from this event, sending the occurrence value along. In some cases the occurrence value would intuitively be called a *description* of the event occurrence and other times it is a more arbitrary seeming value, such as a number, if any value at all. *Occurrence value*, or just *value* for short, seems a good term to use in general, though I still find *occurrence description* and *occurrence information* to be worth mentioning.
 
-##### `event.subscribe(occurrenceValue => {})`
+##### `event.subscribe`
+
+`event.subscribe(occurrenceValue => {})`
 
 Any event may be subscribed to, and the given subscriber function will be called with the occurrence value of the event when it occurs.
 
-##### `event.t()`
+##### `event.t`
+
+`event.t()`
 
 This is a property of event bound to confuse some and anger other folks. It exists for some purposes of practicality and possibly is not needed other than for debugging, testing, and internal implementation details.
 
@@ -293,7 +304,9 @@ clicks.sample() // [ 'click1', 'click3' ]
 
 #### Combining
 
-##### `Event.combineAllWith (occurrences => combinedValue) ([ ...events ])`
+##### `Event.combineAllWith`
+
+`Event.combineAllWith (occurrences => combinedValue) ([ ...events ])`
 
 This is the lowest level and least convenient way to combine events, but provides the most information and compositional possibilities. All other combining functions are derived from this. It takes a function and an array of events. The function receives an object desciribng what has occurred. The object keys correspond to the index of the events as given in the input array. If the event occurred at this moment, its index will be a key on the object, with its occurrence value as the value for that key. This allows you to examine the object to determine whether/what events occurred at the moment with what values and produce a single value for the combined event. If this is very confusing, you may want to refer back to the section about [event simultaneity](#event-simultaneity).
 
@@ -313,7 +326,9 @@ Event.combineAllWith
 
 Do not assume that `o[0] === undefined` means the first given event did not occur - the event may have just occurred with the value `undefined`, so the object looks like `{ 0: undefined }` (not considering any other events that may have occurred simultaneously and would therefore have properties on the object as well). You must check whether the object has key `0` to know whether the event given at `0` occurred.
 
-##### `Event.mergeAllWith (occurrences => combinedValue) ({ ...events })`
+##### `Event.mergeAllWith`
+
+`Event.mergeAllWith (occurrences => combinedValue) ({ ...events })`
 
 Like [`Event.combineAllWith`](#Event-combineAllWith), but takes an object of events, and passes an object of occurrences to the given function, where **occurrences of an event have the same key as the event in the input object**.
 
@@ -327,7 +342,9 @@ Event.mergeAllWith
 	({ eventA, eventB, eventC })
 ```
 
-##### `Event.mergeAll ({ ...events })`
+##### `Event.mergeAll`
+
+`Event.mergeAll ({ ...events })`
 
 Convenience for `[Event.mergeAllWith](#Event-mergeAllWith) (identity)`.
 
@@ -340,7 +357,9 @@ Event
 	})
 ```
 
-##### `Event.combine (whenA) (whenB) (whenAB) (a) (b)`
+##### `Event.combine`
+
+`Event.combine (whenA) (whenB) (whenAB) (a) (b)`
 
 Combine two events using a function to determine the combined occurrence value for each possible scenario of event simultaneity.
 `whenA` will be used when event `a` occurs and event `b` does not. `(a => occurrenceValue)`
@@ -356,17 +375,23 @@ Event.combine
 	(eventB)
 ```
 
-##### `Event.concat (a) (b)`
+##### `Event.concat`
+
+`Event.concat (a) (b)`
 
 `Event.concat` simply combines the given events and will throw an error if they ever occur simultaneously. This provides a way to combine events that is semantically comparable to concat on lists, as an event is a list of occurrences across time, except for when events occur simultaneously, in which case the value of the event is a list of simultaenous occurrences, rather than the typical value just being a single occurrence. It is generally good to be able to compose events (or anything) without having to know the expressions that created them, for example, if you had an event `timeToEatLunch`, it has enough meaning on its own for you to compose it into the eating of a delicious sandwich without needing to know how `timeToEatLunch` came to be. Therefore, it is preferable when combining events if you don't need to know whether they may occur simultaneously, but that also means you can't truly acheive semantic parity with lists/arrays. The idea here is that you can attempt to concat events as though they will always be simply lists of occurrence, and should they in fact ever be the other type - lists of list of simultaneous occurrences, then an error will be thrown and you will discover that the events you used are not compatible with this operator. It's a bit awkward, but seems a reasonable compromise for the sake of being able to operate generically on events as lists.
 
 TODO: Further discuss list across time of a list of simultaenous occurrences vs list across time of occurrence somewhere in the docs, in improve the wording (and length, phew) above.
 
-##### `Event.concatAll ([ ...events ])`
+##### `Event.concatAll`
+
+`Event.concatAll ([ ...events ])`
 
 `Event.concat` but takes an array of events to combine.
 
-##### `Event.leftmost ([ ...events ])`
+##### `Event.leftmost`
+
+`Event.leftmost ([ ...events ])`
 
 Lazy, practical description:
 Use this when you want combine events and don't care about the occurence value or are fine with the occurrence value being based on the order the events are given in the input array.
@@ -379,7 +404,9 @@ Combines events such that the resulting event will have the occurrence value of 
 
 #### Forward References
 
-##### `Event.proxy()`
+##### `Event.proxy`
+
+`Event.proxy()`
 
 Returns an event proxy that can be passed to functions that take an event, for cases where the actual event you'd like to pass has not yet been created. When the event reference that the proxy represents is available, call `proxy.mirror(thatEvent)` to make the proxy behave as though it is that event.
 
@@ -407,7 +434,9 @@ const event = proxy.mirror(Event.create())
 
 #### Transforming
 
-##### Event.map (a => b) (event)
+##### `Event.map`
+
+`Event.map (a => b) (event)`
 
 Takes a function and an event and returns an event whose occurrence value is transformed by the given function.
 
@@ -417,7 +446,9 @@ const doubledEvent = Event.map (v => v * 2) (numberEvent)
 numberEvent.occur(2) // doubledEvent occurs with a value of 4
 ```
 
-##### Event.constant (value) (event)
+##### `Event.constant`
+
+`Event.constant (value) (event)`
 
 Takes an event and returns an event whose occurence value is always the given value.
 
@@ -428,7 +459,9 @@ fooEvent.occur('foo') // barEvent occurs with value 'bar'
 fooEvent.occur('whatever') // barEvent occurs with value 'bar'
 ```
 
-##### Event.filter (predicate) (event)
+##### `Event.filter`
+
+`Event.filter (predicate) (event)`
 
 Takes an event and returns an event that will not occur unless the occurence value of the given event passes the predicate function.
 
@@ -446,7 +479,9 @@ Flattening functions are for the case that the occurence value of an event is it
 
 The reason such composition is helpful and necessary is that it means reactive compositions can themselves be reactively created and used and switched out - reactive expressions can construct reactive expressions reactively.
 
-##### Event.switchMap (v => event) (event)
+##### `Event.switchMap`
+
+`Event.switchMap (v => event) (event)`
 
 `Event.switcMap` takes a function and an event, and like `Event.map`, passes the function the occurrence value of the input event. The function must return an event. The resulting event will occur with the occurrences of the event returned from the function, always switching to the returned event each time the input event occurs.
 
@@ -466,7 +501,9 @@ b.occur(7)
 a.occur(4) // selectedEvent occurs with a value of 4
 ```
 
-##### Event.switchLatest (event)
+##### `Event.switchLatest`
+
+`Event.switchLatest (event)`
 
 Convenience function for `switchMap (identity)`. It would be simply called `switch`, but that is a reserved word in JavaScript. `swoosh`, `sandwich`, and `$witch` were considered.
 
@@ -487,7 +524,9 @@ a.occur(4) // selectedEvent occurs with a value of 4
 
 #### Composing with Behaviors
 
-##### `Event.snapshot (behaviorValue => occurrenceValue => newOccurrenceValue) (behavior) (event)`
+##### `Event.snapshot`
+
+`Event.snapshot (behaviorValue => occurrenceValue => newOccurrenceValue) (behavior) (event)`
 
 This is the lowest level way that you should associate a behavior's value with an event occurrence. Snapshot means deriving an event from a behavior at the time of a given event.
 Takes a function, a behavior, and an event, and returns an event that occurs when the input event occurs. The given behavior's current value and the given event's occurrence value are passed to the function and it returns the occurrence value for the derived event.
@@ -502,7 +541,9 @@ randomInt.sample(keyEvent.t()) // 3
 // so when keyEvent occured, snapshotEvent occurred with a value of { foo: 3 }
 ```
 
-##### `Event.attach (behavior) (event)`
+##### `Event.attach`
+
+`Event.attach (behavior) (event)`
 
 This is a convenience for snapshotting a behavior using a function that returns the event occurrence value and the behavior value in an array.
 
@@ -514,7 +555,9 @@ randomInt.sample(keyEvent.t()) // 3
 keyEvent.occur('foo') // attachEvent occurs with [ 'foo', 3 ]
 ```
 
-##### `Event.tag (behavior) (event)`
+##### `Event.tag`
+
+`Event.tag (behavior) (event)`
 
 This is a convenience for snapshotting a behavior using a function that just returns the behavior's value. In other words, it takes an event and a behavior and makes an event that occurs with the value of the behavior.
 
@@ -563,11 +606,15 @@ d # 1 (2 - 1)
 
 Behaviors integrate with the frp system to avoid this kind of inconsistency.
 
-#### Behavior.create(() => value)
+#### `Behavior.create`
+
+`Behavior.create(() => value)`
 
 Just put your time-varying function here and get a behavior.
 
-#### Behavior.sample(t)
+#### `Behavior.sample
+
+`Behavior.sample(t)`
 
 You may want to learn about the `t` value that can be used in `sample(t)`, which is detailed under [`event.t()`](#event-t). Otherwise, don't worry about it and things will *probably* be ok. Just avoid directly calling `sample()`.
 
@@ -597,7 +644,9 @@ someEvent.t() === eventOfRandom.t() === discreteRandom.t()
 random.sample() === discreteRandom.sample()
 ```
 
-#### `Behavior.constant (value)`
+#### `Behavior.constant`
+
+`Behavior.constant (value)`
 
 Creates a behaviors whose value is always the same.
 
@@ -610,7 +659,9 @@ three.sample(tomorrow) // 3
 three.sample(oneEternityLater) // 3
 ```
 
-#### `Behavior.map (a => b) (behavior)`
+#### `Behavior.map`
+
+`Behavior.map (a => b) (behavior)`
 
 Takes a function and a behavior and returns a behavior whose value is transformed by the given function.
 
@@ -621,7 +672,9 @@ n.sample() 2
 doubleN.sample() 4
 ```
 
-#### `Behavior.lift ((...values) => result) ([ ...behaviors ])`
+#### `Behavior.lift`
+
+`Behavior.lift ((...values) => result) ([ ...behaviors ])`
 
 Takes an nAry function and an array of behaviors and returns a behavior whose value is the result of the function called with the values of the input behaviors.
 
@@ -632,7 +685,9 @@ const nC = Behavior.lift ((a, b) => a + b) ([ nA, nB ])
 nC.sample() // 5
 ```
 
-#### `Behavior.lift2 (a => b => c) (a) (b)`
+#### `Behavior.lift2`
+
+`Behavior.lift2 (a => b => c) (a) (b)`
 
 Like [`Behavior.lift`](#Behavior.lift), but takes two behaviors one at a time and passes them to the function one at a time.
 
@@ -643,7 +698,10 @@ const nC = Behavior.lift2 (a => b => a + b) (nA) (nB)
 nC.sample() // 5
 ```
 
-#### `Behavior.apply (behavior_of_function) (behavior_of_value)`
+#### `Behavior.apply`
+
+`Behavior.apply (behavior_of_function) (behavior_of_value)`
+
 Takes a behavior whose value is a function and another behavior and calls the function from the first behavior with the value of the second behavior.
 
 ```js
@@ -653,7 +711,9 @@ const arrayOfEvenNumbers = Behavior.apply (filterEven) (arrayOfNumbers)
 arrayOfEventNumbers.sample() // [ 2, 4 ]
 ```
 
-#### `Behavior.chain (value => behavior) (behavior)`
+#### `Behavior.chain`
+
+`Behavior.chain (value => behavior) (behavior)`
 
 Takes a function and a behavior, where the function takes the value from that behavior and returns a behavior, and returns a behavior that has the value of the behavior returned from the function.
 It may be easiest to understand this by imagining the scenario that the input behavior's value is also a behavior, and the function just returns that inner behavior, and the result is a behavior with the value of that inner behavior, so `Behavior(Behavior(3))` becomes `Behavior(3)`. This is the behavior equivalent of `flatMap` on arrays.
@@ -667,7 +727,9 @@ b3.sample === b3Again.sample() // true
 
 ### Dynamic
 
+A dynamic is a behavior that changes discretely with an event of its updates. It can be practical to think of it as an event with memory, though it would be more appropriate to think of a Dynamic as a reactive value. A `first_name_update` is an event, while a `first_name` is a reactive value and so should be modeled as a Dynamic. You can pass a dynamic to a function that takes a behavior and it will work, because it is a behavior. For functions that take an event, you can pass the `[updates](#Dynamic.updates)` property of the dynamic.
 
+The relationship of the event and behavior composing the dynamic is not arbitrary. The event should be occurring with the value of the behavior at the time of occurrence, and the value of the behavior can only change if the update event occurs. Therefore, if transforming the behavior of a dynamic, the event must be [pointed to the transformed behavior](#Event.tag) and if transforming the event of a dynamic, the behavior must [always reflect the latest value from the event](#Dynamic.hold).
 
 ## Concepts
 
@@ -850,13 +912,6 @@ a = 1
 ```
 
 [Reactive Progamming Glitches on Wikiepdia](https://en.wikipedia.org/wiki/Reactive_programming#Glitches)
-
-### Dynamic
-
-A dynamic is a behavior that changes discretely with an event of its updates. It can be practical to think of it as an event with memory, though it would be more appropriate to think of a Dynamic as a reactive value. A `first_name_update` is an event, while a `first_name` is a reactive value and so should be modeled as a Dynamic. You can pass a dynamic to a function that takes a behavior and it will work, because it is a behavior. For functions that take an event, you can pass the `[updates](#Dynamic.updates)` property of the dynamic.
-
-The relationship of the event and behavior composing the dynamic is not arbitrary. The event should be occurring with the value of the behavior at the time of occurrence, and the value of the behavior can only change if the update event occurs. Therefore, if transforming the behavior of a dynamic, the event must be [pointed to the transformed behavior](#Event.tag) and if transforming the event of a dynamic, the behavior must [always reflect the latest value from the event](#Dynamic.hold).
-
 
 ## Comparing approaches to reactive programming
 
