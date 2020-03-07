@@ -26,11 +26,11 @@ Let's look at some expressions of the same goal - a simple counter.
 
 I will start with words, stating what I believe this counter **is**, making no consideration of how it should be written as code.
 
-The counter is the accumulation across time of changes to the counter value, which is initially 0.
-By "accumulation", I mean taking each change and adding it to the counter value at the time of the change.
-By "change", I mean that there is an "increment" event and there is a "decrement" event.
-Each occurrence of "increment" should mean +1
-Each occurrence of "decrement" should mean -1
+- The counter is the accumulation across time of changes to the counter value, which is initially 0.
+- By "accumulation", I mean taking each change and adding it to the counter value at the time of the change.
+- By "change", I mean that there is an "increment" event and there is a "decrement" event.
+- Each occurrence of "increment" should mean +1
+- Each occurrence of "decrement" should mean -1
 
 Here is how you would start to make a counter in many approaches:
 
@@ -49,7 +49,7 @@ const [count, dispatch] = useReducer(
 )
 ```
 
-There is certainly more information here - I would even say it does fully define the counter, and we are able to gain a complete (in a sense, anyway) understanding of this expression by reading it alone. These are good things. However, there are issues in how this is expressed. Words such as `dispatch` and `useReducer` may be things that you know how to use in this context, but they don't mean anything otherwise. I urge you to consider whether, when asked what a counter is, and remembering that you must be thoroughly accurate and technical, if any answer you'd ever give would say something like `useReducer` or `dispatch`. Moreover, consider how you could define what `useReducer` and `dispatch` mean, without saying something about how to write code using them.
+There is certainly more information here - I would even say it does fully define the counter, and we are able to gain a complete (in a sense) understanding of this expression by reading it alone. These are good things. However, there are issues. Words such as `dispatch` and `useReducer` may be things that you know how to use in this context, but they don't mean anything otherwise. I urge you to consider whether, when asked what a counter is, and remembering that you must be thoroughly accurate and technical, if any answer you'd ever give would say something like `useReducer` or `dispatch`. Moreover, consider how you could define what `useReducer` and `dispatch` mean, without saying something about how to write code using them.
 
 Issues of meaning and grammar aside, the greatest failure in this approach is that `dispatch` is on the left hand side, but affects the behavior of the right hand side - the composition that created it. `dispatch` is sent out into the world to implicitly affect the expression it is derived from, whereas functional compositionality requires that it be a value explicity passed into the expression. The occurrences of "increment" and "decrement" are implicit. There is no expression in this approach that refers to their actual occurrence. Consider something like a promise or an emitter. Those are examples of values that can represent something like "occurrence".
 
