@@ -1,3 +1,6 @@
+// maybe TODO: turn your push based types into a type implementing Observable, transduce it, convert back to your type. You could use a helper like `Emitter.asObservable(tranduceStuff)` that takes and returns an Emitter, but converts to and from Observable to interop with the given fn
+// const asObservable = fnOnObservable =>  emitter => fromObservable(fnOnObservable(toObservable(emitter)))
+
 on Behavior vs IO, what is a behavior
 const click = Event()
 const random = Behavior.create(Math.random)
@@ -92,3 +95,11 @@ const once = emitter => f => {
 	})
 	return u
 }
+
+const bufferN = n => startEvery => source => {
+	return filter
+		(buffer => buffer.length === n)
+		(snapshot (identity) (Behavior.bufferN (n) (startEvery) (source)) (source))
+}
+
+const pairwise = bufferN (2) (1)
