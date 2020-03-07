@@ -1,15 +1,68 @@
-# wark
+#wark
 
 > avoid pain and suffering and fly around on a chocobo or something
 
 ![Wark!](https://user-images.githubusercontent.com/4369247/33407500-42f7d608-d537-11e7-9754-1ef262f9d6ad.png)
 
+- [Why?](#Why)
 - [Goals](#goals)
 - [Install](#install)
 - [Quick Start](#quick-start)
 - [API](#API)
 - [Concepts](#concepts)
 - [Comparing approaches to reactive programming](#comparing-approaches-to-reactive-programming)
+
+## Why?
+
+Because coordinating events and values that change with code is an often unwieldy, intellectually-painful task for a human, and we should prefer to tell machines how to do it for us with words we would use among friends... albeit technical, pedantic friends.
+
+Also, these fancy human words should have some qualities that let them roll off the tongue for hours on in without causing us to go mute at some point. I was trying to get to the point that we want to avoid complexity walls, but my analogy didn't work out. HELP WANTED: good analogy.
+
+Let's look at some expressions of the same goal - a simple counter.
+
+I will start with words, stating what I believe this counter **is**, making no consideration of how it should be written as code.
+
+The counter is the accumulation across time of changes to the counter value, which is initially 0.
+By "accumulation", I mean taking each change and adding it to the counter value at the time of the change.
+By "change", I mean that there is an "increment" event and there is a "decrement" event.
+Each occurrence of "increment" should mean +1
+Each occurrence of "decrement" should mean -1
+
+Here is how you would start to make a counter in many approaches:
+
+```js
+let count = 0
+```
+
+Well, that was underwhelming! You could say we learned 'zero' about what a counter is.
+
+Next is an approach using a currently popular style of state management, and represents a paradigm found through many libraries and frameworks:
+
+```js
+const [count, dispatch] = useReducer((count, event) => add(count, { increment: 1, decrement: -1 }[event]), 0)
+```
+
+There is certainly more information here - I would even say it does fully define the counter, and we are able to gain a complete (in a sense, anyway) understanding of this expression by reading it alone. These are good things. However, there are issues in how this is expressed. Words such as `dispatch` and `useReducer` may be things that you know how to use in this context, but they don't mean anything otherwise. I urge you to consider whether, when asked what a counter is, and remembering that you must be thoroughly accurate and technical, if any answer you'd ever give would say something like `useReducer` or `dispatch`. Moreover, consider how you could define what `useReducer` and `dispatch` mean, without saying something about how to write code using them.
+
+Issues of meaning and grammar aside, the greatest failure in this approach is that `dispatch` is on the left hand side, but affects the behavior of the right hand side - the composition that created it. `dispatch` is sent out into the world to implicitly affect the expression it is derived from, whereas functional compositionality requires that it be a value explicity passed into the expression. The occurrences of "increment" and "decrement" are implicit. There is no expression in this approach that refers to their actual occurrence. Consider something like a promise or an emitter. Those are examples of values that can represent something like "occurrence".
+
+Here is how the counter is expressed using the functional reactive style of this library:
+
+```js
+const count = accumulateFrom (0) (concatAll ([ constant (1) (increment), constant (-1) (decrement) ]))
+```
+
+This is simply code derived from the words describing the goal and can be read similarly:
+
+"Count is the accumulation from 0, the (combination) of: increment being 1 and decrement being -1"
+
+But accurate and decent grammar aside - what I hope will come to be appreciated is that every word - **every expression** used is a value that can removed, replaced, passed around, and composed on, **independently** of every other value, anywhere, and all compositions can be understood fully according to their inputs and nothing else.
+
+Using not only understandable, meaningful grammar, but grammar with composable semantics, obeying the principle of [compositionality](#compositionality), is paramount for preventing ballooning complexity.
+
+### compositionality
+
+Compositionality is the principle that the meaning of an expression is determined by the meanings of its constituent expressions and the rules used to combine them.
 
 ## Goals
 
@@ -356,7 +409,7 @@ const event = proxy.mirror(Event.create())
 
 ##### Event.map (a => b) (event)
 
-Takes an event and returns an event whose occurrence value is transformed by the given function.
+Takes a function and an event and returns an event whose occurrence value is transformed by the given function.
 
 ```js
 const numberEvent = Event.create()
@@ -475,15 +528,150 @@ keyEvent.occur('foo') // tagEvent occurs with 3
 
 ### Behavior
 
-Behaviors in this library are simply wrappers around impure functions, modeling the concept of [*continuous time*](#continuous-time) or *resolution-independent* values. At some point (aka time) such a value has to be sampled, the result being a time/resolution dependent value. In the event-relative-time world of FRP, any time that you would 
+#### conceptually
 
-#### Continuous Time
+A Behavior is a function across time; simply `currentTime => valueForTheCurrentTime`. Because you call a function at some time, you can think of the function call as the "time" and so the function is `() => valueForTheCurrentTime`; a function that returns a changing value. However, if it were possible to call this function twice at the exact same time (as in [event simultaneity](#event-simultaneity)) the result must be the same, because the time is the same, and a behavior is a function from time to value at that time. A behaviors samples at the same time must have the same value.
 
-[Why program with continuous time?](http://conal.net/blog/posts/why-program-with-continuous-time)
+#### practically
+
+It could be helpful to think of a behavior as a pull-based value, whereas an event occurrence is push-based.
+
+Behaviors are used to model [*continuous time*](#continuous-time) or *resolution-independent* values. Read more: [Why program with continuous time?](http://conal.net/blog/posts/why-program-with-continuous-time). At some point (aka time) such a value has to be sampled; the result being a time/resolution dependent value. In the event-relative-time world of FRP, any time that you would sample a behavior is the time of an event occurrence, so use a behavior, at some point, you will take an event and a behavior and create an event that samples and occurs with the behavior value (or something derived from it). See [`snapshot`](#snapshot).
+
+A Behavior is just a type for composing an impure function call that operates efficiently and consistently within the FRP system. For example, if you create a behavior based on `Math.random` and its value is checked multiple times within a moment (propagation from an `event.occur`), the behavior will be passed the same unique value each time it is checked, so that its value can be cached and reused within that moment.
+
+```
+a = randomInt(0, 5)
+b = a
+c = a + 1
+d = a - 1
+
+a # 3
+b # 3
+c # 4 (3 + 1)
+d # 2 (3 - 1)
+```
+
+Without behavior computation caching, the computation would run each time the value is checked, potentially producing a different value for dependants in the same moment.
+
+```
+a # 3
+b # 5
+c # 2 (1 + 1)
+d # 1 (2 - 1)
+```
+
+Behaviors integrate with the frp system to avoid this kind of inconsistency.
+
+#### Behavior.create(() => value)
+
+Just put your time-varying function here and get a behavior.
+
+#### Behavior.sample(t)
+
+You may want to learn about the `t` value that can be used in `sample(t)`, which is detailed under [`event.t()`](#event-t). Otherwise, don't worry about it and things will *probably* be ok. Just avoid directly calling `sample()`.
+
+```js
+// high level stuff
+// make a behavior of Math.random and compose events and dynamics with it
+const random = Behavior.create(Math.random)
+const someEvent = Event.create()
+const eventOfRandom = Event.tag (random) (someEvent)
+const discreteRandom = Dynamic.hold (random.sample()) (eventOfRandom)
+
+// low level stuff
+random.sample() === discreteRandom.sample() // true
+
+random.sample(Symbol()) // tells the behavior time has moved forward
+
+// false, because eventOfRandom did not occur and cause discreteRandom to update
+random.sample() === discreteRandom.sample()
+
+someEvent.occur()
+
+// true because these all just occurred at the same time
+someEvent.t() === eventOfRandom.t() === discreteRandom.t()
+
+// true because someEvent.occur caused time to move forward
+// and discreteRandom updated at that time
+random.sample() === discreteRandom.sample()
+```
+
+#### `Behavior.constant (value)`
+
+Creates a behaviors whose value is always the same.
+
+```js
+const three = Behavior.constant(3)
+
+three.sample(now) // 3
+three.sample(tonight) // 3
+three.sample(tomorrow) // 3
+three.sample(oneEternityLater) // 3
+```
+
+#### `Behavior.map (a => b) (behavior)`
+
+Takes a function and a behavior and returns a behavior whose value is transformed by the given function.
+
+```js
+const n = Behavior.constant(2)
+const doubleN = Behavior.map (v => v * 2) (n)
+n.sample() 2
+doubleN.sample() 4
+```
+
+#### `Behavior.lift ((...values) => result) ([ ...behaviors ])`
+
+Takes an nAry function and an array of behaviors and returns a behavior whose value is the result of the function called with the values of the input behaviors.
+
+```js
+const nA = Behavior.constant(2)
+const nB = Behavior.constant(3)
+const nC = Behavior.lift ((a, b) => a + b) ([ nA, nB ])
+nC.sample() // 5
+```
+
+#### `Behavior.lift2 (a => b => c) (a) (b)`
+
+Like [`Behavior.lift`](#Behavior.lift), but takes two behaviors one at a time and passes them to the function one at a time.
+
+```js
+const nA = Behavior.constant(2)
+const nB = Behavior.constant(3)
+const nC = Behavior.lift2 (a => b => a + b) (nA) (nB)
+nC.sample() // 5
+```
+
+#### `Behavior.apply (behavior_of_function) (behavior_of_value)`
+Takes a behavior whose value is a function and another behavior and calls the function from the first behavior with the value of the second behavior.
+
+```js
+const filterEven = Behavior.constant(array => array.filter(v => v % 2 === 0))
+const arrayOfNumbers = Behavior.constant([ 1, 2, 3, 4, 5 ])
+const arrayOfEvenNumbers = Behavior.apply (filterEven) (arrayOfNumbers)
+arrayOfEventNumbers.sample() // [ 2, 4 ]
+```
+
+#### `Behavior.chain (value => behavior) (behavior)`
+
+Takes a function and a behavior, where the function takes the value from that behavior and returns a behavior, and returns a behavior that has the value of the behavior returned from the function.
+It may be easiest to understand this by imagining the scenario that the input behavior's value is also a behavior, and the function just returns that inner behavior, and the result is a behavior with the value of that inner behavior, so `Behavior(Behavior(3))` becomes `Behavior(3)`. This is the behavior equivalent of `flatMap` on arrays.
+
+```js
+const b3 = Behavior.constant(3)
+const bb3 = Behavior.constant(b3) // Behavior(Behavior(3))
+const b3Again = Behavior.chain (v => v) (bb3)
+b3.sample === b3Again.sample() // true
+```
+
+### Dynamic
+
+
 
 ## Concepts
 
-TODO: this is currently a big information dump, with some coherent order and flow, but needs work. Ideas here may be redundant with ideas explained in the API section, but this has a lot of additional detailthat some may find helpful.
+TODO: this is currently a big information dump, with some coherent order and flow, but needs work. Ideas here may be redundant with ideas explained in the API section, but this has a lot of additional detail that may be helpful.
 
 ### Emitter
 
@@ -663,41 +851,6 @@ a = 1
 
 [Reactive Progamming Glitches on Wikiepdia](https://en.wikipedia.org/wiki/Reactive_programming#Glitches)
 
-### Behavior
-
-#### conceptually
-
-A Behavior is a function across time; simply `currentTime => valueForTheCurrentTime`. Because you call a function at some time, you can think of the function call as the "time" and so the function is `() => valueForTheCurrentTime`; a function that returns a changing value. However, if it were possible to call this function twice at the exact same time (as in 'event simultaneity') the result must be the same, because the time is the same, and a behavior is a function from time to value at that time. The same time must have the same value.
-
-It could be helpful to think of a behavior as a pull-based value, whereas an event occurrence is push-based.
-
-#### practically
-
-A Behavior is just a type for composing an impure function call that operates efficiently and consistently within the FRP system. For example, if you create a behavior based on `Math.random` and its value is checked multiple times within a moment (propagation from an `event.occur`), the behavior will be passed the same unique value each time it is checked, so that its value can be cached and reused within that moment.
-
-```
-a = randomInt(0, 5)
-b = a
-c = a + 1
-d = a - 1
-
-a # 3
-b # 3
-c # 4 (3 + 1)
-d # 2 (3 - 1)
-```
-
-Without behavior computation caching, the computation would run each time the value is checked, potentially producing a different value for dependants in the same moment.
-
-```
-a # 3
-b # 5
-c # 2 (1 + 1)
-d # 1 (2 - 1)
-```
-
-Behaviors integrate with the frp system to avoid this kind of inconsistency.
-
 ### Dynamic
 
 A dynamic is a behavior that changes discretely with an event of its updates. It can be practical to think of it as an event with memory, though it would be more appropriate to think of a Dynamic as a reactive value. A `first_name_update` is an event, while a `first_name` is a reactive value and so should be modeled as a Dynamic. You can pass a dynamic to a function that takes a behavior and it will work, because it is a behavior. For functions that take an event, you can pass the `[updates](#Dynamic.updates)` property of the dynamic.
@@ -706,3 +859,5 @@ The relationship of the event and behavior composing the dynamic is not arbitrar
 
 
 ## Comparing approaches to reactive programming
+
+TODO:
