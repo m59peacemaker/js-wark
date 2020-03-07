@@ -221,7 +221,7 @@ clicks // [ click, click, click ]
 
 The above example refers to the idea of an Event being a list across time, but has no grammar for directly expressing and composing with it. In the same way that a `Promise` provides a reference to the idea of "a value later" that you can compose with now, `Event` provides a reference to the idea of "possibly an occurrence later, and again later, and again later" and so on, and you can compose that idea into other reactive ideas, such as keeping up with how many times the user has clicked the button. You may think of an Event as an emitter emitting values, but with some improved semantics for composition, and we prefer to talk of `occurrence` rather than `emit` because it accords with the higher level meaning of the application and not with the lower level implementation details.
 
-##### `Event.create````
+##### `Event.create`
 
 `Event.create()`
 
@@ -330,7 +330,7 @@ Do not assume that `o[0] === undefined` means the first given event did not occu
 
 `Event.mergeAllWith (occurrences => combinedValue) ({ ...events })`
 
-Like [`Event.combineAllWith`](#Event-combineAllWith), but takes an object of events, and passes an object of occurrences to the given function, where **occurrences of an event have the same key as the event in the input object**.
+Like [`Event.combineAllWith`](#EventCombineAllWith), but takes an object of events, and passes an object of occurrences to the given function, where **occurrences of an event have the same key as the event in the input object**.
 
 ```js
 Event.mergeAllWith
@@ -346,7 +346,7 @@ Event.mergeAllWith
 
 `Event.mergeAll ({ ...events })`
 
-Convenience for `[Event.mergeAllWith](#Event-mergeAllWith) (identity)`.
+Convenience for `[Event.mergeAllWith](#EventMergeAllWith) (identity)`.
 
 ```js
 Event
