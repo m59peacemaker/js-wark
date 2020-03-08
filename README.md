@@ -80,7 +80,6 @@ Compositionality is the principle that the meaning of an expression is determine
 - performant enough for most use cases, including complex DOM UIs, games, webgl, canvas, etc, never compromising on the goal of expressive grammar, some wiggle room on byte size, and some reasonable compromise on the clean, expressive internal implementation if it is truly necessary for dramatic performance gains. My opinion is that accurate, expressive code can also be performant code in many cases. *Considerable work ***may*** need to done in the implementation to accomplish this - performance has not yet been measured and explored.*
 
 ## TODO
-- add examples for Dynamic functions in README
 - more operators are needed asap, especially related to performing async functions
 - Typescript in jsdoc
 - settle on an api/strategy for deriving new moments of time from a single moment  - i.e. Occurrence(List) into List(Occurrence)
