@@ -49,7 +49,7 @@ export const lift2 = f => d => transformBehavior (Behavior.lift2 (f) (d))
 
 export const map = f => transformBehavior (Behavior.map (f))
 
-export const filter = f => TransformEvent (Event.filter (f))
+export const filter = f => transformEvent (Event.filter (f))
 
 export const proxy = () => {
 	const e_proxy = Event.proxy()
@@ -91,3 +91,4 @@ export const bufferN = n => startEvery => event =>
 			(event)
 		)
 
+export const pairwise = bufferN (2) (1)
