@@ -33,6 +33,13 @@ x.subscribe(f)
 withinTime(x)
 withinTime(() => x)
 
+Event.of (time) ([ 1, 2, 3 ]) // Event(List(Occurrence(List(1, 2, 3)))) event with list of one occurrence with a list of 3 values
+Event.of (time) (1, 2, 3) // Event(List(Occurrence(1), Occurrence(2), Occurrence(3))) Event with a list of 3 occurrences each with one value
+const a = Event.of([ 1, 2, 3 ])
+const b = Event.chain (list => Event.of(...list)) (a)
+const c = Event.bufferN (3) (1) (b)
+const d = Event.concatAll ([ a, c ]) { time: 1, value: [ 1, 2, 3 ] }, { time: 4, value: [ 1, 2, 3 ] }
+
 [ Occurrence(1), Occurrence(2), Occurrence(3) ] // 3 items in an array eventually
 Event.of(1, 2, 3) // should be able to turn this directly into [ 1, 2, 3 ]
 Dynamic.fold (add) (0) (Event.of(1, 2, 3))
@@ -103,3 +110,99 @@ const bufferN = n => startEvery => source => {
 }
 
 const pairwise = bufferN (2) (1)
+
+export const switchLatest = switchMap (identity)
+export const flatMap = f => emitter => DerivedEmitter(fold (v => acc => acc.concat(f(v))) ([]) (emitter))
+export const flatten = flatMap (identity)
+export const concat = a => b => concatAll([ a, b ])
+export const proxy = () => createProxy ({ create, switchLatest, push: 'emit' })
+export const recentN = n => fold
+	(v => acc => [ ...acc.slice(Math.max(0, acc.length - n + 1)), v ])
+	([])
+
+test('Emitter.bufferN', async t => {
+	await t.test('bufferN (4) (1)', async t => {
+		const expected = [
+			[ 1, 2, 3, 4 ],
+			[ 2, 3, 4, 5 ],
+			[ 3, 4, 5, 6 ]
+		]
+		const actual = []
+
+		const a = Emitter.create()
+		const b = Emitter.bufferN (4) (1) (a)
+
+		b.subscribe(value => actual.push(value))
+
+		await Promise.all([ 1, 2, 3, 4, 5, 6 ].map(a.emit))
+
+		t.deepEqual(actual, expected)
+	})
+
+	t.test('bufferN (3) (3)', async t => {
+		const expected = [
+			[ 1, 2, 3 ],
+			[ 4, 5, 6 ],
+			[ 7, 8, 9 ]
+		]
+		const actual = []
+
+		const a = Emitter.create()
+		const b = Emitter.bufferN (3) (3) (a)
+
+		b.subscribe(value => actual.push(value))
+
+		await Promise.all([ 1, 2, 3, 4, 5, 6, 7, 8, 9 ].map(a.emit))
+		
+		t.deepEqual(actual, expected)
+	})
+	return
+	t.test('bufferN (3) (2)', async t => {
+		const expected = [
+			[ 1, 2, 3 ],
+			[ 3, 4, 5 ],
+			[ 5, 6, 7 ]
+		]
+
+		const a = Emitter.create()
+		const b = Emitter.bufferN (3) (2) (a)
+
+		b.subscribe(value => t.deepEqual(value, expected.shift()))
+
+		;[ 1, 2, 3, 4, 5, 6, 7, 8 ].forEach(a.emit)
+	})
+
+	t.test('bufferN (2) (4)', t => {
+		const expected = [
+			[ 1, 2 ],
+			[ 5, 6 ],
+			[ 9, 10 ]
+		]
+		t.plan(expected.length)
+
+		const a = Emitter.create()
+		const b = Emitter.bufferN (2) (4) (a)
+
+		b.subscribe(value => t.deepEqual(value, expected.shift()))
+
+		;[ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 ].forEach(a.emit)
+	})
+})
+
+test('Emitter.pairwise', t => {
+	const expected = [
+		[ 1, 2 ],
+		[ 2, 3 ],
+		[ 3, 4 ]
+	]
+	t.plan(expected.length)
+	const a = Emitter.create()
+	const b = Emitter.pairwise(a)
+
+	b.subscribe(value => t.deepEqual(value, expected.shift()))
+
+	;[ 1, 2, 3, 4 ].forEach(a.emit)
+})
+
+// TODO: not currently usable
+export const of = (...values) => Event(emit => values.forEach(value => emit(value)))
