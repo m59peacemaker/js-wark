@@ -8,6 +8,8 @@
 
 **0.0.0-pre-alpha-insanity-wolf**
 
+## Table of Contents
+
 - [Why?](#Why)
 - [Goals](#goals)
 - [Install](#install)
