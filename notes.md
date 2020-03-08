@@ -120,23 +120,19 @@ export const recentN = n => fold
 	(v => acc => [ ...acc.slice(Math.max(0, acc.length - n + 1)), v ])
 	([])
 
-test('Emitter.bufferN', async t => {
-	await t.test('bufferN (4) (1)', async t => {
-		const expected = [
+test('Dynamic.bufferN', t => {
+	t.test('bufferN (4) (1)', t => {
+		const a = Event.create()
+		const b = Dynamic.bufferN (4) (1) (a)
+		const actual = collectValues(b)
+
+		;[ 1, 2, 3, 4, 5, 6 ].forEach(a.emit)
+
+		t.deepEqual(actual(), [
 			[ 1, 2, 3, 4 ],
 			[ 2, 3, 4, 5 ],
 			[ 3, 4, 5, 6 ]
-		]
-		const actual = []
-
-		const a = Emitter.create()
-		const b = Emitter.bufferN (4) (1) (a)
-
-		b.subscribe(value => actual.push(value))
-
-		await Promise.all([ 1, 2, 3, 4, 5, 6 ].map(a.emit))
-
-		t.deepEqual(actual, expected)
+		])
 	})
 
 	t.test('bufferN (3) (3)', async t => {
