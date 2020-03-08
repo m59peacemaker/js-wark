@@ -1,4 +1,4 @@
-import * as Emitter from './Emitter'
+import * as Emitter from '../Emitter'
 import { add, identity } from '../util'
 
 /*
@@ -33,7 +33,7 @@ function Event () {
 }
 
 function DerivedEvent (dependencies_source, fn) {
-	const emitter = Emitter.create()
+	const { emit, subscribe } = Emitter.create()
 	let t = null
 
 	const combine_dependency_emitters = getEmitterForDependency => {
@@ -66,7 +66,7 @@ function DerivedEvent (dependencies_source, fn) {
 			const { moment_t, ...o } = Object.assign(...dependency_occurrences)
 			const occur = v => {
 				t = moment_t
-				return emitter.emit(v)
+				return emit(v)
 			}
 			fn(occur, o, moment_t)
 		})
@@ -76,7 +76,7 @@ function DerivedEvent (dependencies_source, fn) {
 		t: () => t,
 		occurrence_pending: dependency_occurrence_pending,
 		occurrence_settled: occurrence_opportunity,
-		subscribe: emitter.subscribe,
+		subscribe
 	}
 
 	return event
@@ -86,21 +86,18 @@ function DerivedEvent (dependencies_source, fn) {
 
 export const create = Event
 
-// TODO: not currently usable
-export const of = (...values) => Event(emit => values.forEach(value => emit(value)))
-
 //--- Combining
 
 export const combineAllWith = f => emitters => DerivedEvent(emitters, (emit, o) => emit(f(o)))
 
-export const mergeAllWith = f => emitters => {
+export const combineKeyedWith = f => emitters => {
 	const keys = Object.keys(emitters)
-	return combineAllWith (o => f(Object.entries(o).reduce((acc, [ k, v ]) => Object.assign(acc, { [keys[k]]: v })))) (Object.values(emitters))
+	return combineAllWith (o => f(Object.entries(o).reduce((acc, [ k, v ]) => Object.assign(acc, { [keys[k]]: v }), {}))) (Object.values(emitters))
 }
 
-export const mergeAll = mergeAllWith (identity)
+export const combineKeyed = combineKeyedWith (identity)
 
-export const combine = whenA => whenB => whenAB => a => b => combineAllWith (o => o.hasOwnProperty(0) ? (o.hasOwnProperty(1) ? whenAB (o[0]) (o[1]) : whenA(o[0])) : whenB(o[1])) ([ a, b ])
+export const concatWith = whenA => whenB => whenAB => a => b => combineAllWith (o => o.hasOwnProperty(0) ? (o.hasOwnProperty(1) ? whenAB (o[0]) (o[1]) : whenA(o[0])) : whenB(o[1])) ([ a, b ])
 
 export const concatAll = combineAllWith (o => {
 	const values = Object.values(o)
@@ -110,13 +107,21 @@ export const concatAll = combineAllWith (o => {
 	return values[0]
 })
 
-const concat = a => b => concatAll ([ a, b ])
+export const concat = a => b => concatAll ([ a, b ])
 
-export const leftmost = combineAllWith (o => Object.values(o)[0])
+export const combineByLeftmost = combineAllWith (o => Object.values(o)[0])
 
 //--- Forward References
 
-export const proxy = () => Emitter.createProxy({ create, switchLatest, push: 'occur' })
+export const proxy = () => {
+	const dependency = create()
+	const proxy = switchLatest (dependency)
+	const mirror = event => {
+		dependency.occur(event)
+		return event
+	}
+	return Object.assign(proxy, { mirror })
+}
 
 //--- Transforming
 
