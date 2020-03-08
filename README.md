@@ -755,6 +755,14 @@ The relationship of the event and behavior composing the dynamic is not arbitrar
 
 Turns an event into a dynamic whose value starts as `initialValue` and updates to the occurrence value of the event when it occurs.
 
+```js
+const event = Event.create()
+const dynamic = Dynamic.hold (0) (event)
+dynamic.sample() // 0
+event.occur(1)
+dynamic.sample() // 1
+```
+
 #### `Dynamic.updates`
 
 `Dynamic.updates (dynamic)`
@@ -785,7 +793,17 @@ Like [`Behavior.lift2`](#BehaviorLift2).
 
 #### `Dynamic.fold`
 
-`Dynamic.fold (currentValue => occurrenceValue => newValue) (initialValue) (event)`
+`Dynamic.fold (occurrenceValue => curentValue => newValue) (initialValue) (event)`
+
+Like [`Dynamic.hold`](#DynamicHold), `fold` creates a dynamic from an event, starting from `initialValue`, and calls the given function when `event` occurs, passing the occurrence value of `event`, the current value of the dynamic, and the return value of the function is the new value of the dynamic.
+
+```js
+const event = Event.create()
+const dynamic = Dynamic.fold (0) (event)
+dynamic.sample() // 0
+event.occur(1)
+dynamic.sample() // 1
+```
 
 #### `Dynamic.proxy`
 
