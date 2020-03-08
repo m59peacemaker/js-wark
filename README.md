@@ -625,7 +625,7 @@ Behaviors integrate with the frp system to avoid this kind of inconsistency.
 
 Just put your time-varying function here and get a behavior.
 
-#### `Behavior.sample
+#### `Behavior.sample`
 
 `Behavior.sample(t)`
 
