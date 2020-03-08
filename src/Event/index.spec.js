@@ -5,6 +5,25 @@ import * as Dynamic from '../Dynamic'
 import { add, identity, collectValues } from '../util'
 
 test('Event', t => {
+	t.test('event.t()', t => {
+		// Some extremely bad things are about to go down in this test. DO NOT DO SUCH THINGS IN YOUR APPLICATION CODE. EVER. EVER. EVEREST.
+		// DO NOT DO IT.
+		const a = Event.create()
+		const at = Behavior.create(a.t)
+		t.equal(a.t(), null)
+		t.equal(at.sample(a.t()), null)
+		a.occur()
+		const t0 = a.t()
+		t.equal(typeof t0, 'symbol', 't is a symbol')
+		t.equal(Number.isInteger(Number(t0.description)), true, 't description value is a string of an integer')
+		t.equal(a.t(), at.sample(t0))
+		t.equal(a.t(), at.sample(t0))
+		a.occur()
+		const t1 = a.t()
+		t.notEqual(t0, t1, 'event t changes on occurrence')
+		t.equal(t1, at.sample(t1), 'sampling a behavior with new t gets updated behavior value')
+		t.equal(t1, at.sample(t1), 'sampling a behavior with the same/current t gets same behavior value')
+	})
 	t.test('Event.snapshot', t => {
 		t.test('continuous behavior', t => {
 			const a = Event.create()
