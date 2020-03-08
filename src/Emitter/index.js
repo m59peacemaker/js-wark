@@ -1,5 +1,7 @@
 import { identity, noop, pipe } from '../util'
 
+// The implementation and operators here should be nothing more than what is used to implement Event.
+
 function Emitter () {
 	const subscribers = new Map()
 	const nextId = (n => () => ++n)(0)
@@ -16,16 +18,15 @@ function Emitter () {
 		function emitter (value) { emit(value) },
 		{
 			emit,
-			subscribe,
-			constructor: Emitter
+			subscribe
 		}
 	)
 }
 
 const forward = (emit, { value }) => emit(value)
+
 const DerivedEmitter = (dependencies_source, fn = forward) => {
-	const emitter = Emitter()
-	const { emit, subscribe } = emitter
+	const { emit, subscribe } = Emitter()
 
 	let unsubscribe_from_dependencies = noop
 	const subscribe_to_dependencies = dependencies => {
@@ -44,12 +45,6 @@ export const create = Emitter
 
 export const concatAll = emitters => DerivedEmitter(emitters)
 
-export const concat = a => b => concatAll([ a, b ])
-
-export const map = f => emitter => DerivedEmitter([ emitter ], (emit, { value }) => emit(f(value)))
-
-export const constant = v => map (() => v)
-
 export const fold = reducer => acc => emitter => DerivedEmitter(
 	[ emitter ],
 	(emit, { value }) => {
@@ -60,39 +55,18 @@ export const fold = reducer => acc => emitter => DerivedEmitter(
 
 export const filter = predicate => emitter => DerivedEmitter([ emitter ], (emit, { value }) => predicate(value) && emit(value))
 
-export const flatMap = f => emitter => DerivedEmitter(fold (v => acc => acc.concat(f(v))) ([]) (emitter))
-
-export const flatten = flatMap (identity)
-
 export const switchMap = f => emitter => DerivedEmitter(map (v => [ f(v) ]) (emitter))
 
-export const switchLatest = switchMap (identity)
-
-export const recentN = n => fold
-	(v => acc => [ ...acc.slice(Math.max(0, acc.length - n + 1)), v ])
-	([])
-
+// This could be built on fold and filter, but this seems oddly nicer. Maybe there's a better higher level way.
 export const bufferTo = notifier => source => {
 	const bufferedValues = []
-	const dependencies = [
-		notifier,
-		source
-	]
 	const handlers = [
 		(value, emit) => emit(bufferedValues.splice(0, bufferedValues.length)),
 		(value) => bufferedValues.push(value)
 	]
-	return DerivedEmitter(dependencies, (emit, { index, value }) => handlers[index](value, emit))
+	return DerivedEmitter([ notifier, source ], (emit, { index, value }) => handlers[index](value, emit))
 }
 
-export const createProxy = ({ create, switchLatest, push }) => {
-	const dependency = create()
-	const e = switchLatest (dependency)
-	const mirror = me => {
-		dependency[push](me)
-		return me
-	}
-	return Object.assign(e, { mirror })
-}
+export const map = f => fold (v => () => f(v)) ()
 
-export const proxy = () => createProxy ({ create, switchLatest, push: 'emit' })
+export const constant = v => map (() => v)
