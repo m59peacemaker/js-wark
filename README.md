@@ -80,6 +80,7 @@ Compositionality is the principle that the meaning of an expression is determine
 ## TODO
 - add examples for Dynamic functions in README
 - more operators are needed asap, especially related to performing async functions
+- Typescript in jsdoc
 - settle on an api/strategy for deriving new moments of time from a single moment  - i.e. Occurrence(List) into List(Occurrence)
 - examples for common real-life situations
 - probably document Emitter
@@ -338,14 +339,14 @@ Event.combineAllWith
 
 Do not assume that `o[0] === undefined` means the first given event did not occur - the event may have just occurred with the value `undefined`, so the object looks like `{ 0: undefined }` (not considering any other events that may have occurred simultaneously and would therefore have properties on the object as well). You must check whether the object has key `0` to know whether the event given at `0` occurred.
 
-##### `Event.mergeAllWith`
+##### `Event.combineKeyedWith`
 
-`Event.mergeAllWith (occurrences => combinedValue) ({ ...events })`
+`Event.combineKeyedWith (occurrences => combinedValue) ({ ...events })`
 
 Like [`Event.combineAllWith`](#EventCombineAllWith), but takes an object of events, and passes an object of occurrences to the given function, where **occurrences of an event have the same key as the event in the input object**.
 
 ```js
-Event.mergeAllWith
+Event.combineKeyedWith
 	(o => {
 		o.hasOwnProperty('eventA') true if eventA occurred
 		o.eventA // value of eventA if it occurred
@@ -354,22 +355,22 @@ Event.mergeAllWith
 	({ eventA, eventB, eventC })
 ```
 
-##### `Event.mergeAll`
+##### `Event.combineKeyed`
 
-`Event.mergeAll ({ ...events })`
+`Event.combineKeyed ({ ...events })`
 
-Convenience for [`Event.mergeAllWith`](#EventMergeAllWith)`(identity)`.
+Convenience for [`Event.combineKeyedWith`](#EventCombineKeyedWith)`(identity)`.
 
 ```js
 Event
-	.mergeAll ({ eventA, eventB, eventC })
+	.combineKeyed ({ eventA, eventB, eventC })
 	.subscribe(value => {
 		// indicates that eventA and eventC occurred simultaneously with values 'foo' and 'bar'
 		value // { eventA: 'foo', eventC: 'bar' }
 	})
 ```
 
-##### `Event.combine`
+##### `Event.concatWith`
 
 `Event.combine (whenA) (whenB) (whenAB) (a) (b)`
 
@@ -401,18 +402,17 @@ TODO: Further discuss list across time of a list of simultaenous occurrences vs 
 
 `Event.concat` but takes an array of events to combine.
 
-##### `Event.leftmost`
+##### `Event.combineByLeftmost`
 
-`Event.leftmost ([ ...events ])`
+`Event.combineByLeftmost ([ ...events ])`
 
 Lazy, practical description:
-Use this when you want combine events and don't care about the occurence value or are fine with the occurrence value being based on the order the events are given in the input array.
+Use this when you want to combine events and don't care about the occurence value or are fine with the occurrence value being based on the order the events are given in the input array.
 
 Less fun technical description:
 Combines events such that the resulting event will have the occurrence value of the occurrence appearing first in the list of simultaneous occurrences, which are ordered the same as the input array.
 
-`Event.leftmost ([ eventA, eventB, eventC ])` will occur with the occurrence value of `eventA` if `eventA` occurs, disregarding any simultaneous occurrence of `eventB` and/or `eventC`. Similarly, if `eventA` did not occur and `eventB` did occur, then the value of `eventB` will be used. And lastly, if neither `eventA` or `eventB` occurred, then the occurrence value of `eventC` will be used when it occurs.
-
+`Event.combineByLeftmost ([ eventA, eventB, eventC ])` will occur with the occurrence value of `eventA` if `eventA` occurs, disregarding any simultaneous occurrence of `eventB` and/or `eventC`. Similarly, if `eventA` did not occur and `eventB` did occur, then the value of `eventB` will be used. And lastly, if neither `eventA` or `eventB` occurred, then the occurrence value of `eventC` will be used when it occurs.
 
 #### Forward References
 
