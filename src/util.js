@@ -1,27 +1,17 @@
-const call = (fn, v) => fn(v)
+export const add = a => b => a + b
 
-const noop = () => { return }
+export const call = fn => v => fn(v)
 
-const identity = v => v
+export const noop = () => { return }
 
-const pipe = fns => fns.reduce((acc, fn) => v => acc(fn(v)))
+export const identity = v => v
 
-const add = a => b => a + b
+export const pipe = fns => v => fns.reduce((acc, f) => f(acc), v)
 
-const isPromise = v => typeof v.then === 'function'
+export const isPromise = v => typeof v.then === 'function'
 
-const collectValues = emitter => {
+export const collectValues = emitter => {
 	const values = []
-	emitter.subscribe(value => values.push(value))
-	return () => values
-}
-
-export {
-	add,
-	call,
-	identity,
-	isPromise,
-	noop,
-	pipe,
-	collectValues
+	const stop = emitter.subscribe(value => values.push(value))
+	return Object.assign(function () { return values }, { stop })
 }
