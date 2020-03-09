@@ -20,9 +20,9 @@
 
 ## Why?
 
-Because coordinating events and values that change with code is an often unwieldy, intellectually-painful task for a human, and we should prefer to tell machines how to do it for us with words we would use among friends... albeit technical, pedantic friends.
+Coordinating events and values that change with code is often an unwieldy, intellectually-painful task for a human.  We should prefer to tell machines to do it for us with words we would use among friends... albeit technical, pedantic friends.
 
-Also, these fancy human words should have some qualities that let them roll off the tongue for hours on in without causing us to go mute at some point. I was trying to get to the point that we want to avoid complexity walls, but my analogy didn't work out. HELP WANTED: good analogy.
+These fancy human words should have qualities that let them roll off the tongue for hours without causing us to go mute at some point. I was trying to get to the point that we want to avoid complexity walls, but my analogy didn't work out. HELP WANTED: good analogy.
 
 Let's look at some expressions of the same goal - a simple counter.
 
@@ -51,9 +51,13 @@ const [count, dispatch] = useReducer(
 )
 ```
 
-There is certainly more information here - I would even say it does fully define the counter, and we are able to gain a complete (in a sense) understanding of this expression by reading it alone. These are good things. However, there are issues. Words such as `dispatch` and `useReducer` may be things that you know how to use in this context, but they don't mean anything otherwise. I urge you to consider whether, when asked what a counter is, and remembering that you must be thoroughly accurate and technical, if any answer you'd ever give would say something like `useReducer` or `dispatch`. Moreover, consider how you could define what `useReducer` and `dispatch` mean, without saying something about how to write code using them.
+There is certainly more information here - I would even say it does fully define the counter, and we are able to gain a more complete understanding of this expression by reading alone. These are good things.
 
-Issues of meaning and grammar aside, the greatest failure in this approach is that `dispatch` is on the left hand side, but affects the behavior of the right hand side - the composition that created it. `dispatch` is sent out into the world to implicitly affect the expression it is derived from, whereas functional compositionality requires that it be a value explicity passed into the expression. The occurrences of "increment" and "decrement" are implicit. There is no expression in this approach that refers to their actual occurrence. Consider something like a promise or an emitter. Those are examples of values that can represent something like "occurrence".
+However, there are issues. Words such as `dispatch` and `useReducer` may be things that you know how to use in this context, but they don't mean anything otherwise. I urge you to consider whether, when asked what a counter is, any accurate and technical answer you'd ever give would include something like `useReducer` or `dispatch`. Moreover, consider how you would define `useReducer` and `dispatch` without saying something about how to write code using them.
+
+Issues of meaning and grammar aside, the greatest failure is that `dispatch` is on the left hand side, but affects the behavior of the right hand side - the composition that created it. `dispatch` is sent out into the world to implicitly affect the expression it is derived from, whereas functional compositionality requires that it be a value explicity passed into the expression.
+
+"Increment" and "decrement" are implicit. There is no expression in this approach that refers to their actual occurrence. Consider something like a promise or an emitter as examples of values that can represent something like "occurrence".
 
 Here is how the counter is expressed using the functional reactive style of this library:
 
@@ -65,21 +69,26 @@ This is code derived from the words describing the goal and can be read similarl
 
 "Count is the accumulation from 0, the (combination) of: increment being 1 and decrement being -1"
 
-Accurate and decent grammar aside - what I hope will come to be appreciated is that every word - **every expression** used is a value that can removed, replaced, passed around, and composed on, **independently** of every other value, anywhere, and all compositions can be understood fully according to their inputs and nothing else.
+Grammar aside, what I hope will come to be appreciated is that every word – **every expression** – is a value that can removed, replaced, passed around, and composed on, **independently** of every other value, anywhere, and all compositions can be understood according to their inputs and nothing else.
 
 Using understandable, meaningful grammar with composable semantics and obeying the principle of [compositionality](#compositionality) is paramount for preventing ballooning complexity.
 
 ### compositionality
 
-Compositionality is the principle that the meaning of an expression is determined by the meanings of its constituent expressions and the rules used to combine them.
+Compositionality is the principle of determining the meaning of an expression from the meanings of its constituent expressions and their combination.
 
 ## Goals
 
 - simple, practical, and accurate grammar for the expression of event and reactive value and computation relationships
 - minimal implementation code so that the frp library can be depended on by UI components and other reusable modules where saving bytes is a priority
-- performant enough for most use cases, including complex DOM UIs, games, webgl, canvas, etc, never compromising on the goal of expressive grammar, some wiggle room on byte size, and some reasonable compromise on the clean, expressive internal implementation if it is truly necessary for dramatic performance gains. My opinion is that accurate, expressive code can also be performant code in many cases. *Considerable work ***may*** need to done in the implementation to accomplish this - performance has not yet been measured and explored.*
+- performant enough for most use cases, including complex DOM UIs, games, webgl, canvas, etc 
+- no compromising on the goal of expressive grammar
+- some wiggle room on byte size, and some reasonable compromise on the clean, expressive internal implementation if it is truly necessary for dramatic performance gains.
+
+My opinion is that accurate, expressive code can also be performant code in many cases. *Considerable work ***may*** need to done in the implementation to accomplish this - performance has not yet been measured and explored.*
 
 ## TODO
+
 - more operators are needed asap, especially related to performing async functions
 - Typescript in jsdoc
 - settle on an api/strategy for deriving new moments of time from a single moment  - i.e. Occurrence(List) into List(Occurrence)
@@ -99,7 +108,7 @@ Here's a simple counter. The idea is that the counter is the result of folding (
 
 ```js
 import { Event, Behavior, Dynamic } from 'wark'
-import { add, compose } from 'ramda'
+import { add } from 'ramda'
 
 const increment = Event.create()
 const decrement = Event.create()
