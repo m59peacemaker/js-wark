@@ -2,7 +2,7 @@ import { test } from 'zora'
 import * as Event from './'
 import * as Behavior  from '../Behavior'
 import * as Dynamic from '../Dynamic'
-import { add, identity, collectValues } from '../util'
+import { add, identity, collectValues, pipe } from '../util'
 
 test('Event', t => {
 	t.test('event.t()', t => {
@@ -259,6 +259,23 @@ test('Event', t => {
 
 		t.deepEqual(actualA(), [ 10, 20 ])
 		t.deepEqual(actualB(), [ 11, 21 ])
+	})
+
+	t.test('Event.filter', t => {
+		const a = Event.create()
+		const b = pipe ([
+			Event.map (add(10)),
+			Event.filter (v => v % 2 === 0),
+			Event.map (add(1)),
+			Event.map (add(1)),
+			Event.filter(v => v !== 18),
+			Event.map (v => v * 2)
+		]) (a)
+		const actual = collectValues(b)
+
+		;[ 1, 2, 3, 4, 5, 6, 7, 8 ].forEach(a.occur)
+
+		t.deepEqual(actual(), [ 28, 32, 40 ])
 	})
 
 	t.test('Event.switchMap', async t => {
