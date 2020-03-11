@@ -1,5 +1,5 @@
 import * as Emitter from '../Emitter'
-import { add, identity } from '../util'
+import { add, identity, noop } from '../util'
 
 /*
 	This is shared, but always unique due to Symbol. It would not cause any difference in behavior if two instances of the library came into contact.
@@ -30,6 +30,16 @@ function Event () {
 		occurrence_settled,
 		subscribe: occurrence.subscribe
 	})
+}
+
+function NeverEvent () {
+	const subscribe = () => noop
+	return {
+		t: () => null,
+		subscribe,
+		occurrence_pending: { subscribe },
+		occurrence_settled: { subscribe }
+	}
 }
 
 function DerivedEvent (dependencies_source, fn) {
@@ -85,6 +95,8 @@ function DerivedEvent (dependencies_source, fn) {
 //--- Creating
 
 export const create = Event
+
+export const never = NeverEvent
 
 //--- Combining
 

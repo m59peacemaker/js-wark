@@ -26,8 +26,7 @@ export const create = Dynamic
 	return Dynamic(event, hold (values[0]) (event))
 }*/
 
-// TODO: is this ever useful rather than Behavior.constant? If so, make Event.never() and use it here
-//export const constant = value => Dynamic.hold (value) ({ subscribe: () => {} })
+export const constant = value => hold (value) (Event.never())
 
 export const updates = dynamic => dynamic.updates
 

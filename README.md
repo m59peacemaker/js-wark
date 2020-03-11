@@ -316,6 +316,22 @@ click.occur('click3')
 clicks.sample() // [ 'click1', 'click3' ]
 ```
 
+#### Event.never
+
+`Event.never()`
+
+Creates an event that never occurs.
+
+```js
+const functionThatRequiresAnEvent = event => {
+	foo()
+	event.subscribe(bar) // this function must have an event to subscribe to
+	return baz()
+}
+// but we don't actually have an event to give it and don't want to
+functionThatRequiresAnEvent(Event.never())
+```
+
 #### Combining
 
 ##### `Event.combineAllWith`
@@ -781,6 +797,12 @@ Like [`Event.filter`](#EventFilter), but takes a dynamic and returns a dynamic t
 `Dynamic.map (a => b) (dynamic)`
 
 Like [`Behavior.map`](#BehaviorMap).
+
+#### `Dynamic.constant`
+
+`Dynamic.constant (v)`
+
+Like [`Behavior.constant`](#BehaviorConstant), with an `updates` event that [never occurs](#EventNever).
 
 #### `Dynamic.lift`
 
