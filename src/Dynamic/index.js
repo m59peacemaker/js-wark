@@ -33,7 +33,7 @@ export const updates = dynamic => dynamic.updates
 
 export const transformEvent = f => dynamic => {
 	const event = f(dynamic.updates)
-	return hold (dynamic.sample(dynamic.t)) (event)
+	return hold (dynamic.sample(dynamic.updates.t)) (event)
 }
 
 export const transformBehavior = f => dynamic => {
