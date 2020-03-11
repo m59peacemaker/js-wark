@@ -85,7 +85,7 @@ function DerivedEvent (dependencies_source, fn) {
 	return {
 		t: () => t,
 		occurrence_pending: dependency_occurrence_pending,
-		occurrence_settled: occurrence_opportunity,
+		occurrence_settled: all_dependencies_settled,
 		subscribe
 	}
 }
