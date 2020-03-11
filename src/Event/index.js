@@ -88,8 +88,6 @@ function DerivedEvent (dependencies_source, fn) {
 		occurrence_settled: occurrence_opportunity,
 		subscribe
 	}
-
-	return event
 }
 
 //--- Creating
