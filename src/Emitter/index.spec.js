@@ -77,43 +77,52 @@ test('Emitter.fold accumulates', t => {
 	])
 })
 
-test('Emitter.bufferTo', t => {
-	const notifier = Emitter.create()
-	const source = Emitter.create()
-	const buffered = Emitter.bufferTo (notifier) (source)
-	const actual = collectValues(buffered)
-
-	source.emit(1)
-	source.emit(2)
-	source.emit(3)
-	notifier.emit()
-	source.emit(4)
-	notifier.emit()
-	source.emit(5)
-	source.emit(6)
-	notifier.emit()
-	source.emit(7)
-
-	t.deepEqual(actual(), [ [ 1, 2, 3 ], [ 4 ], [ 5, 6 ] ])
-})
-
 test('Emitter.switchMap', t => {
-	const emitterNameEmitter = Emitter.create()
-	const a = Emitter.create()
-	const b = Emitter.create()
-	const emitters = { a, b }
+	t.test('', t => {
+		const emitterNameEmitter = Emitter.create()
+		const a = Emitter.create()
+		const b = Emitter.create()
+		const emitters = { a, b }
 
-	const c = Emitter.switchMap(name => emitters[name]) (emitterNameEmitter)
-	const actual = collectValues(c)
+		const c = Emitter.switchMap(name => emitters[name]) (emitterNameEmitter)
+		const actual = collectValues(c)
 
-	emitterNameEmitter.emit('a')
-	a.emit('foo')
-	emitterNameEmitter.emit('b')
-	a.emit('bar')
-	b.emit('baz')
-	a.emit('qux')
-	emitterNameEmitter.emit('a')
-	a.emit('fooz')
+		emitterNameEmitter.emit('a')
+		a.emit('foo')
+		emitterNameEmitter.emit('b')
+		a.emit('x')
+		b.emit('bar')
+		a.emit('x')
+		emitterNameEmitter.emit('a')
+		a.emit('baz')
 
-	t.deepEqual(actual(), [ 'foo', 'baz', 'fooz' ])
+		t.deepEqual(actual(), [ 'foo', 'bar', 'baz' ])
+	})
+
+	t.test('', t => {
+		const a = Emitter.create()
+		const b = Emitter.create()
+		const c = Emitter.create()
+		const emitters = { b, c }
+		const d = Emitter.create()
+		const e = Emitter.switchMap (v => Emitter.derive([ a, emitters[v] ])) (d)
+		const actual = collectValues(e)
+
+		d.emit('b')
+		a.emit(1)
+		b.emit(2)
+		c.emit('x')
+
+		d.emit('c')
+		a.emit(3)
+		b.emit('x')
+		c.emit(4)
+
+		d.emit('c')
+		a.emit(5)
+		b.emit('x')
+		c.emit(6)
+
+		t.deepEqual(actual(), [ 1, 2, 3, 4, 5, 6 ])
+	})
 })
