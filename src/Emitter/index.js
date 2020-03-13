@@ -4,34 +4,27 @@ import { identity, noop, pipe } from '../util'
 
 function Emitter () {
 	const subscribers = new Map()
-	const nextId = (n => () => ++n)(0)
-
-	const emit = value => Array.from(subscribers.values()).map(subscriber => subscriber(value))
-
-	const subscribe = subscriber => {
-		const id = nextId()
-		subscribers.set(id, subscriber)
-		return () => subscribers.delete(id)
-	}
-
-	return Object.assign(
-		function emitter (value) { emit(value) },
-		{
-			emit,
-			subscribe
+	return {
+		emit: value => {
+			Array.from(subscribers.values()).map(subscriber => subscriber(value))
+		},
+		subscribe: subscriber => {
+			const id = Symbol()
+			subscribers.set(id, subscriber)
+			return () => subscribers.delete(id)
 		}
-	)
+	}
 }
 
 const forward = (emit, { value }) => emit(value)
 
-const DerivedEmitter = (dependencies_source, fn = forward) => {
+const DerivedEmitter = (dependencies_source, f = forward) => {
 	const { emit, subscribe } = Emitter()
 
 	let unsubscribe_from_dependencies = noop
 	const subscribe_to_dependencies = dependencies => {
 		unsubscribe_from_dependencies()
-		unsubscribe_from_dependencies = pipe(dependencies.map((dependency, index) => dependency.subscribe(value => fn(emit, { index, value }))))
+		unsubscribe_from_dependencies = pipe(dependencies.map((dependency, index) => dependency.subscribe(value => f(emit, { value, index }))))
 	}
 
 	Array.isArray(dependencies_source) ? subscribe_to_dependencies(dependencies_source) : dependencies_source.subscribe(subscribe_to_dependencies)
@@ -43,7 +36,11 @@ const DerivedEmitter = (dependencies_source, fn = forward) => {
 
 export const create = Emitter
 
+export const derive = DerivedEmitter
+
 export const concatAll = emitters => DerivedEmitter(emitters)
+
+export const combineAllWith = f => emitters => DerivedEmitter(emitters, (emit, { value, index }) => emit(f({ value, index })))
 
 export const fold = reducer => acc => emitter => DerivedEmitter(
 	[ emitter ],
@@ -57,16 +54,6 @@ export const filter = predicate => emitter => DerivedEmitter([ emitter ], (emit,
 
 export const switchMap = f => emitter => DerivedEmitter(map (v => [ f(v) ]) (emitter))
 
-// This could be built on fold and filter, but this seems oddly nicer. Maybe there's a better higher level way.
-export const bufferTo = notifier => source => {
-	const bufferedValues = []
-	const handlers = [
-		(value, emit) => emit(bufferedValues.splice(0, bufferedValues.length)),
-		(value) => bufferedValues.push(value)
-	]
-	return DerivedEmitter([ notifier, source ], (emit, { index, value }) => handlers[index](value, emit))
-}
-
-export const map = f => fold (v => () => f(v)) ()
+export const map = f => e => DerivedEmitter([ e ], (emit, { value }) => emit(f(value)))
 
 export const constant = v => map (() => v)

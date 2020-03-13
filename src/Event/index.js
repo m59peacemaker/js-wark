@@ -11,14 +11,13 @@ const nextTime = (n => () => Symbol(n++))(0)
 function Event () {
 	const occurrence = Emitter.create()
 	const occurrence_pending = Emitter.create()
-	const occurrence_settled = Emitter.create()
 	let t = null
 
 	const occur = value => {
 		t = nextTime()
-		occurrence_pending.emit()
+		occurrence_pending.emit(true)
 		occurrence.emit(value)
-		occurrence_settled.emit()
+		occurrence_pending.emit(false)
 	}
 
 	function event (v) { return occur(v) }
@@ -27,7 +26,6 @@ function Event () {
 		t: () => t,
 		occur,
 		occurrence_pending,
-		occurrence_settled,
 		subscribe: occurrence.subscribe
 	})
 }
@@ -38,54 +36,54 @@ function NeverEvent () {
 		t: () => null,
 		subscribe,
 		occurrence_pending: { subscribe },
-		occurrence_settled: { subscribe }
 	}
 }
 
-function DerivedEvent (dependencies_source, fn) {
+function DerivedEvent (dependencies_source, f) {
 	const { emit, subscribe } = Emitter.create()
 	let t = null
-
-	const combine_dependency_emitters = getEmitterForDependency => {
-		const concat_dependencies = dependencies => Emitter.concatAll(dependencies.map(getEmitterForDependency))
-		return Array.isArray(dependencies_source) ? concat_dependencies(dependencies_source) : Emitter.switchMap (concat_dependencies) (dependencies_source)
+	let pending_t = null
+	const dependencies_pending = new Set()
+	const dependency_occurrences_now = new Map()
+	const occur = v => {
+		t = pending_t
+		emit(v)
 	}
 
-	const dependency_occurrence_settled = combine_dependency_emitters(dependency => dependency.occurrence_settled)
-	const dependency_occurrence = combine_dependency_emitters((dependency, index) => Emitter.map (value => ({ [index]: value, moment_t: dependency.t() })) (dependency))
-	const dependency_occurrence_pending = combine_dependency_emitters(dependency => dependency.occurrence_pending)
+	const combineDependencies = getEmitterForDependency => {
+		const combineArray = dependencies => Emitter.derive(dependencies.map(getEmitterForDependency), (emit, { value, index }) => emit({ value, index, dependency: dependencies[index] }))
+		return Array.isArray(dependencies_source)
+			? combineArray(dependencies_source)
+			: Emitter.switchMap (combineArray) (dependencies_source)
+	}
 
-	const count_of_dependencies_pending_occurrence = Emitter.fold
-		(add)
-		(0)
-		(Emitter.concatAll([
-			Emitter.constant (1) (dependency_occurrence_pending),
-			Emitter.constant (-1) (dependency_occurrence_settled)
-		]))
-
-	const all_dependencies_settled = Emitter.filter
-		(count_pending => count_pending === 0)
-		(count_of_dependencies_pending_occurrence)
-
-	const dependency_occurrences_now = Emitter.bufferTo (all_dependencies_settled) (dependency_occurrence)
-	const occurrence_opportunity_event = Emitter.filter
-		(dependency_occurrences => dependency_occurrences.length > 0)
-		(dependency_occurrences_now)
-	const occurrence_opportunity = Emitter.map
-		(dependency_occurrences => {
-			const { moment_t, ...o } = Object.assign(...dependency_occurrences)
-			const occur = v => {
-				t = moment_t
-				return emit(v)
+	const dependency_occurrence_pending = combineDependencies(dependency => dependency.occurrence_pending)
+	const occurrence_pending = Emitter.derive(
+		[ dependency_occurrence_pending ],
+		(emit, { value }) => {
+			const { value: isPending, index, dependency } = value
+			dependencies_pending[isPending ? 'add' : 'delete'](index)
+			if (dependencies_pending.size === 1) {
+				emit(true)
+			} else if (dependencies_pending.size === 0) {
+				dependency_occurrences_now.size && f(occur, Object.fromEntries(dependency_occurrences_now), pending_t)
+				dependency_occurrences_now.clear()
+				pending_t = null
+				emit(false)
 			}
-			fn(occur, o, moment_t)
-		})
-		(occurrence_opportunity_event)
+		}
+	)
+
+	const dependency_occurrence = combineDependencies(dependency => dependency)
+
+	dependency_occurrence.subscribe(({ value, index, dependency }) => {
+		pending_t = dependency.t()
+		dependency_occurrences_now.set(index, value)
+	})
 
 	return {
 		t: () => t,
-		occurrence_pending: dependency_occurrence_pending,
-		occurrence_settled: all_dependencies_settled,
+		occurrence_pending,
 		subscribe
 	}
 }

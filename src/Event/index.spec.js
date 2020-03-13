@@ -116,6 +116,17 @@ test('Event', t => {
 			a.occur(10)
 			t.deepEqual(actual(), [ { occurrences: { 0: 10, 1: 9 } }, { occurrences: { 0: 11, 1: 10, 2: 10} } ])
 		})
+		t.test('mapping a combined event of simultaneous events', t => {
+			const a = Event.create()
+			const b = Event.map (add(1)) (a)
+			const c = Event.combineAllWith (o => Object.values(o).reduce((a, b) => a + b, 0)) ([ a, b ])
+			const d = Event.map (add(1)) (c)
+			const actualC = collectValues(c)
+			const actualD = collectValues(d)
+			a.occur(1)
+			t.equal(actualC(), [ 3 ])
+			t.equal(actualD(), [ 4 ])
+		})
 	})
 
 	t.test('Event.combineKeyedWith', t => {
@@ -278,8 +289,8 @@ test('Event', t => {
 		t.deepEqual(actual(), [ 28, 32, 40 ])
 	})
 
-	t.test('Event.switchMap', async t => {
-		await t.test('has the occurrences of only the most recent event', t => {
+	t.test('Event.switchMap', t => {
+		t.test('has the occurrences of only the most recent event', t => {
 			const a = Event.create()
 			const b = Event.create()
 			const c = Event.create()
@@ -290,22 +301,25 @@ test('Event', t => {
 			c.occur(a)
 			a.occur(1)
 			a.occur(2)
+
 			c.occur(b)
 			b.occur(3)
 			b.occur(4)
 			a.occur('x')
 			b.occur(5)
+
 			c.occur(a)
 			a.occur(6)
 			b.occur('x')
 			a.occur(7)
+
 			c.occur(b)
 			b.occur(8)
 
 			t.deepEqual(actual(), [ 1, 2, 3, 4, 5, 6, 7, 8 ])
 		})
 
-		await t.test('does not break the next operator', t => {
+		t.test('does not break the next operator', t => {
 			const a = Event.create()
 			const b = Event.create()
 			const c = Event.create()
@@ -332,7 +346,7 @@ test('Event', t => {
 			t.deepEqual(actual(), [ 2, 3, 4, 5, 6, 7, 8, 9 ])
 		})
 
-		await t.test('works with other switching events', t => {
+		t.test('works with other switching events', t => {
 			const a = Event.create()
 			const b = Event.create()
 			const eventOfEvent1 = Event.create()
