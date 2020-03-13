@@ -419,9 +419,9 @@ TODO: Further discuss list across time of a list of simultaenous occurrences vs 
 
 `Event.concat` but takes an array of events to combine.
 
-##### `Event.combineByLeftmost`
+##### `Event.combineAllByLeftmost`
 
-`Event.combineByLeftmost ([ ...events ])`
+`Event.combineAllByLeftmost ([ ...events ])`
 
 Lazy, practical description:
 Use this when you want to combine events and don't care about the occurence value or are fine with the occurrence value being based on the order the events are given in the input array.
@@ -430,6 +430,12 @@ Less fun technical description:
 Combines events such that the resulting event will have the occurrence value of the occurrence appearing first in the list of simultaneous occurrences, which are ordered the same as the input array.
 
 `Event.combineByLeftmost ([ eventA, eventB, eventC ])` will occur with the occurrence value of `eventA` if `eventA` occurs, disregarding any simultaneous occurrence of `eventB` and/or `eventC`. Similarly, if `eventA` did not occur and `eventB` did occur, then the value of `eventB` will be used. And lastly, if neither `eventA` or `eventB` occurred, then the occurrence value of `eventC` will be used when it occurs.
+
+##### `Event.combineByLeftmost`
+
+`Event.combineByLeftmost (a) (b)`
+
+[`Event.combineAllByLeftmost`](#EventCombineAllByLeftMost) but takes an event and another event instead of an array of events.
 
 #### Forward References
 

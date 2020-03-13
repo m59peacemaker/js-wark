@@ -117,7 +117,9 @@ export const concatAll = combineAllWith (o => {
 
 export const concat = a => b => concatAll ([ a, b ])
 
-export const combineByLeftmost = combineAllWith (o => Object.values(o)[0])
+export const combineAllByLeftmost = combineAllWith (o => Object.values(o)[0])
+
+export const combineByLeftmost = a => b => combineAllByLeftmost([ a, b ])
 
 //--- Forward References
 
