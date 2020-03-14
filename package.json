@@ -2,7 +2,8 @@
   "name": "wark",
   "version": "0.0.0",
   "description": "Simple and tiny FRP library of the classic-ish event/behavior variety, named after a chocobo sound.",
-  "main": "",
+  "main": "./src/index.js",
+  "sideEffects": false,
   "scripts": {
     "build": "tsc",
     "build-no-type-check": "(tsc || true)",
