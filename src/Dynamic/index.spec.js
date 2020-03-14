@@ -67,11 +67,11 @@ test('Dynamic', t => {
 		t.equal(b.sample(), [ 1, 4, 10 ])
 	})
 
-	t.test('Dynamic.proxy', t => {
+	t.test('Dynamic.forwardReference', t => {
 		const event = Event.create()
-		const proxy = Behavior.proxy()
-		const snapshot = Event.snapshot (b => a => [ ...b, a ]) (proxy) (event)
-		const hold = proxy.mirror (Dynamic.hold ([]) (snapshot))
+		const forwardReference = Behavior.forwardReference()
+		const snapshot = Event.snapshot (b => a => [ ...b, a ]) (forwardReference) (event)
+		const hold = forwardReference.assign (Dynamic.hold ([]) (snapshot))
 		t.deepEqual(hold.sample(), [])
 		event.occur(1)
 		t.deepEqual(hold.sample(), [ 1 ])

@@ -131,14 +131,14 @@ export const combineByLeftmost = a => b => combineAllByLeftmost([ a, b ])
 
 //--- Forward References
 
-export const proxy = () => {
+export const forwardReference = () => {
 	const dependency = create()
-	const proxy = switchLatest (dependency)
-	const mirror = event => {
+	const ref = switchLatest (dependency)
+	const assign = event => {
 		dependency.occur(event)
 		return event
 	}
-	return Object.assign(proxy, { mirror })
+	return Object.assign(ref, { assign })
 }
 
 //--- Transforming
