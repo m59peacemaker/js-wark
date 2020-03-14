@@ -1,13 +1,11 @@
-import { identity, noop, pipe } from '../util'
+import { noop, pipe } from '../util'
 
 // The implementation and operators here should be nothing more than what is used to implement Event.
 
-function Emitter () {
+export const create = () => {
 	const subscribers = new Map()
 	return {
-		emit: value => {
-			Array.from(subscribers.values()).map(subscriber => subscriber(value))
-		},
+		emit: value => Array.from(subscribers.values()).map(subscriber => subscriber(value)),
 		subscribe: subscriber => {
 			const id = Symbol()
 			subscribers.set(id, subscriber)
@@ -16,10 +14,10 @@ function Emitter () {
 	}
 }
 
-const forward = (emit, { value }) => emit(value)
+const emit_identity = (emit, { value }) => emit(value)
 
-const DerivedEmitter = (dependencies_source, f = forward) => {
-	const { emit, subscribe } = Emitter()
+export const derive = dependencies_source => f => {
+	const { emit, subscribe } = create()
 
 	let unsubscribe_from_dependencies = noop
 	const subscribe_to_dependencies = dependencies => {
@@ -34,26 +32,6 @@ const DerivedEmitter = (dependencies_source, f = forward) => {
 	}
 }
 
-export const create = Emitter
+export const map = f => e => derive ([ e ]) ((emit, { value }) => emit(f(value)))
 
-export const derive = DerivedEmitter
-
-export const concatAll = emitters => DerivedEmitter(emitters)
-
-export const combineAllWith = f => emitters => DerivedEmitter(emitters, (emit, { value, index }) => emit(f({ value, index })))
-
-export const fold = reducer => acc => emitter => DerivedEmitter(
-	[ emitter ],
-	(emit, { value }) => {
-		acc = reducer (value) (acc)
-		emit(acc)
-	}
-)
-
-export const filter = predicate => emitter => DerivedEmitter([ emitter ], (emit, { value }) => predicate(value) && emit(value))
-
-export const switchMap = f => emitter => DerivedEmitter(map (v => [ f(v) ]) (emitter))
-
-export const map = f => e => DerivedEmitter([ e ], (emit, { value }) => emit(f(value)))
-
-export const constant = v => map (() => v)
+export const switchMap = f => emitter => derive (map (v => [ f(v) ]) (emitter)) (emit_identity)
