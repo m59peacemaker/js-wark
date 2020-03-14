@@ -332,6 +332,35 @@ const functionThatRequiresAnEvent = event => {
 functionThatRequiresAnEvent(Event.never())
 ```
 
+#### `Event.forwardReference`
+
+`Event.forwardReference()`
+
+Returns a value that can be used as an event, before actually assigning it a value. This is useful for cases where the event you'd like to pass to something has not yet been created. When that event is available, call `forwardReference.assign(thatEvent)` to set the forward reference's real value.
+
+```js
+// pointless example for the sake of a concise demonstration
+const forwardReference = Event.forwardReference()
+forwardReference.subscribe(console.log)
+
+const eventPlusOne = Event.map (add(1)) (forwardReference)
+eventPlusOne.subscribe(console.log)
+
+const event = Event.create()
+forwardReference.assign(event)
+
+event.occur(1)
+// -> logs 1
+// -> logs 2
+```
+
+`forwardReference.assign(event)` returns the given event for convenience and readability. The previous example could have been written like this:
+
+```js
+const event = forwardReference.assign(Event.create())
+```
+
+
 #### Combining
 
 ##### `Event.combineAllWith`
@@ -436,36 +465,6 @@ Combines events such that the resulting event will have the occurrence value of 
 `Event.combineByLeftmost (a) (b)`
 
 [`Event.combineAllByLeftmost`](#EventCombineAllByLeftMost) but takes an event and another event instead of an array of events.
-
-#### Forward References
-
-##### `Event.proxy`
-
-`Event.proxy()`
-
-Returns an event proxy that can be passed to functions that take an event, for cases where the actual event you'd like to pass has not yet been created. When the event reference that the proxy represents is available, call `proxy.mirror(thatEvent)` to make the proxy behave as though it is that event.
-
-```js
-// pointless example for the sake of a concise demonstration
-const proxy = Event.proxy()
-proxy.subscribe(console.log)
-
-const eventPlusOne = Event.map (add(1)) (proxy)
-eventPlusOne.subscribe(console.log)
-
-const event = Event.create()
-proxy.mirror(event)
-
-event.occur(1)
-// -> logs 1
-// -> logs 2
-```
-
-`proxy.mirror(event)` returns the given event for convenience and readability. The previous example could have been written like this:
-
-```js
-const event = proxy.mirror(Event.create())
-```
 
 #### Transforming
 
@@ -760,11 +759,11 @@ const b3Again = Behavior.chain (v => v) (bb3)
 b3.sample === b3Again.sample() // true
 ```
 
-#### `Behavior.proxy`
+#### `Behavior.forwardReference`
 
-`Behavior.proxy()`
+`Behavior.forwardReference()`
 
-Like [`Event.proxy`](#EventProxy), but for a behavior and must mirror a behavior.
+Like [`Event.forwardReference`](#EventForwardReference), but for a behavior and must be assigned a behavior.
 
 ### Dynamic
 
@@ -834,11 +833,11 @@ event.occur(1)
 dynamic.sample() // 1
 ```
 
-#### `Dynamic.proxy`
+#### `Dynamic.forwardReference`
 
-`Dynamic.proxy()`
+`Dynamic.forwardReference()`
 
-Like [`Event.proxy`](#EventProxy) and [`Behavior.proxy`](#BehaviorProxy), but for a dynamic and must mirror a dynamic.
+Like [`Event.forwardReference`](#EventForwardReference) and [`Behavior.forwardReference`](#BehaviorForwardReference), but for a dynamic and must be assigned a dynamic.
 
 ## Concepts
 

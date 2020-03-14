@@ -59,12 +59,12 @@ test('Behavior', async t => {
 		t.deepEqual(actualA1(), actualA2(), actualA1())
 	})
 
-	t.test('Behavior.proxy', t => {
-		const proxy = Behavior.proxy()
-		const r = proxy.mirror(Behavior.create(Math.random))
+	t.test('Behavior.forwardReference', t => {
+		const forwardReference = Behavior.forwardReference()
+		const r = forwardReference.assign(Behavior.create(Math.random))
 		const t0 = Symbol()
 		const t1 = Symbol()
-		t.equal(r.sample(t0), proxy.sample(t0))
-		t.equal(r.sample(t1), proxy.sample(t1))
+		t.equal(r.sample(t0), forwardReference.sample(t0))
+		t.equal(r.sample(t1), forwardReference.sample(t1))
 	})
 })

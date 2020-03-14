@@ -50,22 +50,22 @@ export const map = f => transformBehavior (Behavior.map (f))
 
 export const filter = f => transformEvent (Event.filter (f))
 
-export const proxy = () => {
-	const e_proxy = Event.proxy()
-	const b_proxy = Behavior.createProxy({ pre_mirror_sample_error_message: 'Dynamic proxy should not be sampled before being mirrored!' })
+export const forwardReference = () => {
+	const e_ref = Event.forwardReference()
+	const b_ref = Behavior.createForwardReference({ pre_assign_sample_error_message: 'Dynamic forwardReference should not be sampled before being assigned!' })
 
-	const mirror = dynamic => {
-		e_proxy.mirror(dynamic.updates)
-		b_proxy.mirror(dynamic)
+	const assign = dynamic => {
+		e_ref.assign(dynamic.updates)
+		b_ref.assign(dynamic)
 		return dynamic
 	}
 
-	return Object.assign(Dynamic(e_proxy, b_proxy), { mirror })
+	return Object.assign(Dynamic(e_ref, b_ref), { assign })
 }
 
 export const fold = reducer => initialValue => event => {
-	const p = proxy()
-	return p.mirror(
+	const p = forwardReference()
+	return p.assign(
 		hold
 			(initialValue)
 			(Event.snapshot (b => a => reducer (a) (b)) (p) (event))
