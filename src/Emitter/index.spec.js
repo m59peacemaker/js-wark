@@ -32,51 +32,6 @@ test('Emitter.map emits with mapped value', t => {
 	t.deepEqual(actual(), [ 4, 9 ])
 })
 
-test('Emitter.concatAll makes an emitter that emits when any of the given emitters emit', t => {
-	const a = Emitter.create()
-	const b = Emitter.create()
-	const c = Emitter.create()
-	const d = Emitter.concatAll([ a, b, c ])
-	const actual = collectValues(d)
-
-	b.emit('foo')
-	a.emit('bar')
-	c.emit('baz')
-	a.emit('qux')
-
-	t.deepEqual(actual(), [ 'foo', 'bar', 'baz', 'qux' ])
-})
-
-test('Emitter.filter makes an emitter that emits when then given emitter emits with a value passing the given predicate', t => {
-	const word = Emitter.create()
-	const shortWord = Emitter.filter (v => v.length <= 3) (word)
-	const actual = collectValues(shortWord)
-
-	word.emit('things')
-	word.emit('stuff')
-	word.emit('foo')
-	word.emit('whatever')
-	word.emit('bar')
-
-	t.deepEqual(actual(), [ 'foo', 'bar' ])
-})
-
-test('Emitter.fold accumulates', t => {
-	const a = Emitter.create()
-	const b = Emitter.fold (v => acc => acc.concat(v)) ([]) (a)
-	const actual = collectValues(b)
-
-	a.emit(1),
-	a.emit(2),
-	a.emit(3)
-
-	t.deepEqual(actual(), [
-		[ 1 ],
-		[ 1, 2 ],
-		[ 1, 2, 3 ]
-	])
-})
-
 test('Emitter.switchMap', t => {
 	t.test('', t => {
 		const emitterNameEmitter = Emitter.create()
@@ -105,7 +60,7 @@ test('Emitter.switchMap', t => {
 		const c = Emitter.create()
 		const emitters = { b, c }
 		const d = Emitter.create()
-		const e = Emitter.switchMap (v => Emitter.derive([ a, emitters[v] ])) (d)
+		const e = Emitter.switchMap (v => Emitter.derive ([ a, emitters[v] ]) ((emit, { value }) => emit(value))) (d)
 		const actual = collectValues(e)
 
 		d.emit('b')
