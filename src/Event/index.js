@@ -1,5 +1,5 @@
 import * as Emitter from '../Emitter'
-import { add, identity, noop } from '../util'
+import { identity, noop } from '../util'
 
 /*
 	This is shared, but always unique due to Symbol. It would not cause any difference in behavior if two instances of the library came into contact.
@@ -30,15 +30,6 @@ function Event () {
 	})
 }
 
-function NeverEvent () {
-	const subscribe = () => noop
-	return {
-		t: () => null,
-		subscribe,
-		occurrence_pending: { subscribe },
-	}
-}
-
 function DerivedEvent (dependencies_source, f) {
 	const { emit, subscribe } = Emitter.create()
 	let t = null
@@ -50,41 +41,58 @@ function DerivedEvent (dependencies_source, f) {
 		emit(v)
 	}
 
-	const combineDependencies = getEmitterForDependency => {
-		const combineArray = dependencies => Emitter.derive(dependencies.map(getEmitterForDependency), (emit, { value, index }) => emit({ value, index, dependency: dependencies[index] }))
-		return Array.isArray(dependencies_source)
-			? combineArray(dependencies_source)
-			: Emitter.switchMap (combineArray) (dependencies_source)
-	}
-
-	const dependency_occurrence_pending = combineDependencies(dependency => dependency.occurrence_pending)
-	const occurrence_pending = Emitter.derive(
-		[ dependency_occurrence_pending ],
-		(emit, { value }) => {
-			const { value: isPending, index, dependency } = value
-			dependencies_pending[isPending ? 'add' : 'delete'](index)
-			if (dependencies_pending.size === 1) {
-				emit(true)
-			} else if (dependencies_pending.size === 0) {
-				dependency_occurrences_now.size && f(occur, Object.fromEntries(dependency_occurrences_now), pending_t)
-				dependency_occurrences_now.clear()
-				pending_t = null
-				emit(false)
-			}
-		}
-	)
-
-	const dependency_occurrence = combineDependencies(dependency => dependency)
-
-	dependency_occurrence.subscribe(({ value, index, dependency }) => {
+	const dependency_occurrence_f = ({ value, index, dependency }) => {
 		pending_t = dependency.t()
 		dependency_occurrences_now.set(index, value)
-	})
+	}
+
+	const occurrence_pending_f = ({ value: isPending, index, dependency }, emit) => {
+		dependencies_pending[isPending ? 'add' : 'delete'](index)
+		if (dependencies_pending.size === 1) {
+			emit(true)
+		} else if (dependencies_pending.size === 0) {
+			dependency_occurrences_now.size && f(occur, Object.fromEntries(dependency_occurrences_now), pending_t)
+			dependency_occurrences_now.clear()
+			pending_t = null
+			emit(false)
+		}
+	}
+
+	const combineDependencies = getEmitterForDependency => f => handleSwitch => {
+		const combineArray = handle_derive => dependencies => Emitter.derive
+			(dependencies.map(getEmitterForDependency))
+			((emit, { index, value }) => handle_derive({ index, value, dependency: dependencies[index] }, emit))
+		return Array.isArray(dependencies_source)
+			? combineArray (f) (dependencies_source)
+			: handleSwitch (f) (Emitter.switchMap (combineArray((data, emit) => emit(data))) (dependencies_source))
+	}
+
+	const occurrence_pending = combineDependencies
+		(dependency => dependency.occurrence_pending)
+		(occurrence_pending_f)
+		(f => emitter => Emitter.derive ([ emitter ]) ((emit, { value }) => f(value, emit)))
+
+	const dependency_occurrence = combineDependencies
+		(dependency => dependency)
+		(dependency_occurrence_f)
+		(f => emitter => {
+			emitter.subscribe(f)
+			return emitter
+		})
 
 	return {
 		t: () => t,
 		occurrence_pending,
 		subscribe
+	}
+}
+
+function NeverEvent () {
+	const subscribe = () => noop
+	return {
+		t: () => null,
+		subscribe,
+		occurrence_pending: { subscribe },
 	}
 }
 
