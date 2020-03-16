@@ -25,7 +25,7 @@ export const apply = bf => bv => lift2 (call) ([ bf, bv ])
 export const map = f => b => create(t => f(b.sample(t)))
 
 export const createForwardReference = ({ pre_assign_sample_error_message }) => {
-	let sample = () => { throw new Error(pre_assign_sample_error_message) }
+	let sample = t => { throw new Error(pre_assign_sample_error_message) }
 	const assign = behavior => {
 		sample = behavior.sample
 		return behavior
