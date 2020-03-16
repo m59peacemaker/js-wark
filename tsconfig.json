@@ -1,12 +1,15 @@
 {
 	"include": [
-		"src/**/*.ts"
+		"src/**/*.js"
 	],
 	"compilerOptions": {
-		"outDir": "./dist",
+		"allowJs": true,
+		"checkJs": true,
+		"outDir": "./build",
+		"declaration": true,
 		"module": "es6",
-		"moduleResolution": "Node",
-		"lib": [ "es2017", "dom" ],
-		"strictNullChecks": true
+		"moduleResolution": "node",
+		"lib": [ "es2019" ],
+		"strict": false
 	}
 }
