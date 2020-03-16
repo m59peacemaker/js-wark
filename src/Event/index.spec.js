@@ -15,7 +15,7 @@ test('Event', t => {
 		a.occur()
 		const t0 = a.t()
 		t.equal(typeof t0, 'symbol', 't is a symbol')
-		t.equal(Number.isInteger(Number(t0.description)), true, 't description value is a string of an integer')
+		t.equal(t0 === null ? false : Number.isInteger(Number(t0.description)), true, 't description value is a string of an integer')
 		t.equal(a.t(), at.sample(t0))
 		t.equal(a.t(), at.sample(t0))
 		a.occur()
@@ -69,8 +69,10 @@ test('Event', t => {
 		// Event(List(Occurrence(List(1, 2, 3)))) event with list of one occurrence with a list of 3 values
 		const a = Event.create()
 		// Event(List(Occurrence(1), Occurrence(2), Occurrence(3))) Event with a list of 3 occurrences each with one value
+		// @ts-ignore
 		const b = Event.switchMap (list => Event.magicTimePowersX (...list)) (a)
 		const c = Event.concatAll([ a, b ])
+		// @ts-ignore
 		const d = Event.bufferN (3) (1) (b)
 		const e = Event.concatAll ([ a, d ])
 		const f = Event.combineAllWith (v => v) ([ a, b, d ])
