@@ -6,9 +6,13 @@ import { identity, noop } from '../util'
 	The number inside the symbol arbitrary and just for debugging and testing. The library never examines it and no application should ever examine it.
 	The symbol acts as a unique identifier to the propagation from a source event and is used to interact with the cache in behaviors so that the behavior can be sampled multiple times within a propagation and return the same value each time.
 */
-const nextTime = (n => () => Symbol(n++))(0)
+const nextTime = (n => () => Symbol(n++))(1)
 
-function Event () {
+const createEventObject = event => Object.assign(Object.create(null), event, {
+	[Symbol.toStringTag]: 'Event'
+})
+
+export const create = () => {
 	const occurrence = Emitter.create()
 	const occurrence_pending = Emitter.create()
 	let t = null
@@ -22,15 +26,15 @@ function Event () {
 
 	function event (v) { return occur(v) }
 
-	return Object.assign(event, {
-		t: () => t,
+	return createEventObject(Object.assign(event, {
 		occur,
 		occurrence_pending,
-		subscribe: occurrence.subscribe
-	})
+		subscribe: occurrence.subscribe,
+		t: () => t,
+	}))
 }
 
-function DerivedEvent (dependencies_source, f) {
+export const derive = dependencies_source => f => {
 	const { emit, subscribe } = Emitter.create()
 	let t = null
 	let pending_t = null
@@ -80,35 +84,39 @@ function DerivedEvent (dependencies_source, f) {
 			return emitter
 		})
 
-	return {
+	return createEventObject({
 		t: () => t,
 		occurrence_pending,
 		subscribe
-	}
+	})
 }
 
-function NeverEvent () {
+export const never = () => {
 	const subscribe = () => noop
-	return {
+	return createEventObject({
 		t: () => null,
 		subscribe,
-		occurrence_pending: { subscribe },
-	}
+		occurrence_pending: { emit: noop, subscribe },
+	})
 }
 
-//--- Creating
-
-export const create = Event
-
-export const never = NeverEvent
+export const forwardReference = () => {
+	const dependency = create()
+	const ref = switchLatest (dependency)
+	const assign = event => {
+		dependency.occur(event)
+		return event
+	}
+	return Object.assign(ref, { assign })
+}
 
 //--- Combining
 
-export const combineAllWith = f => emitters => DerivedEvent(emitters, (emit, o) => emit(f(o)))
+export const combineAllWith = f => events => derive (events) ((occur, o) => occur(f(o)))
 
-export const combineKeyedWith = f => emitters => {
-	const keys = Object.keys(emitters)
-	return combineAllWith (o => f(Object.entries(o).reduce((acc, [ k, v ]) => Object.assign(acc, { [keys[k]]: v }), {}))) (Object.values(emitters))
+export const combineKeyedWith = f => events => {
+	const keys = Object.keys(events)
+	return combineAllWith (o => f(Object.entries(o).reduce((acc, [ k, v ]) => Object.assign(acc, { [keys[k]]: v }), {}))) (Object.values(events))
 }
 
 export const combineKeyed = combineKeyedWith (identity)
@@ -129,29 +137,17 @@ export const combineAllByLeftmost = combineAllWith (o => Object.values(o)[0])
 
 export const combineByLeftmost = a => b => combineAllByLeftmost([ a, b ])
 
-//--- Forward References
-
-export const forwardReference = () => {
-	const dependency = create()
-	const ref = switchLatest (dependency)
-	const assign = event => {
-		dependency.occur(event)
-		return event
-	}
-	return Object.assign(ref, { assign })
-}
-
 //--- Transforming
 
-export const map = f => e => DerivedEvent([ e ], (emit, o) => emit(f(o[0])))
+export const map = f => e => derive ([ e ]) ((occur, o) => occur(f(o[0])))
 
 export const constant = v => map (() => v)
 
-export const filter = f => e => DerivedEvent([ e ], (emit, o) => f(o[0]) && emit(o[0]))
+export const filter = f => e => derive ([ e ]) ((occur, o) => f(o[0]) && occur(o[0]))
 
 //--- Flattening
 
-export const switchMap = f => e => DerivedEvent(Emitter.map (v => [ f(v) ]) (e), (emit, o) => emit((o)[0]))
+export const switchMap = f => e => derive (Emitter.map (v => [ f(v) ]) (e)) ((occur, o) => occur((o)[0]))
 
 export const switchLatest = switchMap (identity)
 
