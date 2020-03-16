@@ -56,7 +56,7 @@ test('Behavior', async t => {
 		eventA.occur(2)
 		eventA.occur(3)
 
-		t.deepEqual(actualA1(), actualA2(), actualA1())
+		t.deepEqual(actualA1(), actualA2(), JSON.stringify(actualA1()))
 	})
 
 	t.test('Behavior.forwardReference', t => {
