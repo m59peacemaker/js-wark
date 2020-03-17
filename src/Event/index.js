@@ -8,7 +8,7 @@ import { identity, noop } from '../util'
 */
 const nextTime = (n => () => Symbol(n++))(1)
 
-const createEventObject = event => Object.assign(Object.create(null), event, {
+const assignEventMetaProperties = event => Object.assign(event, {
 	[Symbol.toStringTag]: 'Event'
 })
 
@@ -26,7 +26,7 @@ export const create = () => {
 
 	function event (v) { return occur(v) }
 
-	return createEventObject(Object.assign(event, {
+	return assignEventMetaProperties(Object.assign(event, {
 		occur,
 		occurrence_pending,
 		subscribe: occurrence.subscribe,
@@ -84,7 +84,7 @@ export const derive = dependencies_source => f => {
 			return emitter
 		})
 
-	return createEventObject({
+	return assignEventMetaProperties({
 		t: () => t,
 		occurrence_pending,
 		subscribe
@@ -93,7 +93,7 @@ export const derive = dependencies_source => f => {
 
 export const never = () => {
 	const subscribe = () => noop
-	return createEventObject({
+	return assignEventMetaProperties({
 		t: () => null,
 		subscribe,
 		occurrence_pending: { emit: noop, subscribe },

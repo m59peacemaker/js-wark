@@ -24,6 +24,14 @@ test('Event', t => {
 		t.equal(t1, at.sample(t1), 'sampling a behavior with new t gets updated behavior value')
 		t.equal(t1, at.sample(t1), 'sampling a behavior with the same/current t gets same behavior value')
 	})
+	t.test('event() can be called as event.occur()', t => {
+		const a = Event.create()
+		const actual = collectValues(a)
+		a(1)
+		a.occur(2)
+		a(3)
+		t.deepEqual(actual(), [ 1, 2, 3 ])
+	})
 	t.test('Event.snapshot', t => {
 		t.test('continuous behavior', t => {
 			const a = Event.create()
