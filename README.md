@@ -137,7 +137,7 @@ const count = Dynamic.fold (add) (0) (countChanges)
 count.subscribe(console.log)
 
 // called only when the value is updated
-count.updates.subscribe(console.lg)
+count.update.subscribe(console.lg)
 
 count.sample() // 0
 increment.occur()
@@ -308,7 +308,7 @@ clicks.subscribe(console.log)
 
 // same as subscribing directly to the dynamic (as above),
 // except without the initial call with the current value of the dynamic
-clicks.updates.console.log)
+clicks.update.subscribe(console.log)
 
 click.occur('click1')
 
@@ -773,7 +773,7 @@ Like [`Event.forwardReference`](#EventForwardReference), but for a behavior and 
 
 ### Dynamic
 
-A dynamic is a behavior that changes discretely with an event of its updates. It can be practical to think of it as an event with memory, though it would be more appropriate to think of a Dynamic as a reactive value. A `first_name_update` is an event, while a `first_name` is a reactive value and so should be modeled as a Dynamic. You can pass a dynamic to a function that takes a behavior and it will work, because it is a behavior. For functions that take an event, you can pass the [`updates`](#DynamicUpdates) property of the dynamic.
+A dynamic is a behavior that changes discretely with an event of its update. It can be practical to think of it as an event with memory, though it would be more appropriate to think of a Dynamic as a reactive value. A `first_name_update` is an event, while a `first_name` is a reactive value and so should be modeled as a Dynamic. You can pass a dynamic to a function that takes a behavior and it will work, because it is a behavior. For functions that take an event, you can pass the [`update`](#DynamicUpdate) property of the dynamic.
 
 The relationship of the event and behavior composing the dynamic is not arbitrary. The event should be occurring with the value of the behavior at the time of occurrence, and the value of the behavior can only change if the update event occurs. Therefore, if transforming the behavior of a dynamic, the event must be [pointed to the transformed behavior](#EventTag) and if transforming the event of a dynamic, the behavior must [always reflect the latest value from the event](#DynamicHold).
 
@@ -791,11 +791,11 @@ event.occur(1)
 dynamic.sample() // 1
 ```
 
-#### `Dynamic.updates`
+#### `Dynamic.update`
 
-`Dynamic.updates (dynamic)`
+`Dynamic.update (dynamic)`
 
-Returns the update event of the dynamic. You also also do this simply by accessing the `.updates` on a dynamic - `dynamic.updates`.
+Returns the update event of the dynamic. You also also do this simply by accessing the `.update` on a dynamic - `dynamic.update`.
 
 #### `Dynamic.filter`
 
@@ -813,7 +813,7 @@ Like [`Behavior.map`](#BehaviorMap).
 
 `Dynamic.constant (v)`
 
-Like [`Behavior.constant`](#BehaviorConstant), with an `updates` event that [never occurs](#EventNever).
+Like [`Behavior.constant`](#BehaviorConstant), with an `update` event that [never occurs](#EventNever).
 
 #### `Dynamic.lift`
 

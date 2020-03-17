@@ -99,7 +99,7 @@ test('Dynamic.bufferN', t => {
 	t.test('bufferN (3) (3)', t => {
 		const a = Event.create()
 		const b = Dynamic.bufferN (3) (3) (a)
-		const actual = collectValues(b.updates)
+		const actual = collectValues(b.update)
 
 		;[ 1, 2, 3, 4, 5, 6, 7, 8, 9 ].forEach(a.occur)
 		
@@ -113,7 +113,7 @@ test('Dynamic.bufferN', t => {
 	t.test('bufferN (3) (2)', t => {
 		const a = Event.create()
 		const b = Dynamic.bufferN (3) (2) (a)
-		const actual = collectValues(b.updates)
+		const actual = collectValues(b.update)
 
 		;[ 1, 2, 3, 4, 5, 6, 7, 8 ].forEach(a.occur)
 
@@ -127,7 +127,7 @@ test('Dynamic.bufferN', t => {
 	t.test('bufferN (2) (4)', t => {
 		const a = Event.create()
 		const b = Dynamic.bufferN (2) (4) (a)
-		const actual = collectValues(b.updates)
+		const actual = collectValues(b.update)
 
 		;[ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 ].forEach(a.occur)
 

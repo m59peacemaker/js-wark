@@ -6,18 +6,18 @@ const Dynamic = (event, behavior) => {
 		f(behavior.sample(event.t))
 		return event.subscribe(f)
 	}
-	return { updates: event, ...behavior, subscribe }
+	return { update: event, ...behavior, subscribe }
 }
 
-const DiscreteBehavior = (value, updates) => {
-	updates.subscribe(v => value = v)
+const DiscreteBehavior = (value, update) => {
+	update.subscribe(v => value = v)
 	return {
 		sample: () => value
 	}
 }
 
 // TODO: maybe make this not ducky?
-export const isDynamic = v => v.updates && v.sample
+export const isDynamic = v => v.update && v.sample
 
 export const create = Dynamic
 
@@ -28,16 +28,16 @@ export const create = Dynamic
 
 export const constant = value => hold (value) (Event.never())
 
-export const updates = dynamic => dynamic.updates
+export const update = dynamic => dynamic.update
 
 export const transformEvent = f => dynamic => {
-	const event = f(dynamic.updates)
-	return hold (dynamic.sample(dynamic.updates.t)) (event)
+	const event = f(dynamic.update)
+	return hold (dynamic.sample(dynamic.update.t)) (event)
 }
 
 export const transformBehavior = f => dynamic => {
 	const behavior = f(dynamic)
-	return Dynamic(Event.tag (behavior) (dynamic.updates), behavior)
+	return Dynamic(Event.tag (behavior) (dynamic.update), behavior)
 }
 
 export const hold = value => event => Dynamic(event, DiscreteBehavior(value, event))
@@ -55,7 +55,7 @@ export const forwardReference = () => {
 	const b_ref = Behavior.createForwardReference({ pre_assign_sample_error_message: 'Dynamic forwardReference should not be sampled before being assigned!' })
 
 	const assign = dynamic => {
-		e_ref.assign(dynamic.updates)
+		e_ref.assign(dynamic.update)
 		b_ref.assign(dynamic)
 		return dynamic
 	}
@@ -79,7 +79,7 @@ export const recentN = n => v =>
 	fold
 		(v => acc => [ ...acc.slice(Math.max(0, acc.length - n + 1)), v ])
 		(isDynamic(v) ? [ v.sample() ] : [ ])
-		(isDynamic(v) ? v.updates : v) // TODO: yikes, these checks are annoying
+		(isDynamic(v) ? v.update : v) // TODO: yikes, these checks are annoying
 
 export const bufferN = n => startEvery => event =>
 	filter // TODO: think through implications of the value without the filter... this is one big expression that seems like it would be composed up from some smaller pieces
