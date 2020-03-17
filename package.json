@@ -1,6 +1,6 @@
 {
   "name": "wark",
-  "version": "0.0.0-alpha.1",
+  "version": "0.0.0-alpha.2",
   "description": "Simple and tiny FRP library of the classic-ish event/behavior variety, named after a chocobo sound.",
   "main": "./src/index.js",
   "sideEffects": false,
@@ -39,7 +39,7 @@
   "dependencies": {},
   "devDependencies": {
     "glob-module-file": "^2.2.1",
-    "onchange": "^3.2.1",
+    "onchange": "^6.1.0",
     "reify": "^0.18.1",
     "tape": "^4.9.1",
     "tsd": "^0.11.0",
