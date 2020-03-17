@@ -1,6 +1,6 @@
 {
   "name": "wark",
-  "version": "0.0.0-alpha.0",
+  "version": "0.0.0-alpha.1",
   "description": "Simple and tiny FRP library of the classic-ish event/behavior variety, named after a chocobo sound.",
   "main": "./src/index.js",
   "sideEffects": false,
