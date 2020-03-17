@@ -36,12 +36,11 @@
   },
   "author": "Johnny Hauser <johnnyhauser@gmail.com>",
   "license": "CC0-1.0",
-  "dependencies": {
-    "reify": "^0.18.1"
-  },
+  "dependencies": {},
   "devDependencies": {
     "glob-module-file": "^2.2.1",
     "onchange": "^3.2.1",
+    "reify": "^0.18.1",
     "tape": "^4.9.1",
     "tsd": "^0.11.0",
     "typescript": "^3.8.3",
