@@ -4,6 +4,8 @@ import * as Behavior  from '../Behavior'
 import * as Dynamic from '../Dynamic'
 import { add, identity, collectValues, pipe } from '../util'
 
+// TODO: clean up this trainwreck of a file
+
 test('Event', t => {
 	t.test('event.t()', t => {
 		// Some extremely bad things are about to go down in this test. DO NOT DO SUCH THINGS IN YOUR APPLICATION CODE. EVER. EVER. EVEREST.
@@ -31,46 +33,6 @@ test('Event', t => {
 		a.occur(2)
 		a(3)
 		t.deepEqual(actual(), [ 1, 2, 3 ])
-	})
-	t.test('Event.snapshot', t => {
-		t.test('continuous behavior', t => {
-			const a = Event.create()
-			const behaviorValues = [ 1, 2, 3 ]
-			const b = Behavior.create(() => behaviorValues.shift())
-			const c = Event.snapshot (b => a => [ b, a ]) (b) (a)
-			const actual = collectValues(c)
-			a.occur(0)
-			a.occur(0)
-			a.occur(0)
-			t.deepEqual(actual(), [ [ 1, 0 ], [ 2, 0 ], [ 3, 0 ] ])
-		})
-		t.test('dynamic snapshotted from the same event that updates it', t => {
-			const a = Event.create()
-			const b = Dynamic.hold (0) (a)
-			const c = Event.snapshot (b => a => [ b, a ]) (b) (a)
-			const actual = collectValues(c)
-			a.occur(1)
-			a.occur(2)
-			a.occur(3)
-			t.deepEqual(actual(), [ [ 1, 1 ], [ 2, 2 ], [ 3, 3 ] ])
-		})
-		t.test('dynamic snapshotted by event that is not the same one that updates it', t => {
-			const a = Event.create()
-			const b = Event.create()
-			const c = Dynamic.hold (0) (a)
-			const d = Event.snapshot (b => a => [ b, a ]) (c) (b)
-			const actual = collectValues(d)
-			a.occur(1)
-			t.equal(c.sample(), 1)
-			a.occur(2)
-			t.equal(c.sample(), 2)
-			b.occur(5)
-			b.occur(10)
-			a.occur(3)
-			a.occur(4)
-			b.occur(15)
-			t.deepEqual(actual(), [ [ 2, 5 ], [ 2, 10 ], [ 4, 15 ] ])
-		})
 	})
 	// TODO:
 	t.skip('generate multiple new moments from one moment and buffer them back to one moment', t => {
@@ -106,289 +68,36 @@ test('Event', t => {
 		])
 	})
 
-	t.test('Event.combineAllWith', t => {
-		t.test('combining events that always occur together', t => {
-			const a = Event.create()
-			const b = Event.map (add(1)) (a)
-			const c = Event.map (add(2)) (a)
-			const d = Event.combineAllWith (o => ({ occurrences : o })) ([ b, a, c ])
-			const actual = collectValues(d)
-			a.occur(10)
-			t.deepEqual(actual(), [ { occurrences: { 0: 11, 1: 10, 2: 12 } } ])
-		})
-		t.test('combining events that sometimes occur together', t => {
-			const a = Event.create()
-			const b = Event.map (add(1)) (a)
-			const c = Event.filter (v => v > 9) (a)
-			const d = Event.combineAllWith (o => ({ occurrences : o })) ([ b, a, c ])
-			const actual = collectValues(d)
-			a.occur(9)
-			a.occur(10)
-			t.deepEqual(actual(), [ { occurrences: { 0: 10, 1: 9 } }, { occurrences: { 0: 11, 1: 10, 2: 10} } ])
-		})
-		t.test('mapping a combined event of simultaneous events', t => {
-			const a = Event.create()
-			const b = Event.map (add(1)) (a)
-			const c = Event.combineAllWith (o => Object.values(o).reduce((a, b) => a + b, 0)) ([ a, b ])
-			const d = Event.map (add(1)) (c)
-			const actualC = collectValues(c)
-			const actualD = collectValues(d)
-			a.occur(1)
-			t.equal(actualC(), [ 3 ])
-			t.equal(actualD(), [ 4 ])
-		})
-	})
+	// TODO:
+	// Event.promiseOfN ? instead of/in addition to promiseNext
+	// 1. finish the current state of things just using promiseNext, copying the fn out to files where it is needed and leave todos on those
+	// 2. make some kind of transduce/reduce - need short circuiting/completion
+	// would be better to use Event.toPromise(Event.take(10))
 
-	t.test('Event.combineKeyedWith', t => {
+	/*
+	// TODO: this belongs in Dynamic tests
+	// TODO: actually, maybe doesn't need to even exist
+	const promisePending = eventOfPromise => Dynamic.onOff (false) (eventOfPromise) (awaitPromise(eventOfPromise))
+	t.test('promisePending', async t => {
 		const a = Event.create()
-		const b = Event.create()
-		const c = Event.map (identity) (a)
-		const d = Event.combineKeyedWith (Object.entries) ({ a, b, c })
-		const actual = collectValues(d)
-		a.occur(0)
-		b.occur(1)
-		t.deepEqual(
-			actual(),
-			[
-				[ [ 'a', 0 ], [ 'c', 0 ] ],
-				[ [ 'b' , 1 ] ]
-			]
-		)
+		const b = promisePending (a)
+		t.equal(b.sample(), false)
+		const p1 = new Promise(resolve => setTimeout(resolve, 50))
+		a.occur(p1)
+		t.equal(b.sample(), true)
+		await p1
+		t.equal(b.sample(), false)
+		a.occur(p1)
+		t.equal(b.sample(), true)
+		await new Promise(resolve => setTimeout(resolve, 4))
+		t.equal(b.sample(), false)
 	})
-
-	t.test('Event.combineKeyed', t => {
+	*/
+	/*const promiseNext = event => new Promise(event.subscribe)
+		t.test('Event.promiseNext', async t => {
 		const a = Event.create()
-		const b = Event.create()
-		const c = Event.map (identity) (a)
-		const d = Event.combineKeyed({ a, b, c })
-		const actual = collectValues(d)
-		a.occur(0)
-		b.occur(1)
-		t.deepEqual(actual(), [ { a: 0, c: 0 }, { b: 1 } ])
-	})
-
-	t.test('Event.concatWith', t => {
-		t.test('whenA, whenB', t => {
-			const a = Event.create()
-			const b = Event.create()
-			const c = Event.concatWith (a => a + a) (b => b + b) (t.fail) (a) (b)
-			const actual = collectValues(c)
-			b.occur('b')
-			b.occur('b')
-			a.occur('a')
-			b.occur('b')
-			a.occur('a')
-			t.deepEqual(actual(), [ 'bb', 'bb', 'aa', 'bb', 'aa' ])
-		})
-		t.test('whenAB', t => {
-			const a = Event.create()
-			const b = Event.filter (v => v % 2 === 0) (a)
-			const c = Event.concatWith (identity) (t.fail) (a => b => [ a, b ]) (a) (b)
-			const actual = collectValues(c)
-			a.occur(0)
-			a.occur(5)
-			a.occur(10)
-			a.occur(15)
-			t.deepEqual(actual(), [ [ 0, 0 ], 5, [ 10, 10 ], 15 ])
-		})
-	})
-
-	t.test('Event.concatAll', t => {
-		t.test('concats given events', t => {
-			const a = Event.create()
-			const b = Event.create()
-			const c = Event.create()
-			const d = Event.concatAll ([ a, b, c ])
-			const actual = collectValues(d)
-			a.occur(1)
-			a.occur(2)
-			b.occur(3)
-			c.occur(4)
-			t.deepEqual(actual(), [ 1, 2, 3, 4 ])
-		})
-		t.test('throws on simultaneous occurrence', t => {
-			const a = Event.create()
-			const b = Event.map (identity) (a)
-			const c = Event.concatAll ([ a, b ])
-			try {
-				a.occur()
-				t.fail('did not throw on simultaneous occurrence!')
-			} catch (error) {
-				t.ok(true, error)
-			}
-		})
-	})
-
-	t.test('Event.concat', t => {
-		t.test('concats given events', t => {
-			const a = Event.create()
-			const b = Event.create()
-			const c = Event.concat (a) (b)
-			const actual = collectValues(c)
-			a.occur(1)
-			a.occur(2)
-			b.occur(3)
-			a.occur(4)
-			t.deepEqual(actual(), [ 1, 2, 3, 4 ])
-		})
-	})
-
-	t.test('Event.combineAllByLeftmost', t => {
-		t.test('concatting events that never occur together occurs with the value of each event occurrence', t => {
-			const a = Event.create()
-			const b = Event.create()
-			const c = Event.combineAllByLeftmost([ a, b ])
-			const actual = collectValues(c)
-			b.occur(10)
-			a.occur(20)
-			a.occur(30)
-			b.occur(40)
-			t.deepEqual(actual(), [ 10, 20, 30, 40 ])
-		})
-		t.test('concatting events that sometimes occur together always occurs with the value of the first given event', t => {
-			const a = Event.create()
-			const b = Event.filter (v => v < 10 || (v !== 10 && v % 2 === 0)) (a)
-			const c = Event.filter (v => v > 10 || (v !== 10 && v % 2 === 0)) (a)
-			const d = Event.combineAllByLeftmost([ b, c ])
-			const actual = collectValues(d)
-			a.occur(9)  // b, < 10
-			a.occur(10)
-			a.occur(11) // c, > 10
-			a.occur(12) // b, c % 2 === 0
-			a.occur(13) // c > 10
-			t.deepEqual(actual(), [ 9, 11, 12, 13 ])
-		})
-		t.test('concatting events that always occur together always occurs the value of the first given event', t => {
-			const a = Event.create()
-			const b = Event.map (add(1)) (a)
-			const c = Event.combineAllByLeftmost([ a, b ])
-			const actual = collectValues(c)
-			a.occur(20)
-			a.occur(30)
-			t.deepEqual(actual(), [ 20, 30 ])
-		})
-	})
-
-	t.test('Event.map', t => {
-		const a = Event.create()
-		const b = Event.map (add(1)) (a)
-		const actualA = collectValues(a)
-		const actualB = collectValues(b)
-
-		a.occur(10)
-		a.occur(20)
-
-		t.deepEqual(actualA(), [ 10, 20 ])
-		t.deepEqual(actualB(), [ 11, 21 ])
-	})
-
-	t.test('Event.filter', t => {
-		const a = Event.create()
-		const b = pipe ([
-			Event.map (add(10)),
-			Event.filter (v => v % 2 === 0),
-			Event.map (add(1)),
-			Event.map (add(1)),
-			Event.filter(v => v !== 18),
-			Event.map (v => v * 2)
-		]) (a)
-		const actual = collectValues(b)
-
-		;[ 1, 2, 3, 4, 5, 6, 7, 8 ].forEach(a.occur)
-
-		t.deepEqual(actual(), [ 28, 32, 40 ])
-	})
-
-	t.test('Event.switchMap', t => {
-		t.test('has the occurrences of only the most recent event', t => {
-			const a = Event.create()
-			const b = Event.create()
-			const c = Event.create()
-			const d = Event.switchMap (v => v) (c)
-
-			const actual = collectValues(d)
-
-			c.occur(a)
-			a.occur(1)
-			a.occur(2)
-
-			c.occur(b)
-			b.occur(3)
-			b.occur(4)
-			a.occur('x')
-			b.occur(5)
-
-			c.occur(a)
-			a.occur(6)
-			b.occur('x')
-			a.occur(7)
-
-			c.occur(b)
-			b.occur(8)
-
-			t.deepEqual(actual(), [ 1, 2, 3, 4, 5, 6, 7, 8 ])
-		})
-
-		t.test('does not break the next operator', t => {
-			const a = Event.create()
-			const b = Event.create()
-			const c = Event.create()
-			const d = Event.switchMap (v => v) (c)
-			const e = Event.map (add(1)) (d)
-
-			const actual = collectValues(e)
-
-			c.occur(a)
-			a.occur(1)
-			a.occur(2)
-			c.occur(b)
-			b.occur(3)
-			b.occur(4)
-			a.occur('x')
-			b.occur(5)
-			c.occur(a)
-			a.occur(6)
-			b.occur('x')
-			a.occur(7)
-			c.occur(b)
-			b.occur(8)
-
-			t.deepEqual(actual(), [ 2, 3, 4, 5, 6, 7, 8, 9 ])
-		})
-
-		t.test('works with other switching events', t => {
-			const a = Event.create()
-			const b = Event.create()
-			const eventOfEvent1 = Event.create()
-			const eventOfEvent2 = Event.create()
-			const switch1 = Event.switchMap (identity) (eventOfEvent1)
-			const switch2 = Event.switchMap (identity) (eventOfEvent2)
-			const eventOfSwitches = Event.create()
-			const switchOfSwitches = Event.switchMap (identity) (eventOfSwitches)
-
-			const actual = collectValues(switchOfSwitches)
-
-			eventOfSwitches.occur(switch1)
-			eventOfEvent1.occur(a)
-			a.occur(5)
-			eventOfEvent1.occur(b)
-			a.occur('x')
-			b.occur(10)
-			eventOfEvent1.occur(a)
-			a.occur(15)
-			eventOfSwitches.occur(switch2)
-			a.occur('x')
-			b.occur('x')
-			eventOfEvent2.occur(a)
-			b.occur('x')
-			a.occur(20)
-			eventOfEvent2.occur(b)
-			b.occur(25)
-			eventOfSwitches.occur(switch1)
-			b.occur('x')
-			a.occur(30)
-
-			t.deepEqual(actual(), [ 5, 10, 15, 20, 25, 30 ])
-		})
-	})
+		const p = promiseNext(a)
+		a.occur('foo')
+		t.deepEqual(await p, 'foo')
+	})*/
 })

@@ -16,7 +16,7 @@ const DiscreteBehavior = (value, update) => {
 	}
 }
 
-// TODO: maybe make this not ducky?
+// TODO: make this not ducky
 export const isDynamic = v => v.update && v.sample
 
 export const create = Dynamic
@@ -32,7 +32,7 @@ export const update = dynamic => dynamic.update
 
 export const transformEvent = f => dynamic => {
 	const event = f(dynamic.update)
-	return hold (dynamic.sample(dynamic.update.t)) (event)
+	return hold (dynamic.sample(dynamic.update.t())) (event)
 }
 
 export const transformBehavior = f => dynamic => {
@@ -63,31 +63,27 @@ export const forwardReference = () => {
 	return Object.assign(Dynamic(e_ref, b_ref), { assign })
 }
 
-export const fold = reducer => initialValue => event => {
-	const p = forwardReference()
-	return p.assign(
-		hold
-			(initialValue)
-			(Event.snapshot (b => a => reducer (a) (b)) (p) (event))
-	)
-}
-
 // TODO: figure out the todos and make stuff better and document it, or ditch these, dunno yet
 // TODO: maybe a pattern will emerge for creating functions that do `isDynamic(v) ? [ v ] : []` (in whatever generic/reusable way) Maybe something about monoids and empty, or just a wrapper around fold
 // having a recentN transducer and a reduction for Event and a different one for Dynamic  would probably settle everything like this
-export const recentN = n => v =>
+/*export const recentN = n => v =>
 	fold
 		(v => acc => [ ...acc.slice(Math.max(0, acc.length - n + 1)), v ])
 		(isDynamic(v) ? [ v.sample() ] : [ ])
 		(isDynamic(v) ? v.update : v) // TODO: yikes, these checks are annoying
 
-export const bufferN = n => startEvery => event =>
-	filter // TODO: think through implications of the value without the filter... this is one big expression that seems like it would be composed up from some smaller pieces
+export const bufferN = n => startEvery => v => // again with the awfulness
+	filter
 		(buffer => buffer.length === n)
 		(fold
 			(v => buffer => [ ...(buffer.length === Math.max(n, startEvery) ? buffer.slice(startEvery) : buffer), v ])
-			([])
-			(event)
+			(isDynamic(v) ? [ v.sample() ] : [ ])
+			(isDynamic(v) ? v.update : v)
 		)
-
 export const pairwise = bufferN (2) (1)
+*/
+
+export * from './chain'
+export * from './fold'
+export * from './onOff'
+export * from './toggle'

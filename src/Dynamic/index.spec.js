@@ -80,7 +80,7 @@ test('Dynamic', t => {
 	})
 })
 
-test('Dynamic.bufferN', t => {
+test.skip('Dynamic.bufferN', t => {
 	t.test('bufferN (4) (1)', t => {
 		const a = Event.create()
 		const b = Dynamic.bufferN (4) (1) (a)
@@ -139,7 +139,7 @@ test('Dynamic.bufferN', t => {
 	})
 })
 
-test('Dynamic.pairwise', t => {
+test.skip('Dynamic.pairwise', t => {
 	const a = Event.create()
 	const b = Dynamic.pairwise(a)
 	const actual = collectValues(b)
