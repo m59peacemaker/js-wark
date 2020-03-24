@@ -38,6 +38,7 @@
   "license": "CC0-1.0",
   "dependencies": {},
   "devDependencies": {
+    "delay": "^4.3.0",
     "glob-module-file": "^2.2.1",
     "onchange": "^6.1.0",
     "reify": "^0.18.1",
