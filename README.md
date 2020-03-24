@@ -167,7 +167,7 @@ const counterOperations = compose
 		Event.concatAll
 	)
 	([
-		Event.constant (always(0)) (reset))
+		Event.constant (always(0)) (reset),
 		Event.constant (add(1)) (increment),
 		Event.constant (add(-1)) (decrement),
 	])
@@ -206,6 +206,9 @@ const counterOperations = compose // (read this from the bottom up)
 		Event.concatAll
 	)
 	([
+		// Make an event from `reset` whose occurrence value
+		// is always (constant) a function that always returns 0
+		Event.constant (always(0)) (reset),
 		// Make an event from `increment` whose occurrence value
 		// is always a function that adds 1 to its input.
 		Event.constant (add(1)) (increment),
