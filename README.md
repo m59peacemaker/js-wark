@@ -24,6 +24,8 @@ Coordinating events and values that change with code is often an unwieldy, intel
 
 These fancy human words should have qualities that let them roll off the tongue for hours without causing us to go mute at some point. I was trying to get to the point that we want to avoid complexity walls, but my analogy didn't work out. HELP WANTED: good analogy.
 
+TODO: put something about compositionality and events (and other reactives?) being first class here.
+
 Let's look at some expressions of the same goal - a simple counter.
 
 I will start with words, stating what I believe this counter **is**, making no consideration of how it should be written as code.
