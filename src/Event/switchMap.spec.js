@@ -1,6 +1,6 @@
 import { test } from 'zora'
-import * as Event from './'
-import { add, collectValues, identity } from '../util'
+import { Event } from '../index.js'
+import { add, collectValues, identity } from '../util.js'
 
 test('Event.switchMap', t => {
 	t.test('has the occurrences of only the most recent event', t => {

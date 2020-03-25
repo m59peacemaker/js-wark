@@ -1,5 +1,5 @@
-import { noop } from '../util'
-import { assignEventMetaProperties } from './assignEventMetaProperties'
+import { assignEventMetaProperties } from './assignEventMetaProperties.js'
+import { noop } from '../util.js'
 
 export const never = () => {
 	const subscribe = () => noop

@@ -1,7 +1,7 @@
 import { test } from 'zora'
-import { collectValues } from '../util'
 import delay from 'delay'
-import * as Event from './'
+import { Event } from '../index.js'
+import { collectValues } from '../util.js'
 
 test('Event.awaitPromiseOrdered', async t => {
 	const a = Event.create()

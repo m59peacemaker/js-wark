@@ -1,4 +1,4 @@
-import { combineAllWith } from './combineAllWith'
+import { combineAllWith } from './combineAllWith.js'
 
 export const combineKeyedWith = f => events => {
 	const keys = Object.keys(events)

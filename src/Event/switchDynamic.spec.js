@@ -1,6 +1,5 @@
 import { test } from 'zora'
-import * as Event from './'
-import * as Dynamic from '../Dynamic'
+import { Dynamic, Event } from '../index.js'
 
 test('Event.switchDynamic', t => {
 	const a = Event.create()

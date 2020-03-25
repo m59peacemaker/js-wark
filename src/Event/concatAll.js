@@ -1,4 +1,4 @@
-import { combineAllWith } from './combineAllWith'
+import { combineAllWith } from './combineAllWith.js'
 
 export const concatAll = combineAllWith (o => {
 	const values = Object.values(o)

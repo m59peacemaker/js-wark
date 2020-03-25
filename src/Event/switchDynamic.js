@@ -1,6 +1,6 @@
-import { combineAllByLeftmost } from './combineAllByLeftmost'
-import { switchLatest } from './switchLatest'
-import { until } from './until'
+import { combineAllByLeftmost } from './combineAllByLeftmost.js'
+import { switchLatest } from './switchLatest.js'
+import { until } from './until.js'
 
 export const switchDynamic = dynamic => {
 	const switched = switchLatest (dynamic.update)

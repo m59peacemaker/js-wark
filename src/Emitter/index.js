@@ -1,4 +1,4 @@
-import { noop, pipe } from '../util'
+import { noop, pipe } from '../util.js'
 
 // The implementation and operators here should be nothing more than what is used to implement Event.
 

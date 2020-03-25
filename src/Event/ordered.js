@@ -1,6 +1,6 @@
-import { combineAllWith } from './combineAllWith'
-import { map } from './map'
-import { zip } from './zip'
+import { combineAllWith } from './combineAllWith.js'
+import { map } from './map.js'
+import { zip } from './zip.js'
 
 export const ordered = events => combineAllWith
 	(o => Object.values(o).map(values => values[values.length - 1]))

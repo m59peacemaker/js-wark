@@ -1,8 +1,6 @@
 import { test } from 'zora'
-import * as Event from './'
-import * as Behavior  from '../Behavior'
-import * as Dynamic from '../Dynamic'
-import { add, identity, collectValues, pipe } from '../util'
+import { Behavior, Event, Dynamic } from '../index.js'
+import { add, identity, collectValues, pipe } from '../util.js'
 
 // TODO: clean up this trainwreck of a file
 
@@ -34,8 +32,9 @@ test('Event', t => {
 		a(3)
 		t.deepEqual(actual(), [ 1, 2, 3 ])
 	})
+	/*
 	// TODO:
-	t.skip('generate multiple new moments from one moment and buffer them back to one moment', t => {
+	test('generate multiple new moments from one moment and buffer them back to one moment', t => {
 		// Event(List(Occurrence(List(1, 2, 3)))) event with list of one occurrence with a list of 3 values
 		const a = Event.create()
 		// Event(List(Occurrence(1), Occurrence(2), Occurrence(3))) Event with a list of 3 occurrences each with one value

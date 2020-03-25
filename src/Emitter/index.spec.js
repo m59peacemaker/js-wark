@@ -1,6 +1,6 @@
 import { test } from 'zora'
-import * as Emitter from './'
-import { collectValues } from '../util'
+import * as Emitter from './index.js'
+import { collectValues } from '../util.js'
 
 test('Emitter.emit emits to subscriber', t => {
 	const emitter = Emitter.create()

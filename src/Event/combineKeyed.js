@@ -1,4 +1,4 @@
-import { combineKeyedWith } from './combineKeyedWith'
-import { identity } from '../util'
+import { combineKeyedWith } from './combineKeyedWith.js'
+import { identity } from '../util.js'
 
 export const combineKeyed = combineKeyedWith (identity)

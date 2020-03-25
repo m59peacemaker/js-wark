@@ -1,8 +1,6 @@
 import { test } from 'zora'
-import * as Event from '../Event'
-import * as Behavior from '../Behavior'
-import * as Dynamic from './'
-import { add, collectValues } from '../util'
+import { Behavior, Dynamic, Event } from '../index.js'
+import { add, collectValues } from '../util.js'
 
 test('Dynamic', t => {
 	t.test('Can be used just as a behavior', t => {
@@ -12,16 +10,6 @@ test('Dynamic', t => {
 		t.equal(a.sample(), 2)
 		t.equal(b.sample(), 5)
 		t.equal(c.sample(), [ 2, 5 ])
-	})
-
-	t.test('Dynamic.hold', t => {
-		const event = Event.create()
-		const dynamic = Dynamic.hold (0) (event)
-		const actual = collectValues(dynamic)
-		event.occur(1)
-		event.occur(2)
-		event.occur(3)
-		t.equal(actual(), [ 0, 1, 2, 3 ])
 	})
 
 	t.test('Dynamic.filter', t => {
@@ -80,7 +68,8 @@ test('Dynamic', t => {
 	})
 })
 
-test.skip('Dynamic.bufferN', t => {
+/*
+test('Dynamic.bufferN', t => {
 	t.test('bufferN (4) (1)', t => {
 		const a = Event.create()
 		const b = Dynamic.bufferN (4) (1) (a)
@@ -148,3 +137,4 @@ test.skip('Dynamic.pairwise', t => {
 
 	t.deepEqual(actual(), [ [], [ 1, 2 ], [ 2, 3 ], [ 3, 4 ] ])
 })
+*/

@@ -1,7 +1,6 @@
 import { test } from 'zora'
-import * as Event from './'
-import * as Dynamic from '../Dynamic'
-import { collectValues } from '../util'
+import { Event, Dynamic } from '../index.js'
+import { collectValues } from '../util.js'
 
 test('Event.gate', t => {
 	const toggleGate = Event.create()

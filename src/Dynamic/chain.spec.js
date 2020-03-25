@@ -1,7 +1,6 @@
 import { test } from 'zora'
-import * as Event from '../Event'
-import * as Dynamic from './'
-import { collectValues } from '../util'
+import { Dynamic, Event } from '../index.js'
+import { collectValues } from '../util.js'
 
 test('Dynamic.chain', t => {
 	const valueUpdate = Event.create()

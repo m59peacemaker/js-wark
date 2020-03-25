@@ -1,4 +1,4 @@
-import { create } from './create'
+import { create } from './create.js'
 
 export const fromPromise = promise => {
 	const event = create()

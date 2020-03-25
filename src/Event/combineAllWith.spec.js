@@ -1,6 +1,6 @@
 import { test } from 'zora'
-import * as Event from './'
-import { add, collectValues } from '../util'
+import { Event } from '../index.js'
+import { add, collectValues } from '../util.js'
 
 test('Event.combineAllWith', t => {
 	t.test('combining events that always occur together', t => {

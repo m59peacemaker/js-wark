@@ -1,6 +1,6 @@
 import { test } from 'zora'
-import * as Event from './'
-import { add, collectValues } from '../util'
+import { Event } from '../index.js'
+import { add, collectValues } from '../util.js'
 
 test('Event.map', t => {
 	const a = Event.create()

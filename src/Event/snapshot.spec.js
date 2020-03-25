@@ -1,8 +1,6 @@
 import { test } from 'zora'
-import { collectValues } from '../util'
-import * as Event from './'
-import * as Behavior from '../Behavior'
-import * as Dynamic from '../Dynamic'
+import { Behavior, Event, Dynamic } from '../index.js'
+import { collectValues } from '../util.js'
 
 test('Event.snapshot', t => {
 	t.test('continuous behavior', t => {

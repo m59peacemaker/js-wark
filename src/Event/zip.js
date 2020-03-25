@@ -1,8 +1,8 @@
-import { map } from './map'
-import { filter } from './filter'
-import { combineAllWith } from './combineAllWith'
-import { fold } from '../Dynamic'
-import { compose, adjust, append } from '../util'
+import { combineAllWith } from './combineAllWith.js'
+import { filter } from './filter.js'
+import { map } from './map.js'
+import { fold } from '../Dynamic/fold.js'
+import { compose, adjust, append } from '../util.js'
 
 const allOccurred = buffer => buffer.every(array => array.length > 0)
 

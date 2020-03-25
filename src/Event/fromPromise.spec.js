@@ -1,5 +1,5 @@
 import { test } from 'zora'
-import * as Event from './'
+import { Event } from '../index.js'
 
 // TODO: replace this
 const promiseNext = event => new Promise(event.subscribe)

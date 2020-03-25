@@ -1,6 +1,6 @@
-import { fromPromise } from './fromPromise'
-import { ordered } from './ordered'
-import { awaitConcurrentPromisesWith } from './awaitConcurrentPromisesWith'
+import { awaitConcurrentPromisesWith } from './awaitConcurrentPromisesWith.js'
+import { fromPromise } from './fromPromise.js'
+import { ordered } from './ordered.js'
 
 export const awaitPromiseOrdered = awaitConcurrentPromisesWith (promises => {
 	const events = promises.map(fromPromise)

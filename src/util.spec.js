@@ -1,5 +1,5 @@
 import { test } from 'zora'
-import { pipe } from './util'
+import { pipe } from './util.js'
 
 test('pipe', t => {
 	t.equal(

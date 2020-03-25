@@ -1,5 +1,6 @@
-import { forwardReference, hold } from './'
-import { snapshot } from '../Event'
+import { forwardReference } from './forwardReference.js'
+import { hold } from './hold.js'
+import { snapshot } from '../Event/snapshot.js'
 
 export const fold = reducer => initialValue => event => {
 	const p = forwardReference()

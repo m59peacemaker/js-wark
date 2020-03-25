@@ -1,6 +1,5 @@
 import { test } from 'zora'
-import * as Dynamic from '../Dynamic'
-import * as Event from './'
+import { Event, Dynamic } from '../index.js'
 
 test('Event.ordered', t => {
 	t.test('zipping zipped - sanity checking', t => {

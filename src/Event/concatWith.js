@@ -1,4 +1,4 @@
-import { combineAllWith } from './combineAllWith'
+import { combineAllWith } from './combineAllWith.js'
 
 export const concatWith = whenA => whenB => whenAB => a => b =>
 	combineAllWith

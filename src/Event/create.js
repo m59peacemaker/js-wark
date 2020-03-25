@@ -1,5 +1,5 @@
-import { create as Emitter_create } from '../Emitter'
-import { assignEventMetaProperties } from './assignEventMetaProperties'
+import { create as Emitter_create } from '../Emitter/index.js'
+import { assignEventMetaProperties } from './assignEventMetaProperties.js'
 
 /*
 	This is shared, but always unique due to Symbol. It would not cause any difference in behavior if two instances of the library came into contact.

@@ -1,5 +1,9 @@
-import { hold, map } from './'
-import { combineAllByLeftmost, map as Event_map, until, switchDynamic } from '../Event'
+import { hold } from './hold.js'
+import { map } from './map.js'
+import { combineAllByLeftmost } from '../Event/combineAllByLeftmost.js'
+import { map as Event_map } from '../Event/map.js'
+import { until } from '../Event/until.js'
+import { switchDynamic } from '../Event/switchDynamic.js'
 
 export const chain = f => dynamic => {
 	const dynamicOfDynamic = map (v => f(v)) (dynamic)

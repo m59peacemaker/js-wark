@@ -1,5 +1,5 @@
-import { create as Emitter_create, derive as Emitter_derive, switchMap as Emitter_switchMap } from '../Emitter'
-import { assignEventMetaProperties } from './assignEventMetaProperties'
+import { create as Emitter_create, derive as Emitter_derive, switchMap as Emitter_switchMap } from '../Emitter/index.js'
+import { assignEventMetaProperties } from './assignEventMetaProperties.js'
 
 export const derive = dependencies_source => f => {
 	const { emit, subscribe } = Emitter_create()

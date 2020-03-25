@@ -1,8 +1,6 @@
 import { test } from 'zora'
-import * as Behavior from './'
-import * as Event from '../Event'
-import * as Dynamic from '../Dynamic'
-import { add, identity, collectValues } from '../util'
+import { Behavior, Event, Dynamic } from '../index.js'
+import { add, identity, collectValues } from '../util.js'
 
 test('Behavior', async t => {
 	t.test('behavior.sample() returns the same value for the same t and next value for the next t', t => {

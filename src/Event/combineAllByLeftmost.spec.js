@@ -1,6 +1,6 @@
 import { test } from 'zora'
-import * as Event from './'
-import { add, collectValues } from '../util'
+import { Event } from '../index.js'
+import { add, collectValues } from '../util.js'
 
 test('Event.combineAllByLeftmost', t => {
 	t.test('concatting events that never occur together occurs with the value of each event occurrence', t => {

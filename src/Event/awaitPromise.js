@@ -1,4 +1,4 @@
-import { create } from './create'
+import { create } from './create.js'
 
 // occurs with the value of each promise, when each promise resolves (occurs in order of resolution, not order received)
 export const awaitPromise = eventOfPromise => {

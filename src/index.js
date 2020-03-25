@@ -1,3 +1,3 @@
-export * as Event from './Event'
-export * as Behavior from './Behavior'
-export * as Dynamic from './Dynamic'
+export * as Event from './Event/index.js'
+export * as Behavior from './Behavior/index.js'
+export * as Dynamic from './Dynamic/index.js'

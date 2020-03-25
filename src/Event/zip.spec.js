@@ -1,6 +1,6 @@
 import { test } from 'zora'
-import * as Event from './'
-import { collectValues } from '../util'
+import { Event } from '../index.js'
+import { collectValues } from '../util.js'
 
 test('Event.zip', t => {
 	const a = Event.create()

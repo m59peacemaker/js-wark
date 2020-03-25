@@ -1,5 +1,5 @@
-import { create } from './create'
-import { switchLatest } from './switchLatest'
+import { create } from './create.js'
+import { switchLatest } from './switchLatest.js'
 
 export const forwardReference = () => {
 	const dependency = create()

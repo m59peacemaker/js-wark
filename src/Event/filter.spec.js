@@ -1,6 +1,6 @@
 import { test } from 'zora'
-import * as Event from './'
-import { add, collectValues, pipe } from '../util'
+import { Event } from '../index.js'
+import { add, collectValues, pipe } from '../util.js'
 
 test('Event.filter', t => {
 	const a = Event.create()

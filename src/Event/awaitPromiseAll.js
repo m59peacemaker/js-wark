@@ -1,5 +1,5 @@
-import { fromPromise } from './fromPromise'
-import { awaitConcurrentPromisesWith } from './awaitConcurrentPromisesWith'
+import { awaitConcurrentPromisesWith } from './awaitConcurrentPromisesWith.js'
+import { fromPromise } from './fromPromise.js'
 
 export const awaitPromiseAll = awaitConcurrentPromisesWith (promises => {
 	const event = fromPromise(Promise.all(promises))

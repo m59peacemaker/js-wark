@@ -1,11 +1,12 @@
 {
   "name": "wark",
-  "version": "0.0.0-alpha.4",
+  "version": "0.0.0-alpha.5",
   "description": "Simple and tiny FRP library of the classic-ish event/behavior variety, named after a chocobo sound.",
   "main": "./src/index.js",
+  "type": "module",
   "sideEffects": false,
   "scripts": {
-    "test": "glob-module-file --pattern './src/**/*.{spec,test}.js' | node -r reify",
+    "test": "glob-module-file --format=es --importStar --pattern './src/**/*.{spec,test}.js' | rollup -c rollup.test.config.js | node --input-type=module",
     "dev": "onchange 'src/**/*' -i -- npm run test"
   },
   "keywords": [
@@ -29,11 +30,12 @@
   "license": "CC0-1.0",
   "dependencies": {},
   "devDependencies": {
+    "@rollup/plugin-commonjs": "^11.0.2",
+    "@rollup/plugin-node-resolve": "^7.1.1",
     "delay": "^4.3.0",
-    "glob-module-file": "^2.2.1",
+    "glob-module-file": "^3.0.1",
     "onchange": "^6.1.0",
-    "reify": "^0.18.1",
-    "tape": "^4.9.1",
+    "rollup": "^2.2.0",
     "zora": "^3.1.8"
   }
 }

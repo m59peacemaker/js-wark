@@ -1,6 +1,6 @@
 import { test } from 'zora'
-import * as Event from './'
-import { collectValues, identity } from '../util'
+import { Event } from '../index.js'
+import { collectValues, identity } from '../util.js'
 
 test('Event.concatWith', t => {
 	t.test('whenA, whenB', t => {
