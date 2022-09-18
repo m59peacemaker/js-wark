@@ -1,0 +1,33 @@
+{
+  "name": "vigilant",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/index.cjs",
+  "module": "dist/esm/index.js",
+  "unpkg": "dist/index.umd.min.js",
+  "sideEffects": false,
+  "type": "module",
+  "scripts": {
+    "build": "rollup -c",
+    "dev": "onchange 'src/**/*' -i -- npm run tests",
+    "glob-files": "glob-module-file --format=es --importStar --pathPrefix='' --pattern \"${GLOB_FILES_PATTERN}\"",
+    "node-run": "f () { GLOB_FILES_PATTERN=\"$1\" npm run --silent run-glob-pattern; }; f",
+    "prepublishOnly": "npm run build",
+    "run-glob-pattern": "npm run --silent glob-files | rollup -c rollup.tests.config.js > build/run.js && node --expose-gc --allow-natives-syntax --enable-source-maps build/run.js",
+    "test:docs": "gfmjs ./README.md",
+    "test": "npm-run-all --sequential tests test:docs",
+    "tests": "GLOB_FILES_PATTERN=\"./{src,test,tests}/**/*.{spec,test}.js\" npm run --silent run-glob-pattern",
+    "tests:watch": "onchange 'src/**/*' -i -- npm run --silent tests"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@rollup/plugin-node-resolve": "^14.1.0",
+    "glob-module-file": "^3.0.2",
+    "onchange": "^7.1.0",
+    "rollup": "^2.79.0",
+    "rollup-plugin-terser": "^7.0.2",
+    "uvu": "^0.5.6"
+  }
+}
