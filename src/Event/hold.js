@@ -3,7 +3,7 @@ import { noop } from '../util.js'
 
 const registry = new FinalizationRegistry(unobserve => unobserve())
 
-export const hold = initial_value => event => {
+const _hold = (initial_value, event, event_complete) => {
 	let value = initial_value
 
 	const unobserve = event.observe({
@@ -19,10 +19,10 @@ export const hold = initial_value => event => {
 		Statefully observing an event requires also observing its complete event,
 		so that the complete event's occurrence time property is updated when it should occur.
 	*/
-	const unobserve_complete = event.complete.observe({
+	const unobserve_complete = event_complete.observe({
 		pre_compute: noop,
 		compute: () => {
-			if (event.complete.value !== nothing) {
+			if (event_complete.value !== nothing) {
 				// TODO: this breaks garbage collection because it references `self`... so does this need to be done differently or is it unnecessary?
 				// registry.unregister(self)
 				unobserve()
@@ -31,9 +31,16 @@ export const hold = initial_value => event => {
 		}
 	})
 
+	// TODO:
 	const self = {
-		run: () => value,
-		updates: event
+		compute: (time, f) => {
+			f (value)
+		},
+		run: time => {
+			self.compute (time, noop)
+			return value
+		},
+		updates: f => f(event)
 	}
 
 	registry.register(self, () => {
@@ -42,4 +49,18 @@ export const hold = initial_value => event => {
 	})
 
 	return self
+}
+
+export const hold = initial_value => event => {
+	let self
+	const queue = []
+	event(event =>
+		event.complete(event_complete => {
+			self = _hold(initial_value, event, event_complete)
+			while (queue.length > 0) {
+				queue.pop()(self)
+			}
+		})
+	)
+	return f => self === undefined ? queue.push(f) : f(self)
 }

@@ -3,11 +3,11 @@ import { catch_up_observer } from './internal/catch_up_observer.js'
 import { pre_compute_observers } from './internal/pre_compute_observers.js'
 import { compute_observers } from './internal/compute_observers.js'
 
-export const calling = f => input_event => {
+export const _calling = (f, input_event, input_event_complete) => {
 	const observers = new Map()
 
 	const self = {
-		complete: input_event.complete,
+		complete: input_event_complete,
 		observers,
 		settled: true,
 		time: null,
@@ -50,12 +50,12 @@ export const calling = f => input_event => {
 		making it effectively true that the complete event only occurs once.
 	*/
 	let complete_propagation
-	const unobserve_input_event_complete_event = input_event.complete.observe({
+	const unobserve_input_event_complete_event = input_event_complete.observe({
 		pre_compute: dependency => {
 			complete_propagation = dependency.propagation
 		},
 		compute: () => {
-			if (input_event.complete.value !== nothing) {
+			if (input_event_complete.value !== nothing) {
 				complete_propagation.post_propagation.add(() => {
 					unobserve_input_event()
 					unobserve_input_event_complete_event()
@@ -65,4 +65,18 @@ export const calling = f => input_event => {
 	})
 
 	return self
+}
+
+export const calling = f => input_event => {
+	let self
+	const queue = []
+	input_event(input_event =>
+		input_event.complete(input_event_complete => {
+			self = _calling (f, input_event, input_event_complete)
+			while (queue.length > 0) {
+				queue.pop()(self)
+			}
+		})
+	)
+	return f => self === undefined ? queue.push(f) : f(self)
 }

@@ -5,8 +5,7 @@ import { nothing } from './internal/nothing.js'
 import { catch_up_observer } from './internal/catch_up_observer.js'
 import { compute_observers } from './internal/compute_observers.js'
 import { pre_compute_observers } from './internal/pre_compute_observers.js'
-import {take_until} from './take_until.js'
-import {alt} from './alt.js'
+import { _take_until } from './take_until.js'
 
 
 const registry = new FinalizationRegistry(unobserve => unobserve())
@@ -32,7 +31,7 @@ const registry = new FinalizationRegistry(unobserve => unobserve())
 	// 	)
 	// 	(event)
 
-export const take = n => input_event => {
+export const _take = (n, input_event, input_event_complete) => {
 	const observers = new Map()
 
 	let i = 0
@@ -66,14 +65,14 @@ export const take = n => input_event => {
 				return
 			}
 			const { time, post_propagation } = self.propagation
-			if (input_event.settled && input_event.complete.settled) {
+			if (input_event.settled && input_event_complete.settled) {
 				self.settled = true
 				if (input_event.value !== nothing) {
 					++i
 				}
-				if (i === n || input_event.complete.value !== nothing) {
+				if (i === n || input_event_complete.value !== nothing) {
 					self.time = time
-					self.value = input_event.value !== nothing ? input_event.value : input_event.complete.value
+					self.value = input_event.value !== nothing ? input_event.value : input_event_complete.value
 					post_propagation.add(() => {
 						self.value = nothing
 						unobserve_input_event()
@@ -85,15 +84,29 @@ export const take = n => input_event => {
 		}
 	}
 
-	self.complete = self
+	self.complete = f => f(self)
 
 	const unobserve_input_event = input_event.observe(dependency_observer)
-	const unobserve_input_complete_event = input_event.complete.observe(dependency_observer)
+	const unobserve_input_complete_event = input_event_complete.observe(dependency_observer)
 
 	registry.register(self, () => {
 		unobserve_input_event()
 		unobserve_input_complete_event()
 	})
 
-	return take_until (self) (input_event)
+	return _take_until(self, input_event)
+}
+
+export const take = n => input_event => {
+	let self
+	const queue = []
+	input_event(input_event =>
+		input_event.complete(input_event_complete => {
+			self = _take(n, input_event, input_event_complete)
+			while (queue.length > 0) {
+				queue.pop()(self)
+			}
+		})
+	)
+	return f => self === undefined ? queue.push(f) : f(self)
 }

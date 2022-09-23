@@ -1,0 +1,100 @@
+const uninitialized = Symbol()
+
+class Reference {
+	#value = uninitialized
+	#dependants = new Set()
+	#queue = []
+	#assign (x) {
+		this.#value = x
+		while (this.#queue.length > 0) {
+			this.#queue.pop()(x)
+		}
+	}
+	has_dependant (x) {
+		if (this.#dependants.has(x)) {
+			return true
+		}
+		for (const dependant of this.#dependants) {
+			if (dependant.has_dependant(x)) {
+				return true
+			}
+		}
+		return false
+	}
+	get (dependant, f) {
+		if (this.#value === uninitialized) {
+			this.#dependants.add(dependant)
+			this.#queue.push(f)
+		} else {
+			f(this.#value)
+		}
+	}
+	assign (x) {
+		if (x instanceof Reference) {
+			if (this.has_dependant(x)) {
+				const tmp = new Proxy({}, {
+					get (_, prop) {
+						return (f) => {
+							f(f => {
+								x.get(Symbol(), x => x[prop](f))
+							})
+						}
+					}
+				})
+				this.#assign(tmp)
+			} else {
+				/*
+					TODO:
+						maybe this `else` should be removed,
+						so that when this reference is self-referencing, its actual value is determined and assigned,
+						rather than remaining a Proxy
+						Also... maybe this doesn't work anyway... may only work for values that are objects
+				*/
+				x.get(Symbol(), this.#assign.bind(this))
+			}
+		} else {
+			this.#assign(x)
+		}
+	}
+}
+
+const reference = () => new Reference()
+
+const a = reference()
+const create_b = a => {
+	const ref = reference()
+	a.get(ref, a =>
+		a.bar(a_bar => {
+			a_bar(console.log)
+			ref.assign({
+				foo: a_bar,
+				bar: f => f(0)
+			})
+		})
+	)
+	return ref
+}
+
+const b = create_b(a)
+
+const c = reference()
+b.get(c, b =>
+	console.log({ b }) ||
+	b.bar(b_bar =>
+		c.assign({
+			bar: b_bar
+		})
+		// b.foo(b_foo => {
+		// 	c.assign({
+		// 		foo: b_foo,
+		// 		bar: b_bar
+		// 	})
+		// })
+	)
+)
+
+a.assign(c)
+// a.assign(b)
+
+// b.get(Symbol(), b => b.foo(console.log))
+c.get(Symbol(), c => c.foo(console.log))

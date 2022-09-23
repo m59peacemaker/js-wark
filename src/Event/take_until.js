@@ -1,9 +1,6 @@
 import { noop } from '../util.js'
 import { nothing } from './internal/nothing.js'
 
-// TODO: the whole core is missing logic to handle a dependency that is already complete at the time the dependant is expressed
-// forward references may pose a challenge.
-
 /*
 	Event X => Event Y => Event Y
 	Takes an Event, `a`, and an Event, `b`, and returns an Event with the same occurrences as Event `b` until Event `a` occurs, and completes when Event `a` occurs.
@@ -30,8 +27,10 @@ const registry = new FinalizationRegistry(unobserve => unobserve())
 	Otherwise, there is an inconsistency with `take (n) (x)`, if it completes or the nth occurrence OR when `x` completes
 */
 
-export const take_until = complete_event => input_event => {
-	const complete = {
+export const _take_until = (complete_event, input_event) => {
+	const complete = f => f(_complete)
+	const _complete = {
+		complete,
 		get observers () { return complete_event.observers },
 		get settled () { return complete_event.settled },
 		get time () { return complete_event.time },
@@ -40,7 +39,6 @@ export const take_until = complete_event => input_event => {
 		get propagation () { return complete_event.propagation },
 		get referenced () { return complete_event }
 	}
-	complete.complete = complete
 	const unobserve = complete_event.observe({
 		pre_compute: noop,
 		compute: () => {
@@ -62,6 +60,20 @@ export const take_until = complete_event => input_event => {
 		get propagation () { return input_event.propagation },
 		get referenced () { return input_event }
 	}
+}
+
+export const take_until = complete_event => input_event => {
+	let self
+	const queue = []
+	complete_event(complete_event =>
+		input_event(input_event => {
+			self = _take_until(complete_event, input_event)
+			while (queue.length > 0) {
+				queue.pop()(self)
+			}
+		})
+	)
+	return f => self === undefined ? queue.push(f) : f(self)
 }
 
 // export const _take_until = complete_event => input_event => {

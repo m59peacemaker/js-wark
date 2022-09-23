@@ -69,7 +69,7 @@ test(`complete event of event x's complete event has the same occurrence as even
 	)
 })
 
-test(`complete event of event x's complete event has the same occurrence as event x's complete event`, () => {
+test.only(`complete event of event x's complete event has the same occurrence as event x's complete event`, () => {
 	const values = []
 	const a = Event.exposed_producer()
 	const b = Event.take_until (a) (a)

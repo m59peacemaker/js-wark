@@ -3,7 +3,7 @@ import { catch_up_observer } from './internal/catch_up_observer.js'
 import { compute_observers } from './internal/compute_observers.js'
 import { pre_compute_observers } from './internal/pre_compute_observers.js'
 
-export const map = f => input_event => {
+export const _map = (f, input_event) => {
 	const observers = new Map()
 
 	let unobserve_input_event
@@ -51,4 +51,16 @@ export const map = f => input_event => {
 	}
 
 	return self
+}
+
+export const map = f => input_event => {
+	let self
+	const queue = []
+	input_event(input_event => {
+		self = _map (f, input_event)
+		while (queue.length > 0) {
+			queue.pop()(self)
+		}
+	})
+	return f => self === undefined ? queue.push(f) : f(self)
 }

@@ -6,7 +6,7 @@ import { compute_observers } from './internal/compute_observers.js'
 import { pre_compute_observers } from './internal/pre_compute_observers.js'
 import { Error_Cycle_Detected } from './Error_Cycle_Detected.js'
 import { is_same_event_reference } from './internal/is_same_event_reference.js'
-import { never } from './never.js'
+import { _never } from './never.js'
 
 // TODO: this shares a ton of code with create_merged_event
 // TODO: does the complete event need the "*_observers_this_event"/cycle logic? If so, write tests for that. If not, remove that logic.
@@ -107,7 +107,7 @@ const create_merged_complete_event = (a, b) => {
 	return self
 }
 
-const create_merged_event = (f, a, b) => {
+const create_merged_event = (f, a, b, a_complete, b_complete) => {
 	const observers = new Map()
 
 	let unobserve_a
@@ -120,8 +120,8 @@ const create_merged_event = (f, a, b) => {
 	let a_observes_this_event = false
 	let b_observes_this_event = false
 
-	let a_complete = false
-	let b_complete = false
+	let a_is_complete = false
+	let b_is_complete = false
 
 	const self = {
 		observers,
@@ -135,8 +135,8 @@ const create_merged_event = (f, a, b) => {
 			if (observers.size === 1) {
 				unobserve_a = a.observe(dependency_observer)
 				unobserve_b = b.observe(dependency_observer)
-				unobserve_a_complete = a.complete.observe(dependency_complete_observer)
-				unobserve_b_complete = b.complete.observe(dependency_complete_observer)
+				unobserve_a_complete = a_complete.observe(dependency_complete_observer)
+				unobserve_b_complete = b_complete.observe(dependency_complete_observer)
 			}
 
 			catch_up_observer (self, observer, false)
@@ -197,7 +197,7 @@ const create_merged_event = (f, a, b) => {
 			if ((a.settled || a_observes_this_event) && (b.settled || b_observes_this_event)) {
 				self.settled = true
 				if (a.value !== nothing || b.value !== nothing) {
-					const value = f (a_complete ? never : a, b_complete ? never : b)
+					const value = f (a_is_complete ? _never : a, b_is_complete ? _never : b)
 					if (value !== public_nothing) {
 						self.time = time
 						self.value = value
@@ -215,21 +215,19 @@ const create_merged_event = (f, a, b) => {
 			complete_propagation = dependency.propagation
 		},
 		compute: dependency => {
-			if (a.complete.value !== nothing && is_same_event_reference(a.complete, dependency)) {
+			if (a_complete.value !== nothing && is_same_event_reference(a_complete, dependency)) {
 				complete_propagation.post_propagation.add(() => {
-					a_complete = true
+					a_is_complete = true
 					unobserve_a()
 					unobserve_a_complete()
 				})
 			}
-			if (b.complete.value !== nothing && is_same_event_reference(b.complete, dependency)) {
-				if (b.complete.value !== nothing) {
-					complete_propagation.post_propagation.add(() => {
-						b_complete = true
-						unobserve_b()
-						unobserve_b_complete()
-					})
-				}
+			if (b_complete.value !== nothing && is_same_event_reference(b_complete, dependency)) {
+				complete_propagation.post_propagation.add(() => {
+					b_is_complete = true
+					unobserve_b()
+					unobserve_b_complete()
+				})
 			}
 		}
 	}
@@ -237,13 +235,38 @@ const create_merged_event = (f, a, b) => {
 	return self
 }
 
-export const merge_2_with = f => a => b => {
+export const _merge_2_with = (f, a, b, a_complete, b_complete) => {
 	const merge_f = (a, b) => f
 		(a.value === nothing ? public_nothing : a.value)
 		(b.value === nothing ? public_nothing : b.value)
-	const self = create_merged_event (merge_f, a, b)
-	const complete = create_merged_complete_event (a.complete, b.complete)
-	complete.complete = complete
+	const self = create_merged_event (merge_f, a, b, a_complete, b_complete)
+	const _complete = create_merged_complete_event (a_complete, b_complete)
+	const complete = f => f(_complete)
+	_complete.complete = complete
+	// complete.complete = complete
 	self.complete = complete
 	return self
+}
+
+export const merge_2_with = f => a => b => {
+	let self
+	const queue = []
+	a(a =>
+		console.log({ a }) ||
+		b(b =>
+			console.log({ b }) ||
+			a.complete(a_complete =>
+				console.log({ a_complete }) ||
+				b.complete(b_complete => {
+					console.log({ b_complete })
+					console.log({ a, b, a_complete, b_complete })
+					self = _merge_2_with (f, a, b, a_complete, b_complete)
+					while (queue.length > 0) {
+						queue.pop()(self)
+					}
+				})
+			)
+		)
+	)
+	return f => console.log('here') || self === undefined ? queue.push(f) : f(self)
 }

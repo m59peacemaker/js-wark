@@ -1,6 +1,6 @@
 import { suite } from 'uvu'
 import * as assert from 'uvu/assert'
-import * as Event from './index.js'
+import { Event, reference } from '../index.js'
 import { promise_wait } from '../test/util.js'
 import { nothing } from './nothing.js'
 
@@ -63,7 +63,7 @@ test('merging an event with itself creates an event that completes once, when th
 	assert.equal(values, [ [ 1, 1, { complete: nothing } ], [ 2, 2, { complete: 2 } ] ])
 })
 
-test('merge throws Error_Cycle_Detected when its dependency a occurs and its dependency b has a dependency on the merge', () => {
+test.only('merge throws Error_Cycle_Detected when its dependency a occurs and its dependency b has a dependency on the merge', () => {
 	/*
 		a unsettles b (merge, unsettled by a)
 		b unsettles b (merge, unsettled by b - cycle not allowed) -> Error_Cycle_Detected
@@ -99,7 +99,7 @@ test('merge throws Error_Cycle_Detected when its dependency a occurs and its dep
 		so the switch happens / the new event is focused
 		if the new focused event is occurring, throw an Error, because it would imply a loop of occurring/switching/occurring/etc
 	*/
-	const b = Event.forward_reference()
+	const b = reference()
 	const a = Event.exposed_producer()
 	b.assign (
 		Event.merge_2_with
@@ -117,7 +117,7 @@ test('merge throws Error_Cycle_Detected when its dependency a occurs and its dep
 })
 
 test('merge throws Error_Cycle_Detected when its dependency b occurs and its dependency a has a dependency on the merge', () => {
-	const a = Event.forward_reference()
+	const a = reference()
 	const b = Event.exposed_producer()
 	a.assign (
 		Event.merge_2_with

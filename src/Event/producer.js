@@ -26,5 +26,5 @@ export const producer = producer_function => {
 
 	producer_function (x => produce(self, x))
 
-	return self
+	return f => f(self)
 }
