@@ -1,5 +1,6 @@
 import { nothing } from './internal/nothing.js'
 import { noop } from '../util.js'
+import { _use } from '../reference.js'
 
 const registry = new FinalizationRegistry(unobserve => unobserve())
 
@@ -40,7 +41,7 @@ const _hold = (initial_value, event, event_complete) => {
 			self.compute (time, noop)
 			return value
 		},
-		updates: f => f(event)
+		updates: event
 	}
 
 	registry.register(self, () => {
@@ -51,16 +52,9 @@ const _hold = (initial_value, event, event_complete) => {
 	return self
 }
 
-export const hold = initial_value => event => {
-	let self
-	const queue = []
-	event(event =>
-		event.complete(event_complete => {
-			self = _hold(initial_value, event, event_complete)
-			while (queue.length > 0) {
-				queue.pop()(self)
-			}
-		})
+export const hold = initial_value => event =>
+	_use (event, event =>
+		_use (event.complete, event_complete =>
+			_hold(initial_value, event, event_complete)
+		)
 	)
-	return f => self === undefined ? queue.push(f) : f(self)
-}

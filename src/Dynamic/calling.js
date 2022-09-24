@@ -1,5 +1,6 @@
 import { _calling as Event_calling } from '../Event/calling.js'
 import { nothing } from '../Event/internal/nothing.js'
+import { _use } from '../reference.js'
 
 const _calling = (f, dynamic, dynamic_updates, dynamic_updates_complete) => {
 	const updates = Event_calling (f, dynamic_updates, dynamic_updates_complete)
@@ -29,24 +30,15 @@ const _calling = (f, dynamic, dynamic_updates, dynamic_updates_complete) => {
 
 	return {
 		value,
-		updates: f => f(updates)
+		updates
 	}
 }
 
-export const calling = f => dynamic => {
-	const queue = []
-	let self
-
-	dynamic(dynamic =>
-		dynamic.updates(dynamic_updates =>
-			dynamic_updates.complete(dynamic_updates_complete => {
-				self = _calling (f, dynamic, dynamic_updates, dynamic_updates_complete)
-				while (queue.length > 0) {
-					queue.pop()(self)
-				}
-			})
+export const calling = f => dynamic =>
+	_use(dynamic, dynamic =>
+		_use(dynamic.updates, dynamic_updates =>
+			_use(dynamic_updates.complete, dynamic_updates_complete =>
+				_calling (f, dynamic, dynamic_updates, dynamic_updates_complete)
+			)
 		)
 	)
-
-	return f => self === undefined ? queue.push(f) : f(self)
-}

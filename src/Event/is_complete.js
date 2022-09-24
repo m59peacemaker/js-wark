@@ -1,8 +1,9 @@
 import { map } from './map.js'
+import { _use } from '../reference.js'
 
 const uninitialized = Symbol()
 
-export const is_complete = event => {
+export const _is_complete = event => {
 	let callers = []
 	let value = uninitialized
 	const updates = map
@@ -17,7 +18,7 @@ export const is_complete = event => {
 		(event.complete)
 
 	const compute = (time, f) => {
-		const x = () => f(value = value === uninitialized ? event.time !== null : value)
+		const x = () => f(value = value === uninitialized ? event.complete.time !== null : value)
 		event.complete.settled
 			? x()
 			: callers.push(x)
@@ -32,3 +33,6 @@ export const is_complete = event => {
 		updates
 	}
 }
+
+export const is_complete = event =>
+	_use(event, _is_complete)

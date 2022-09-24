@@ -6,7 +6,7 @@ import { catch_up_observer } from './internal/catch_up_observer.js'
 import { compute_observers } from './internal/compute_observers.js'
 import { pre_compute_observers } from './internal/pre_compute_observers.js'
 import { _take_until } from './take_until.js'
-
+import { _use } from '../reference.js'
 
 const registry = new FinalizationRegistry(unobserve => unobserve())
 
@@ -84,29 +84,30 @@ export const _take = (n, input_event, input_event_complete) => {
 		}
 	}
 
-	self.complete = f => f(self)
+	self.complete = self
 
-	const unobserve_input_event = input_event.observe(dependency_observer)
-	const unobserve_input_complete_event = input_event_complete.observe(dependency_observer)
+	let unobserve_input_event
+	let unobserve_input_complete_event
 
-	registry.register(self, () => {
-		unobserve_input_event()
-		unobserve_input_complete_event()
-	})
+	// TODO: all these _use calls in a place like this in the whole library probably need to be `_call`
+	_use(input_event.observe, input_event_observe =>
+		_use(input_event_complete.observe, input_event_complete_observe => {
+			unobserve_input_event = input_event_observe(dependency_observer)
+			unobserve_input_complete_event = input_event_complete_observe(dependency_observer)
+
+			registry.register(self, () => {
+				unobserve_input_event()
+				unobserve_input_complete_event()
+			})
+		})
+	)
 
 	return _take_until(self, input_event)
 }
 
-export const take = n => input_event => {
-	let self
-	const queue = []
-	input_event(input_event =>
-		input_event.complete(input_event_complete => {
-			self = _take(n, input_event, input_event_complete)
-			while (queue.length > 0) {
-				queue.pop()(self)
-			}
-		})
+export const take = n => input_event =>
+	_use(input_event, input_event =>
+		_use(input_event.complete, input_event_complete =>
+			_take(n, input_event, input_event_complete)
+		)
 	)
-	return f => self === undefined ? queue.push(f) : f(self)
-}

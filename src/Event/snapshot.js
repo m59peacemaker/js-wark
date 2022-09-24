@@ -40,15 +40,16 @@ export const snapshot = f => sample => input_event => {
 		},
 		compute: () => {
 			const { time, post_propagation } = self.propagation
-			sample.compute(time, x => {
-				self.settled = true
-				if (input_event.value !== nothing) {
-					self.time = time
-					self.value = f (x) (input_event.value)
-					post_propagation.add(() => self.value = nothing)
-				}
-				compute_observers(self)
-			})
+			// NOTE: if needed, Dynamic/Sample could have a callback api to fix timing issue, if the update is unsettled
+			// sample.compute(time, x => {
+			self.settled = true
+			if (input_event.value !== nothing) {
+				self.time = time
+				self.value = f (sample.run(time)) (input_event.value)
+				post_propagation.add(() => self.value = nothing)
+			}
+			compute_observers(self)
+			// })
 		}
 	}
 

@@ -1,5 +1,6 @@
 import { noop } from '../util.js'
 import { nothing } from './internal/nothing.js'
+import { _use } from '../reference.js'
 
 /*
 	Event X => Event Y => Event Y
@@ -28,9 +29,7 @@ const registry = new FinalizationRegistry(unobserve => unobserve())
 */
 
 export const _take_until = (complete_event, input_event) => {
-	const complete = f => f(_complete)
-	const _complete = {
-		complete,
+	const complete = {
 		get observers () { return complete_event.observers },
 		get settled () { return complete_event.settled },
 		get time () { return complete_event.time },
@@ -39,6 +38,7 @@ export const _take_until = (complete_event, input_event) => {
 		get propagation () { return complete_event.propagation },
 		get referenced () { return complete_event }
 	}
+	complete.complete = complete
 	const unobserve = complete_event.observe({
 		pre_compute: noop,
 		compute: () => {
@@ -62,19 +62,12 @@ export const _take_until = (complete_event, input_event) => {
 	}
 }
 
-export const take_until = complete_event => input_event => {
-	let self
-	const queue = []
-	complete_event(complete_event =>
-		input_event(input_event => {
-			self = _take_until(complete_event, input_event)
-			while (queue.length > 0) {
-				queue.pop()(self)
-			}
-		})
+export const take_until = complete_event => input_event =>
+	_use(complete_event, complete_event =>
+		_use(input_event, input_event =>
+			_take_until(complete_event, input_event)
+		)
 	)
-	return f => self === undefined ? queue.push(f) : f(self)
-}
 
 // export const _take_until = complete_event => input_event => {
 // 	let unobserve_dependencies

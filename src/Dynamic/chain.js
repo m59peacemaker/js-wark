@@ -6,10 +6,11 @@ import { nothing as public_nothing } from '../Event/nothing.js'
 import { nothing } from '../Event/internal/nothing.js'
 import { switch_with } from '../Event/switch_with.js'
 import { switch_resolver_eager } from '../Event/switch_resolver_eager.js'
+import { _use } from '../reference.js'
 
 const registry = new FinalizationRegistry(unobserve => unobserve())
 
-export const chain = f => dynamic => {
+export const _chain = (f, dynamic) => {
 	const initial_inner_dynamic = f (dynamic.run())
 	let value = initial_inner_dynamic.run()
 
@@ -49,3 +50,6 @@ export const chain = f => dynamic => {
 
 	return self
 }
+
+export const chain = f => dynamic =>
+	_use(dynamic, dynamic => _chain (f, dynamic))

@@ -5,31 +5,40 @@ class Reference {
 		this._value = uninitialized
 		this._dependants = new Set()
 		this._queue = []
-		f(this._assign.bind(this), this)
+		f(
+			x => {
+				if (x instanceof Reference) {
+					if (this.has_dependant(x)) {
+						let value = uninitialized
+						const tmp = new Proxy({}, {
+							get (_, prop) {
+								if (value !== uninitialized) {
+									return value[prop]
+								}
+								return new Reference ((assign, reference) =>
+									// TODO: `null` didn't work... maybe the following comment was wrong. This needs more thought.
+									// since it depends on itself, pass null dependant here to break the cycle
+									x.get(reference, x => assign(x[prop]))
+								)
+							}
+						})
+						this._set(tmp)
+						x.get(null, x => value = x)
+					} else {
+						x.get(create(), this._set.bind(this))
+					}
+				} else {
+					this._set(x)
+				}
+				return x
+			},
+			this
+		)
 	}
 	_set (x) {
 		this._value = x
 		while (this._queue.length > 0) {
 			this._queue.pop()(x)
-		}
-	}
-	_assign (x) {
-		if (x instanceof Reference) {
-			if (this.has_dependant(x)) {
-				const tmp = new Proxy({}, {
-					get (_, prop) {
-						return new Reference (assign =>
-							// since it depends on itself, pass null dependant here to break the cycle
-							x.get(null, x => assign(x[prop]))
-						)
-					}
-				})
-				this._set(tmp)
-			} else {
-				x.get(create(), this._set.bind(this))
-			}
-		} else {
-			this._set(x)
 		}
 	}
 	get (dependant, f) {
@@ -78,7 +87,8 @@ export const get = (dependant, x, f) => {
 
 export const call = f => x => get(null, x, f)
 
-export const use = f => x => {
+// slightly more efficient than `use (f) (x)`
+export const _use = (x, f) => {
 	if (x instanceof Reference) {
 		return construct ((assign, reference) => x.get(reference, x => assign (f (x))))
 	} else {
@@ -86,27 +96,23 @@ export const use = f => x => {
 	}
 }
 
+export const use = f => x => _use (x, f)
+
 export const use2 = f => a => b =>
-	use
-		(a =>
-			use
-				(b => f (a) (b))
-				(b)
+	_use (a, a =>
+		_use (b, b =>
+			f (a) (b)
 		)
-		(a)
+	)
 
 export const use3 = f => a => b => c =>
-	use
-		(a =>
-			use
-				(b =>
-					use
-						(c => f (a) (b) (c))
-						(c)
-				)
-				(b)
+	_use (a, a =>
+		_use (b, b =>
+			_use (c, c =>
+				f (a) (b) (c)
+			)
 		)
-		(a)
+	)
 
 export const array = use
 		(array =>

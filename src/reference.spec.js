@@ -4,6 +4,11 @@ import { Dynamic, Event, Reference } from './index.js'
 
 const test = suite('reference')
 
+test('`reference.assign(x)` returns `x` for convenience', () => {
+	const a = Reference.create()
+	assert.equal(a.assign('x'), 'x')
+})
+
 test('use', () => {
 	let result
 	const a = Reference.create()

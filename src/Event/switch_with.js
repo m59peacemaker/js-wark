@@ -8,13 +8,14 @@ import { map } from './map.js'
 import { Error_Cycle_Detected } from './Error_Cycle_Detected.js'
 import { compute_observers } from './internal/compute_observers.js'
 import { pre_compute_observers } from './internal/pre_compute_observers.js'
+import { _use } from '../reference.js'
 
 /*
 	TODO: test garbage collection!
 */
 const registry = new FinalizationRegistry(unobserve => unobserve())
 
-const create_switch_complete = (initial_focused_event, source_event) => {
+const create_switch_complete = (initial_focused_event, source_event, source_event_complete) => {
 	const observers = new Map()
 
 	let focused_event = initial_focused_event.complete
@@ -164,12 +165,14 @@ const create_switch_complete = (initial_focused_event, source_event) => {
 
 	// it must observe the source_event regardless of having any observers because it maintains state (focused_event) from source_event's value
 	const unobserve_source_event = source_event.observe(source_event_observer)
-	const unobserve_source_event_complete = source_event.complete.observe(source_event_complete_observer)
+	_use(source_event_complete.observe, source_event_complete_observe => {
+		const unobserve_source_event_complete = source_event_complete_observe(source_event_complete_observer)
 
-	registry.register(self, () => {
-		unobserve_focused_event()
-		unobserve_source_event()
-		unobserve_source_event_complete()
+		registry.register(self, () => {
+			unobserve_focused_event()
+			unobserve_source_event()
+			unobserve_source_event_complete()
+		})
 	})
 
 	return self
@@ -211,7 +214,7 @@ const create_switch_complete = (initial_focused_event, source_event) => {
 /*
 	TODO: don't forget that this is low level and impure... it observes source_event upon creation and keeps internal state (focused_event) from source event's value.
 */
-export const create_switch = (resolve, initial_focused_event, source_event) => {
+export const create_switch = (resolve, initial_focused_event, source_event, source_event_complete) => {
 	const observers = new Map()
 
 	let resolve_event = null
@@ -386,29 +389,34 @@ export const create_switch = (resolve, initial_focused_event, source_event) => {
 	}
 
 	// it must observe the source_event regardless of having any observers because it maintains state (focused_event) from source_event's value
+	// TODO: move this to _use below?
 	const unobserve_source_event = source_event.observe(source_event_observer)
 	let complete_propagation
-	// TODO: should the complete event logic take care of any of this instead?
-	const unobserve_source_event_complete = source_event.complete.observe({
-		pre_compute: dependency => {
-			complete_propagation = dependency.propagation
-		},
-		compute: () => {
-			if (source_event.complete.value !== nothing) {
-				complete_propagation.post_propagation.add(() => {
-					unobserve_source_event()
-					unobserve_source_event_complete()
-					if (focused_event.complete.time !== null) {
-						unobserve_focused_event()
-					}
-				})
-			}
-		}
-	})
 
-	registry.register(self, () => {
-		unobserve_source_event()
-		unobserve_source_event_complete()
+	// TODO: should the complete event logic take care of any of this instead?
+	_use(source_event_complete.observe, source_event_complete_observe => {
+		const unobserve_source_event_complete = source_event_complete_observe({
+			pre_compute: dependency => {
+				complete_propagation = dependency.propagation
+			},
+			compute: () => {
+				// TODO: maybe all references need to be updates from stuff like focused_event.complete to focused_event_complete
+				if (source_event_complete.value !== nothing) {
+					complete_propagation.post_propagation.add(() => {
+						unobserve_source_event()
+						unobserve_source_event_complete()
+						if (focused_event.complete.time !== null) {
+							unobserve_focused_event()
+						}
+					})
+				}
+			}
+		})
+
+		registry.register(self, () => {
+			unobserve_source_event()
+			unobserve_source_event_complete()
+		})
 	})
 
 	return self
@@ -423,14 +431,24 @@ export const create_switch = (resolve, initial_focused_event, source_event) => {
 	so there would need to be a solid alternative way of doing that, presumably involving Dynamic/Sample.
 	If so, perhaps the implementation could be simplified.
 */
-export const switch_resolve = resolve => initial_focused_event => source_event => {
+const _switch_resolve = (resolve, initial_focused_event, source_event, source_event_complete) => {
 	const self = create_switch (
 		resolve,
 		initial_focused_event,
-		source_event
+		source_event,
+		source_event_complete
 	)
-	self.complete = create_switch_complete(initial_focused_event, source_event)
+	self.complete = create_switch_complete(initial_focused_event, source_event, source_event_complete)
 	return self
 }
+
+export const switch_resolve = resolve => initial_focused_event => source_event =>
+	_use(initial_focused_event, initial_focused_event =>
+		_use(source_event, source_event =>
+			_use(source_event.complete, source_event_complete =>
+				_switch_resolve(resolve, initial_focused_event, source_event, source_event_complete)
+			)
+		)
+	)
 
 export const switch_with = resolve => f => initial => x => switch_resolve (resolve) (initial) (map (f) (x))

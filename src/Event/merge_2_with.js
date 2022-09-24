@@ -6,10 +6,11 @@ import { compute_observers } from './internal/compute_observers.js'
 import { pre_compute_observers } from './internal/pre_compute_observers.js'
 import { Error_Cycle_Detected } from './Error_Cycle_Detected.js'
 import { is_same_event_reference } from './internal/is_same_event_reference.js'
-import { _never } from './never.js'
+import { never } from './never.js'
+import { _use } from '../reference.js'
 
 // TODO: this shares a ton of code with create_merged_event
-// TODO: does the complete event need the "*_observers_this_event"/cycle logic? If so, write tests for that. If not, remove that logic.
+// TODO: does the complete event need the "*_observes_this_event"/cycle logic? If so, write tests for that. If not, remove that logic.
 const create_merged_complete_event = (a, b) => {
 	const observers = new Map()
 
@@ -31,8 +32,12 @@ const create_merged_complete_event = (a, b) => {
 			observers.set(id, observer)
 
 			if (observers.size === 1) {
-				unobserve_a = a.observe(dependency_observer)
-				unobserve_b = b.observe(dependency_observer)
+				_use(a.observe, a_observe =>
+					_use(b.observe, b_observe => {
+						unobserve_a = a_observe(dependency_observer)
+						unobserve_b = b_observe(dependency_observer)
+					})
+				)
 			}
 
 			catch_up_observer (self, observer, false)
@@ -133,10 +138,19 @@ const create_merged_event = (f, a, b, a_complete, b_complete) => {
 			observers.set(id, observer)
 
 			if (observers.size === 1) {
-				unobserve_a = a.observe(dependency_observer)
-				unobserve_b = b.observe(dependency_observer)
-				unobserve_a_complete = a_complete.observe(dependency_complete_observer)
-				unobserve_b_complete = b_complete.observe(dependency_complete_observer)
+				// TODO: use `call` rather than `use` ?
+				_use (a.observe, a_observe =>
+					_use (a_complete.observe, a_complete_observe =>
+						_use (b.observe, b_observe =>
+							_use (b_complete.observe, b_complete_observe => {
+								unobserve_a = a_observe(dependency_observer)
+								unobserve_b = b_observe(dependency_observer)
+								unobserve_a_complete = a_complete_observe(dependency_complete_observer)
+								unobserve_b_complete = b_complete_observe(dependency_complete_observer)
+							})
+						)
+					)
+				)
 			}
 
 			catch_up_observer (self, observer, false)
@@ -197,7 +211,7 @@ const create_merged_event = (f, a, b, a_complete, b_complete) => {
 			if ((a.settled || a_observes_this_event) && (b.settled || b_observes_this_event)) {
 				self.settled = true
 				if (a.value !== nothing || b.value !== nothing) {
-					const value = f (a_is_complete ? _never : a, b_is_complete ? _never : b)
+					const value = f (a_is_complete ? never : a, b_is_complete ? never : b)
 					if (value !== public_nothing) {
 						self.time = time
 						self.value = value
@@ -240,33 +254,20 @@ export const _merge_2_with = (f, a, b, a_complete, b_complete) => {
 		(a.value === nothing ? public_nothing : a.value)
 		(b.value === nothing ? public_nothing : b.value)
 	const self = create_merged_event (merge_f, a, b, a_complete, b_complete)
-	const _complete = create_merged_complete_event (a_complete, b_complete)
-	const complete = f => f(_complete)
-	_complete.complete = complete
+	const complete = create_merged_complete_event (a_complete, b_complete)
+	complete.complete = complete
 	// complete.complete = complete
 	self.complete = complete
 	return self
 }
 
-export const merge_2_with = f => a => b => {
-	let self
-	const queue = []
-	a(a =>
-		console.log({ a }) ||
-		b(b =>
-			console.log({ b }) ||
-			a.complete(a_complete =>
-				console.log({ a_complete }) ||
-				b.complete(b_complete => {
-					console.log({ b_complete })
-					console.log({ a, b, a_complete, b_complete })
-					self = _merge_2_with (f, a, b, a_complete, b_complete)
-					while (queue.length > 0) {
-						queue.pop()(self)
-					}
-				})
+export const merge_2_with = f => a => b =>
+	_use(a, a =>
+		_use(a.complete, a_complete =>
+			_use(b, b =>
+				_use(b.complete, b_complete =>
+					_merge_2_with (f, a, b, a_complete, b_complete)
+				)
 			)
 		)
 	)
-	return f => console.log('here') || self === undefined ? queue.push(f) : f(self)
-}

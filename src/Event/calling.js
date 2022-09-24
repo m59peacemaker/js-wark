@@ -2,9 +2,11 @@ import { nothing } from './internal/nothing.js'
 import { catch_up_observer } from './internal/catch_up_observer.js'
 import { pre_compute_observers } from './internal/pre_compute_observers.js'
 import { compute_observers } from './internal/compute_observers.js'
+import { _use } from '../reference.js'
 
 export const _calling = (f, input_event, input_event_complete) => {
 	const observers = new Map()
+	let unobserve_input_event
 
 	const self = {
 		complete: input_event_complete,
@@ -22,26 +24,31 @@ export const _calling = (f, input_event, input_event_complete) => {
 		}
 	}
 
-	const unobserve_input_event = input_event.observe({
-		pre_compute: (dependency, cycle_allowed) => {
-			self.propagation = dependency.propagation
-			self.settled = false
-			pre_compute_observers(self, cycle_allowed)
-		},
-		compute: () => {
-			const { time, post_propagation } = self.propagation
-			if (self.settled) {
-				return
-			}
-			self.settled = true
-			if (input_event.value !== nothing) {
-				self.time = time
-				self.value = f (input_event.value)
-				post_propagation.add(() => self.value = nothing)
-			}
-			compute_observers(self)
+	_use(
+		input_event.observe,
+		input_event_observe => {
+			unobserve_input_event = input_event_observe({
+				pre_compute: (dependency, cycle_allowed) => {
+					self.propagation = dependency.propagation
+					self.settled = false
+					pre_compute_observers(self, cycle_allowed)
+				},
+				compute: () => {
+					const { time, post_propagation } = self.propagation
+					if (self.settled) {
+						return
+					}
+					self.settled = true
+					if (input_event.value !== nothing) {
+						self.time = time
+						self.value = f (input_event.value)
+						post_propagation.add(() => self.value = nothing)
+					}
+					compute_observers(self)
+				}
+			})
 		}
-	})
+	)
 
 	/*
 		This is the essence of the implementation of `complete_when`.
@@ -67,16 +74,9 @@ export const _calling = (f, input_event, input_event_complete) => {
 	return self
 }
 
-export const calling = f => input_event => {
-	let self
-	const queue = []
-	input_event(input_event =>
-		input_event.complete(input_event_complete => {
-			self = _calling (f, input_event, input_event_complete)
-			while (queue.length > 0) {
-				queue.pop()(self)
-			}
-		})
+export const calling = f => input_event =>
+	_use(input_event, input_event =>
+		_use(input_event.complete, input_event_complete =>
+			_calling (f, input_event, input_event_complete)
+		)
 	)
-	return f => self === undefined ? queue.push(f) : f(self)
-}

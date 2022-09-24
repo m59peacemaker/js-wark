@@ -1,13 +1,14 @@
 import { suite } from 'uvu'
 import * as assert from 'uvu/assert'
-import * as Event from './index.js'
+import { Event, Reference } from '../index.js'
 import { promise_wait } from '../test/util.js'
 
-const test = suite('Event.forward_reference')
+// TODO: move these tests to `reference` or `misc ?
+const test = suite('Event forward reference')
 
 test('has same occurrences as assigned event', () => {
 	const values = []
-	const a = Event.forward_reference()
+	const a = Reference.create()
 	Event.calling (x => values.push(x)) (a)
 	const b = Event.exposed_producer()
 
@@ -21,7 +22,7 @@ test('has same occurrences as assigned event', () => {
 
 test('has same complete occurrence as assigned event', () => {
 	const values = []
-	const a = Event.forward_reference()
+	const a = Reference.create()
 	Event.calling (x => values.push(x)) (Event.complete (a))
 	const b = Event.exposed_producer()
 	const b_x = Event.exposed_producer()
@@ -38,7 +39,7 @@ test('has same complete occurrence as assigned event', () => {
 
 test('has same complete occurrence as assigned event complete', () => {
 	const values = []
-	const a = Event.forward_reference()
+	const a = Reference.create()
 	Event.calling (x => values.push(x)) (Event.complete (Event.complete (a)))
 	const b = Event.exposed_producer()
 	const b_x = Event.exposed_producer()
@@ -55,7 +56,7 @@ test('has same complete occurrence as assigned event complete', () => {
 
 test('has same complete occurrence as assigned event complete', () => {
 	const values = []
-	const a = Event.forward_reference()
+	const a = Reference.create()
 	Event.calling (x => values.push(x)) (Event.complete (Event.complete (a)))
 	const b = Event.exposed_producer()
 	const b_x = Event.exposed_producer()
@@ -98,7 +99,7 @@ test.skip('', () => {
 	console.log({ values })
 })
 
-test('interval via self referencing switch_with', async () => {
+test.only('interval via self referencing switch_with', async () => {
 	/*
 		initial focused wait occurs
 		switch computes with value of initial focused wait and value of focusing event (never)
@@ -112,7 +113,7 @@ test('interval via self referencing switch_with', async () => {
 	*/
 	const interval = ({ ms }) => {
 		// TODO: use function closure version
-		const interval = Event.forward_reference()
+		const interval = Reference.create()
 		return interval.assign(
 			Event.switch_with
 				(focused => focusing => focused)
@@ -165,7 +166,7 @@ test('interval via self referencing switch and merge', async () => {
 			rest changes focus to a new wait
 		*/
 		// an interval is self referencing - its a series of starting a wait when its wait is finished
-		const interval = Event.forward_reference()
+		const interval = Reference.create()
 
 		// need an initial one to kick things off
 		const initial = Event.wait ({ ms })
@@ -283,7 +284,7 @@ test('interval after initial wait via self referencing merge and switch', async 
 
 	const initial_wait = Event.wait ({ ms })
 
-	const waits_done = Event.forward_reference()
+	const waits_done = Reference.create()
 
 	const new_waits = Event.alt
 		(initial_wait)
