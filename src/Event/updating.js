@@ -2,8 +2,9 @@ import { nothing } from './internal/nothing.js'
 import { noop } from '../util.js'
 import { _call, _use } from '../reference.js'
 
-// TODO: put these elsewhere
+// TODO: rename this to 'subsequently' or 'afterward'?
 export const deferred = x => _ => x
+// TODO: rename this to 'instantly' or 'immediately'?
 export const eagerly = _ => y => y
 
 const registry = new FinalizationRegistry(unobserve => unobserve())
@@ -13,15 +14,11 @@ export const _updating = (f, initial_value, event, event_complete) => {
 
 	// TODO:
 	const self = {
-		// compute: (time, f) => {
-		// 	f (value)
-		// },
 		run: time => {
 			if (!event.settled) {
 				// TODO: better error after having a better handle on the possibilities
 				throw new Error(`Either a self-referencing dynamic attempted to update using its own updated value, or there is a case where a dynamic's value is accessed while it is pending update.`)
 			}
-			// self.compute (time, noop)
 			return value
 		},
 		updates: event

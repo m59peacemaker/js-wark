@@ -1,6 +1,4 @@
-// import { forward_reference } from '../Dynamic/forward_reference.js'
 import { forward_reference } from '../reference.js'
-import { hold } from './hold.js'
 import { snapshot } from './snapshot.js'
 import { updating } from './updating.js'
 import { eagerly, deferred } from './updating.js'
