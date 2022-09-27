@@ -6,7 +6,7 @@ import { catch_up_observer } from './internal/catch_up_observer.js'
 import { compute_observers } from './internal/compute_observers.js'
 import { pre_compute_observers } from './internal/pre_compute_observers.js'
 import { _take_until } from './take_until.js'
-import { _use } from '../reference.js'
+import { _call, _use } from '../reference.js'
 
 const registry = new FinalizationRegistry(unobserve => unobserve())
 
@@ -89,9 +89,8 @@ export const _take = (n, input_event, input_event_complete) => {
 	let unobserve_input_event
 	let unobserve_input_complete_event
 
-	// TODO: all these _use calls in a place like this in the whole library probably need to be `_call`
-	_use(input_event.observe, input_event_observe =>
-		_use(input_event_complete.observe, input_event_complete_observe => {
+	_call(input_event.observe, input_event_observe =>
+		_call(input_event_complete.observe, input_event_complete_observe => {
 			unobserve_input_event = input_event_observe(dependency_observer)
 			unobserve_input_complete_event = input_event_complete_observe(dependency_observer)
 

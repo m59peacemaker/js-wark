@@ -2,7 +2,7 @@ import { nothing } from './internal/nothing.js'
 import { catch_up_observer } from './internal/catch_up_observer.js'
 import { compute_observers } from './internal/compute_observers.js'
 import { pre_compute_observers } from './internal/pre_compute_observers.js'
-import { _use } from '../reference.js'
+import { _call, _use } from '../reference.js'
 
 export const _map = (f, input_event) => {
 	const observers = new Map()
@@ -19,7 +19,7 @@ export const _map = (f, input_event) => {
 			const id = Symbol()
 			observers.set(id, observer)
 			if (observers.size === 1) {
-				_use (input_event.observe, input_event_observe =>
+				_call (input_event.observe, input_event_observe =>
 					unobserve_input_event = input_event_observe(input_event_observer)
 				)
 			}

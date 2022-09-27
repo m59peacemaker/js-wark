@@ -7,7 +7,7 @@ import { pre_compute_observers } from './internal/pre_compute_observers.js'
 import { Error_Cycle_Detected } from './Error_Cycle_Detected.js'
 import { is_same_event_reference } from './internal/is_same_event_reference.js'
 import { never } from './never.js'
-import { _use } from '../reference.js'
+import { _call, _use } from '../reference.js'
 
 // TODO: this shares a ton of code with create_merged_event
 // TODO: does the complete event need the "*_observes_this_event"/cycle logic? If so, write tests for that. If not, remove that logic.
@@ -32,8 +32,8 @@ const create_merged_complete_event = (a, b) => {
 			observers.set(id, observer)
 
 			if (observers.size === 1) {
-				_use(a.observe, a_observe =>
-					_use(b.observe, b_observe => {
+				_call(a.observe, a_observe =>
+					_call(b.observe, b_observe => {
 						unobserve_a = a_observe(dependency_observer)
 						unobserve_b = b_observe(dependency_observer)
 					})
@@ -139,10 +139,10 @@ const create_merged_event = (f, a, b, a_complete, b_complete) => {
 
 			if (observers.size === 1) {
 				// TODO: use `call` rather than `use` ?
-				_use (a.observe, a_observe =>
-					_use (a_complete.observe, a_complete_observe =>
-						_use (b.observe, b_observe =>
-							_use (b_complete.observe, b_complete_observe => {
+				_call(a.observe, a_observe =>
+					_call(a_complete.observe, a_complete_observe =>
+						_call(b.observe, b_observe =>
+							_call(b_complete.observe, b_complete_observe => {
 								unobserve_a = a_observe(dependency_observer)
 								unobserve_b = b_observe(dependency_observer)
 								unobserve_a_complete = a_complete_observe(dependency_complete_observer)

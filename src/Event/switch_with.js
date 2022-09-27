@@ -8,7 +8,7 @@ import { map } from './map.js'
 import { Error_Cycle_Detected } from './Error_Cycle_Detected.js'
 import { compute_observers } from './internal/compute_observers.js'
 import { pre_compute_observers } from './internal/pre_compute_observers.js'
-import { _use } from '../reference.js'
+import { _call, _use } from '../reference.js'
 
 /*
 	TODO: test garbage collection!
@@ -165,7 +165,7 @@ const create_switch_complete = (initial_focused_event, source_event, source_even
 
 	// it must observe the source_event regardless of having any observers because it maintains state (focused_event) from source_event's value
 	const unobserve_source_event = source_event.observe(source_event_observer)
-	_use(source_event_complete.observe, source_event_complete_observe => {
+	_call(source_event_complete.observe, source_event_complete_observe => {
 		const unobserve_source_event_complete = source_event_complete_observe(source_event_complete_observer)
 
 		registry.register(self, () => {
@@ -389,12 +389,12 @@ export const create_switch = (resolve, initial_focused_event, source_event, sour
 	}
 
 	// it must observe the source_event regardless of having any observers because it maintains state (focused_event) from source_event's value
-	// TODO: move this to _use below?
+	// TODO: move this to _call below?
 	const unobserve_source_event = source_event.observe(source_event_observer)
 	let complete_propagation
 
 	// TODO: should the complete event logic take care of any of this instead?
-	_use(source_event_complete.observe, source_event_complete_observe => {
+	_call(source_event_complete.observe, source_event_complete_observe => {
 		const unobserve_source_event_complete = source_event_complete_observe({
 			pre_compute: dependency => {
 				complete_propagation = dependency.propagation

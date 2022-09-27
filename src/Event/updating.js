@@ -1,6 +1,6 @@
 import { nothing } from './internal/nothing.js'
 import { noop } from '../util.js'
-import { _use } from '../reference.js'
+import { _call, _use } from '../reference.js'
 
 // TODO: put these elsewhere
 export const deferred = x => _ => x
@@ -27,8 +27,8 @@ export const _updating = (f, initial_value, event, event_complete) => {
 		updates: event
 	}
 
-	_use(event.observe, event_observe => {
-		_use(event_complete.observe, event_complete_observe => {
+	_call(event.observe, event_observe => {
+		_call(event_complete.observe, event_complete_observe => {
 			const unobserve = event_observe({
 				pre_compute: () => {},
 				compute: () => {
