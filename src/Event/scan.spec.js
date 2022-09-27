@@ -1,6 +1,6 @@
 import { suite } from 'uvu'
 import * as assert from 'uvu/assert'
-import * as Event from './index.js'
+import { Event, Dynamic, Reference } from '../index.js'
 
 const test = suite('Event.scan')
 
@@ -9,15 +9,15 @@ test('starts with the initial value and updates to the result of the reducer whe
 
 	const a = Event.exposed_producer()
 	const b = Event.scan (a => b => a + b) (0) (a)
-	Event.calling (x => update_values.push(x)) (b.updates)
+	Event.calling (x => update_values.push(x)) (Dynamic.updates(b))
 
-	assert.equal(b.run(), 0)
+	assert.equal(Dynamic.get(b), 0)
 	a.produce(1)
-	assert.equal(b.run(), 1)
+	assert.equal(Dynamic.get(b), 1)
 	a.produce(2)
-	assert.equal(b.run(), 3)
+	assert.equal(Dynamic.get(b), 3)
 	a.produce(3)
-	assert.equal(b.run(), 6)
+	assert.equal(Dynamic.get(b), 6)
 
 	assert.equal(update_values, [ 1, 3, 6 ])
 })
@@ -27,7 +27,7 @@ test('completes when the input event completes', () => {
 
 	const a = Event.exposed_producer()
 	const b = Event.scan (a => b => b) (0) (Event.take (2) (a))
-	const c = Event.complete (b.updates)
+	const c = Event.complete (Dynamic.updates(b))
 
 	Event.calling (x => update_values.push(x)) (c)
 
@@ -36,6 +36,24 @@ test('completes when the input event completes', () => {
 	a.produce(3)
 
 	assert.equal(update_values, [ 2 ])
+})
+
+test('', () => {
+	const foo = initial_value => event =>
+		Reference.forward_reference (x =>
+			Event.hold
+			(initial_value)
+			(Event.tag (x) (event))
+		)
+
+	const a = Event.exposed_producer()
+	const b = foo (0) (a)
+
+	assert.equal (Dynamic.get (b), 0)
+	a.produce (1)
+	assert.equal (Dynamic.get (b), 0)
+	a.produce (2)
+	assert.equal (Dynamic.get (b), 0)
 })
 
 test.run()

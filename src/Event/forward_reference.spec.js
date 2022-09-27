@@ -99,7 +99,7 @@ test.skip('', () => {
 	console.log({ values })
 })
 
-test.only('interval via self referencing switch_with', async () => {
+test('interval via self referencing switch_with', async () => {
 	/*
 		initial focused wait occurs
 		switch computes with value of initial focused wait and value of focusing event (never)

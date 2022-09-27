@@ -1,6 +1,6 @@
 import { suite } from 'uvu'
 import * as assert from 'uvu/assert'
-import * as Event from './index.js'
+import { Dynamic, Event } from '../index.js'
 
 const test = suite('Event.take')
 
@@ -41,9 +41,9 @@ test('completes when the input event completes when input event completes before
 
 	const a = Event.exposed_producer()
 	const b = Event.scan (_ => b => b) (0) (Event.take (3) (a))
-	const c = Event.take (2) (b.updates)
+	const c = Event.take (2) (Dynamic.updates(b))
 
-	Event.calling (x => b_update_values.push(x)) (b.updates)
+	Event.calling (x => b_update_values.push(x)) (Dynamic.updates(b))
 	Event.calling (x => c_values.push(x)) (c)
 	Event.calling (x => c_complete_values.push(x)) (Event.complete (c))
 

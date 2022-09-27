@@ -2,8 +2,9 @@ import { nothing } from './internal/nothing.js'
 import { catch_up_observer } from './internal/catch_up_observer.js'
 import { compute_observers } from './internal/compute_observers.js'
 import { pre_compute_observers } from './internal/pre_compute_observers.js'
+import { _use } from '../reference.js'
 
-export const snapshot = f => sample => input_event => {
+export const _snapshot = (f, sample, input_event) => {
 	const observers = new Map()
 
 	let unobserve_input_event
@@ -18,7 +19,9 @@ export const snapshot = f => sample => input_event => {
 			const id = Symbol()
 			observers.set(id, observer)
 			if (observers.size === 1) {
-				unobserve_input_event = input_event.observe(input_event_observer)
+				_use(input_event.observe, input_event_observe => {
+					unobserve_input_event = input_event_observe(input_event_observer)
+				})
 			}
 
 			catch_up_observer (self, observer, false)
@@ -55,3 +58,10 @@ export const snapshot = f => sample => input_event => {
 
 	return self
 }
+
+export const snapshot = f => sample => input_event =>
+	_use(sample, sample =>
+		_use(input_event, input_event =>
+			_snapshot (f, sample, input_event)
+		)
+	)

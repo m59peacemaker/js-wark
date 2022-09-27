@@ -138,6 +138,9 @@ export const object = use
 			)
 			(array (Object.values (object)))
 	})
+
+export const forward_reference = f =>
+	construct((assign, reference) => assign(f(reference)))
 /*
 	TODO: A possible efficiency gain is to pass the same reference to each `get` call,
 	but only if it works in all cases.
@@ -153,6 +156,7 @@ export const object = use
 // 	return reference
 // }
 
+// TODO: put some or all of this stuff into reference.spec.js as tests
 // const a = create()
 
 // const create_b = chain(x =>
