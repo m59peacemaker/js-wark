@@ -33,7 +33,7 @@ const test = suite('Event.switch_with')
 		switch_map_with
 			(focused => focusing => )
 			(() =>
-				forward_reference(
+				Reference.forward_reference(
 					switch_map_with
 						(todo)
 						(() => merge_2_with (f) (a) (b))
@@ -43,7 +43,7 @@ const test = suite('Event.switch_with')
 			(a)
 			(b)
 	
-	const a = Event.create()
+	const a = Event.exposed_producer()
 	const b = Event.map (x => x + 100) (a)
 	const c = merge_2_with (Array.of) (a) (b)
 
@@ -494,7 +494,7 @@ test('completes when source event completes and (next) focused event completes (
 	x (switch) unsettles x (switch, unsettled by source)
 */
 test.skip('TODO: ', () => {
-	const x = forward_reference (pipe (
+	const x = Reference.forward_reference (pipe (
 		map (() => wait (1000)),
 		switching
 			(eagerly)
@@ -513,8 +513,8 @@ test.skip('TODO: ', () => {
 			Error_Cycle_Detected
 */
 test.skip('TODO: ', () => {
-	const a = Event.create()
-	const x = Event.create_forward_reference()
+	const a = Event.exposed_producer()
+	const x = Reference.create()
 	const y = Event.map (multiply_by (2)) (x)
 	const z = map (() => y) (x)
 	x.assign(

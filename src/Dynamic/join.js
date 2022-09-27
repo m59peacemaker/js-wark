@@ -6,7 +6,7 @@ import { nothing as public_nothing } from '../Event/nothing.js'
 import { nothing } from '../Event/internal/nothing.js'
 import { switch_with } from '../Event/switch_with.js'
 import { switch_resolver_eager } from '../Event/switch_resolver_eager.js'
-import { forward_reference as Event_forward_reference } from '../Event/forward_reference.js'
+// import { forward_reference as Event_forward_reference } from '../Event/forward_reference.js'
 
 const registry = new FinalizationRegistry(unobserve => unobserve())
 const uninitialized = Symbol()
@@ -14,7 +14,7 @@ const uninitialized = Symbol()
 export const join = dynamic => {
 	let value = uninitialized
 
-	const updates_reference = Event_forward_reference()
+	// const updates_reference = Event_forward_reference()
 
 	const updates = merge_2_with
 		(a => b => b === public_nothing ? a : b.run())

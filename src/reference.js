@@ -85,7 +85,9 @@ export const get = (dependant, x, f) => {
 	}
 }
 
-export const call = f => x => get(null, x, f)
+export const _call = (x, f) => get(null, x, f)
+
+export const call = f => x => _call (x, f)
 
 // slightly more efficient than `use (f) (x)`
 export const _use = (x, f) => {
