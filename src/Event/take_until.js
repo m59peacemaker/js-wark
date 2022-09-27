@@ -24,10 +24,15 @@ import { _use } from '../reference.js'
 const registry = new FinalizationRegistry(unobserve => unobserve())
 
 /*
-	TODO: perhaps rename this to `complete_when` and make `take_until = x => y => alt (x) (complete (y))`
-	Otherwise, there is an inconsistency with `take (n) (x)`, if it completes or the nth occurrence OR when `x` completes
+	TODO: perhaps rename this to `complete_when` and make `take_until = x => y => complete_when (alt (x) (complete (y)))`
+	Otherwise, there is an inconsistency with `take (n) (x)`, if it completes on the nth occurrence OR when `x` completes
 */
-
+/*
+	TODO: maybe use a Proxy to clean this up
+*/
+/*
+	TODO: try to get rid of the `referenced` property
+*/
 export const _take_until = (complete_event, input_event) => {
 	const complete = {
 		get observers () { return complete_event.observers },
@@ -68,66 +73,3 @@ export const take_until = complete_event => input_event =>
 			_take_until(complete_event, input_event)
 		)
 	)
-
-// export const _take_until = complete_event => input_event => {
-// 	let unobserve_dependencies
-
-// 	const input_event_observer = {
-// 		pre_compute: () => self.settled = false,
-// 		compute: (time, propagate, post_propagation) => {
-// 			self.settled = true
-// 			if (input_event.value !== nothing) {
-// 				self.time = time
-// 				self.value = input_event.value
-// 				post_propagation.add(() => self.value = nothing)
-// 			}
-// 			propagate(self.observers)
-// 		}
-// 	}
-
-// 	const complete_event_observer = {
-// 		pre_compute: () => {},
-// 		compute: () => {
-// 			if (complete_event.settled) {
-// 				if (complete_event.value !== nothing) {
-// 					unobserve_dependencies()
-// 				}
-// 			}
-// 		}
-// 	}
-
-// 	const complete = {
-// 		get observers () { return complete_event.observers },
-// 		get settled () { return complete_event.settled },
-// 		get time () { return complete_event.time },
-// 		get value () { return complete_event.value },
-// 		get observe () { return complete_event.observe }
-// 	}
-// 	complete.complete = complete
-
-// 	const self = {
-// 		complete,
-// 		observers: new Set(),
-// 		settled: true,
-// 		time: null,
-// 		value: nothing,
-// 		observe: observer => {
-// 			observer = { ...observer }
-// 			self.observers.add(observer)
-// 			if (self.observers.size === 1) {
-// 				unobserve_dependencies = pipe2(
-// 					input_event.observe(input_event_observer),
-// 					complete_event.observe(complete_event_observer)
-// 				)
-// 			}
-// 			return () => {
-// 				self.observers.delete(observer)
-// 				if (self.observers.size === 0) {
-// 					unobserve_dependencies()
-// 				}
-// 			}
-// 		}
-// 	}
-
-// 	return self
-// }

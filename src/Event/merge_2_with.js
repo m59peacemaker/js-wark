@@ -177,7 +177,6 @@ const create_merged_event = (f, a, b, a_complete, b_complete) => {
 
 			if (unsettling) {
 				if (cycle_allowed) {
-					// throw new Error('merge_2_with pre_compute cycle_allowed TODO:')
 					if (is_same_event_reference (a, dependency)) {
 						a_observes_this_event = true
 					} else {
@@ -256,7 +255,6 @@ export const _merge_2_with = (f, a, b, a_complete, b_complete) => {
 	const self = create_merged_event (merge_f, a, b, a_complete, b_complete)
 	const complete = create_merged_complete_event (a_complete, b_complete)
 	complete.complete = complete
-	// complete.complete = complete
 	self.complete = complete
 	return self
 }
