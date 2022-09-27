@@ -1,7 +1,5 @@
-import { switch as switching } from '../Event/switch.js'
 import { map } from '../Event/map.js'
 import { merge_2_with } from '../Event/merge_2_with.js'
-import { tag } from '../Event/tag.js'
 import { nothing as public_nothing } from '../Event/nothing.js'
 import { nothing } from '../Event/internal/nothing.js'
 import { switch_with } from '../Event/switch_with.js'
@@ -10,6 +8,9 @@ import { _use } from '../reference.js'
 
 const registry = new FinalizationRegistry(unobserve => unobserve())
 
+/*
+	TODO: clean this up after refactoring Event.switch*
+*/
 export const _chain = (f, dynamic) => {
 	const initial_inner_dynamic = f (dynamic.run())
 	let value = initial_inner_dynamic.run()
@@ -20,9 +21,6 @@ export const _chain = (f, dynamic) => {
 		(a => b => b === public_nothing ? a : b.run())
 		(switch_with (switch_resolver_eager) (x => x.updates) (initial_inner_dynamic.updates) (inner_dynamics))
 		(inner_dynamics)
-
-
-
 
 	// let value = f (dynamic.run()).run()
 
