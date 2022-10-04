@@ -1,4 +1,4 @@
-import { call } from '../reference.js'
+import { call } from '../Reference/index.js'
 
 const uninitialized = Symbol()
 
@@ -10,7 +10,7 @@ export const get = dynamic => {
 		(dynamic)
 	if (value === uninitialized) {
 		// TODO: custom error?
-		throw new Error('Attempted Dynamic.get on a reference that has not been assigned')
+		throw new Error('Dynamic.get() was called on a reference before it was assigned a value.')
 	}
 	return value.run(Symbol())
 }

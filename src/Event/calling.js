@@ -2,7 +2,8 @@ import { nothing } from './internal/nothing.js'
 import { catch_up_observer } from './internal/catch_up_observer.js'
 import { pre_compute_observers } from './internal/pre_compute_observers.js'
 import { compute_observers } from './internal/compute_observers.js'
-import { _use } from '../reference.js'
+import { _call } from '../Reference/call.js'
+import { _use } from '../Reference/use.js'
 
 export const _calling = (f, input_event, input_event_complete) => {
 	const observers = new Map()
@@ -56,19 +57,21 @@ export const _calling = (f, input_event, input_event_complete) => {
 		but only one occurrence of a complete event is observed,
 		making it effectively true that the complete event only occurs once.
 	*/
-	let complete_propagation
-	const unobserve_input_event_complete_event = input_event_complete.observe({
-		pre_compute: dependency => {
-			complete_propagation = dependency.propagation
-		},
-		compute: () => {
-			if (input_event_complete.value !== nothing) {
-				complete_propagation.post_propagation.add(() => {
-					unobserve_input_event()
-					unobserve_input_event_complete_event()
-				})
+	_call(input_event_complete.observe, input_event_complete_observe => {
+		let complete_propagation
+		const unobserve_input_event_complete_event = input_event_complete_observe({
+			pre_compute: dependency => {
+				complete_propagation = dependency.propagation
+			},
+			compute: () => {
+				if (input_event_complete.value !== nothing) {
+					complete_propagation.post_propagation.add(() => {
+						unobserve_input_event()
+						unobserve_input_event_complete_event()
+					})
+				}
 			}
-		}
+		})
 	})
 
 	return self

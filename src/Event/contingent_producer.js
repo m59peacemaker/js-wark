@@ -5,7 +5,7 @@ import { catch_up_observer } from './internal/catch_up_observer.js'
 
 const registry = new FinalizationRegistry(cleanup => cleanup())
 
-// TODO: maybe rename to weak_producer. contingent_producer sounds like something that take a reference to something and be eligible for garbage collection when that reference is eligible for garbage collection.
+// TODO: maybe rename to weak_producer. contingent_producer sounds like something that would take a reference to something and be eligible for garbage collection when that reference is eligible for garbage collection.
 export const contingent_producer = producer_function => {
 	const self = {
 		complete: never,

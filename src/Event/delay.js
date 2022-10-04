@@ -1,4 +1,9 @@
-import { switch as Event_switch } from './switch.js'
+import { map } from './map.js'
+import { switching } from './switching.js'
 import { wait } from './wait.js'
+import { pipe2 } from '../util.js'
 
-export const delay = ({ ms }) => Event_switch (value => wait ({ ms, value }))
+export const delay = ({ ms }) => pipe2(
+	map (value => wait ({ ms, value })),
+	switching
+)

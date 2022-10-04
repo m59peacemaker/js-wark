@@ -1,6 +1,8 @@
 import { noop } from '../util.js'
 import { nothing } from './internal/nothing.js'
-import { _use } from '../reference.js'
+import { _call } from '../Reference/call.js'
+import { _use } from '../Reference/use.js'
+
 
 /*
 	Event X => Event Y => Event Y

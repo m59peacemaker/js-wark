@@ -1,4 +1,4 @@
-export const create = f => {
+export const construct = f => {
 	const cache = { time: Symbol(), value: null }
 	return {
 		run: time => {

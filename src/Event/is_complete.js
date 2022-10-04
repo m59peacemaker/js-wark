@@ -1,5 +1,5 @@
 import { map } from './map.js'
-import { _use } from '../reference.js'
+import { _use } from '../Reference/use.js'
 
 const uninitialized = Symbol()
 

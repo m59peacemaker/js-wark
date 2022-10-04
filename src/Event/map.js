@@ -2,7 +2,9 @@ import { nothing } from './internal/nothing.js'
 import { catch_up_observer } from './internal/catch_up_observer.js'
 import { compute_observers } from './internal/compute_observers.js'
 import { pre_compute_observers } from './internal/pre_compute_observers.js'
-import { _call, _use } from '../reference.js'
+import { _call } from '../Reference/call.js'
+import { _use } from '../Reference/use.js'
+
 
 export const _map = (f, input_event) => {
 	const observers = new Map()

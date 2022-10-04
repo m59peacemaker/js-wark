@@ -1,6 +1,6 @@
 import { suite } from 'uvu'
 import * as assert from 'uvu/assert'
-import { Event, Reference } from '../index.js'
+import { Event, Reference, immediately, subsequently } from '../index.js'
 import { promise_wait } from '../test/util.js'
 
 // TODO: move these tests to `reference` or `misc ?
@@ -71,34 +71,6 @@ test('has same complete occurrence as assigned event complete', () => {
 	assert.equal(values, [ 'x' ])
 })
 
-const flip = f => a => b => f (b) (a)
-test.skip('', () => {
-	const values = []
-	const a = Event.exposed_producer()
-	// const b = Event.exposed_producer()
-	const b = Event.map (x => x + 100) (a)
-	const merge_2 = a => b =>
-		Event.switch_with
-			(x => _ => _)
-			(_ => merge_2 (b) (a))
-			(a)
-			(b)
-	const c = merge_2 (a) (b)
-	Event.calling (x => values.push(x)) (c)
-	a.produce(1)
-	// a.produce(2)
-	// a.produce(3)
-
-	// a.produce(1)
-	// b.produce(2)
-	// a.produce(3)
-	// a.produce(4)
-	// b.produce(5)
-	// a.produce(6)
-
-	console.log({ values })
-})
-
 test('interval via self referencing switch_with', async () => {
 	/*
 		initial focused wait occurs
@@ -115,11 +87,13 @@ test('interval via self referencing switch_with', async () => {
 		// TODO: use function closure version
 		const interval = Reference.create()
 		return interval.assign(
-			Event.switch_with
-				(focused => focusing => focused)
-				(() => Event.wait ({ ms }))
+			Event.switch_updating
+				(subsequently)
 				(Event.wait ({ ms }))
-				(interval)
+				(Event.map
+					(() => Event.wait ({ ms }))
+					(interval)
+				)
 		)
 	}
 
@@ -176,13 +150,13 @@ test('interval via self referencing switch and merge', async () => {
 		// 	(() => Event.wait ({ ms }))
 		// 	(interval)
 
-		const rest = Event.switch_with
-			(focused => _ => focused)
-			(() => Event.wait ({ ms }))
+		const rest = Event.switch_updating
+			(subsequently)
 			(Event.never)
-			(interval)
-
-
+			(Event.map
+				(() => Event.wait ({ ms }))
+				(interval)
+			)
 
 		// the interval is the initial wait as well as the rest of them
 		return interval.assign(
@@ -291,11 +265,13 @@ test('interval after initial wait via self referencing merge and switch', async 
 		(waits_done)
 
 	waits_done.assign(
-		Event.switch_with
-			(focused => focusing => focused)
-			(() => Event.wait ({ ms }))
+		Event.switch_updating
+			(subsequently)
 			(Event.never)
-			(new_waits)
+			(Event.map
+				(() => Event.wait ({ ms }))
+				(new_waits)
+			)
 	)
 
 	Event.calling (() => values.push(Date.now())) (Event.take (3) (waits_done))

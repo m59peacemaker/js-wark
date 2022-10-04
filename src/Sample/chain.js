@@ -1,4 +1,4 @@
-import { create } from './create.js'
+import { construct } from './construct.js'
 
 export const chain = f => s =>
-	create (time => f (s.run (time)).run (time))
+	construct (time => f (s.run (time)).run (time))

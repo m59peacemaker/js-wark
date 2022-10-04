@@ -1,6 +1,6 @@
 import { _calling as Event_calling } from '../Event/calling.js'
 import { nothing } from '../Event/internal/nothing.js'
-import { _use } from '../reference.js'
+import { _use } from '../Reference/use.js'
 
 const _calling = (f, dynamic, dynamic_updates, dynamic_updates_complete) => {
 	const updates = Event_calling (f, dynamic_updates, dynamic_updates_complete)

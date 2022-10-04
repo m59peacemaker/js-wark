@@ -1,8 +1,8 @@
 import { suite } from 'uvu'
 import * as assert from 'uvu/assert'
-import { Dynamic, Event, Reference } from './index.js'
+import { Dynamic, Event, Reference } from '../index.js'
 
-const test = suite('reference')
+const test = suite('Reference')
 
 test('`reference.assign(x)` returns `x` for convenience', () => {
 	const a = Reference.create()
@@ -135,5 +135,61 @@ test('Dynamic.calling on dynamic with forward reference updates', () => {
 
 	assert.equal(values, [ 0, 1 ])
 })
+
+// TODO: make some or all of this into tests
+// const a = create()
+
+// const create_b = chain(x =>
+// 	console.log({ chian_x: x, bar: x.bar }) ||
+// 	map (bar => console.log({ bar }) || ({ foo: bar, bar: of(0) })) (x.bar)
+// )
+
+// const b = create_b (a)
+
+// call (console.log) (b)
+// a.assign (b)
+
+// const _foo = x => {
+// 	const ref = create()
+// 	x.get(ref, x => {
+// 		x.bar.get(ref, console.log)
+// 		ref.assign({
+// 			foo: x.bar,
+// 			bar: 10 //of(10)
+// 		})
+// 	})
+// 	return ref
+// }
+
+// const foo = use (x => use (console.log) (x.bar) && ({ foo: x.bar, bar: 0 }))
+
+// const a = create()
+// const b = foo (a)
+
+// a.assign(b)
+// use (b => use (console.log) (b.foo)) (b)
+// b.get(create(), b => b.foo.get(create(), console.log))
+
+// const c = create()
+// b.get(c, b => {
+// 	const bar = create()
+// 	b.bar.get(c, console.log)
+// 	b.bar.get(c, x => bar.assign(x + 10))
+// 	c.assign({
+// 		foo: b.foo,
+// 		bar
+// 	})
+// })
+
+// const c = use
+// 	(b => console.log ({ b }) || ({
+// 		foo: b.foo,
+// 		bar: b.bar + 10 //use (x => x + 10) (b.bar)
+// 	}))
+// 	(b)
+
+// a.assign(c)
+// // c.get(reference(), c => c.foo.get(reference(), console.log))
+// use (c => use (console.log) (c.foo)) (c)
 
 test.run()

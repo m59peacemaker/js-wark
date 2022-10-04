@@ -1,15 +1,10 @@
-import { forward_reference } from '../reference.js'
+import { forward_referencing } from '../Reference/forward_referencing.js'
+import { hold } from './hold.js'
 import { snapshot } from './snapshot.js'
-import { updating } from './updating.js'
-import { eagerly, deferred } from './updating.js'
 
 export const scan = f => initial_value => event =>
-	updating
-		(eagerly)
-		(initial_value)
-		(forward_reference (x =>
-			snapshot
-				(f)
-				(updating (deferred) (initial_value) (x))
-				(event)
-		))
+	forward_referencing (x =>
+		hold
+			(initial_value)
+			(snapshot (f) (x) (event))
+	)
