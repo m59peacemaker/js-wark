@@ -1,3 +1,3 @@
-import { create } from './create.js'
+import { construct } from './construct.js'
 
-export const of = x => create(() => x)
+export const of = x => construct(() => x)

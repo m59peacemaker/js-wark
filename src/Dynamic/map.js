@@ -1,38 +1,36 @@
-import { chain } from './chain.js'
-import { of } from './of.js'
+// import { chain } from './chain.js'
+// import { of } from './of.js'
 
-export const map = f => dynamic => chain (x => of (f(x))) (dynamic)
+// export const map = f => dynamic => chain (x => of (f(x))) (dynamic)
 
-// TODO: use efficient implementation?
+import { _use } from '../Reference/use.js'
+import { _map as Event_map } from '../Event/map.js'
+import { nothing } from '../Event/internal/nothing.js'
 
-// import { _use } from '../reference.js'
-// import { _map as Event_map } from '../Event/map.js'
-// import { nothing } from '../Event/internal/nothing.js'
-
-// const registry = new FinalizationRegistry(unobserve => unobserve())
-// export const _map = (f, dynamic) => {
-// 	let value = f (dynamic.run())
+const registry = new FinalizationRegistry(unobserve => unobserve())
+export const _map = (f, dynamic) => {
+	let value = f (dynamic.run())
 	
-// 	const updates = Event_map(f, dynamic.updates)
+	const updates = Event_map(f, dynamic.updates)
 
-// 	const self = {
-// 		run: () => value,
-// 		updates
-// 	}
+	const self = {
+		run: () => value,
+		updates
+	}
 
-// 	const unobserve = updates.observe({
-// 		pre_compute: () => {},
-// 		compute: () => {
-// 			if (updates.value !== nothing) {
-// 				value = updates.value
-// 			}
-// 		}
-// 	})
+	const unobserve = updates.observe({
+		pre_compute: () => {},
+		compute: () => {
+			if (updates.value !== nothing) {
+				value = updates.value
+			}
+		}
+	})
 	
-// 	registry.register(self, unobserve)
+	registry.register(self, unobserve)
 
-// 	return self
-// }
+	return self
+}
 
-// export const map = f => dynamic =>
-// 	_use(dynamic, dynamic => _map (f, dynamic))
+export const map = f => dynamic =>
+	_use(dynamic, dynamic => _map (f, dynamic))

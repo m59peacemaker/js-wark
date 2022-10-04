@@ -1,51 +1,50 @@
-import { switch as switching } from '../Event/switch.js'
 import { map } from '../Event/map.js'
 import { merge_2_with } from '../Event/merge_2_with.js'
-import { tag } from '../Event/tag.js'
 import { nothing as public_nothing } from '../Event/nothing.js'
 import { nothing } from '../Event/internal/nothing.js'
-import { switch_with } from '../Event/switch_with.js'
-import { switch_resolver_eager } from '../Event/switch_resolver_eager.js'
-// import { forward_reference as Event_forward_reference } from '../Event/forward_reference.js'
+import { switch_updating } from '../Event/switch_updating.js'
+import { _call } from '../Reference/call.js'
+import { _use } from '../Reference/use.js'
+import { immediately } from '../immediately.js'
+import { updates as Dynamic_updates } from './updates.js'
+import { get } from './get.js'
 
 const registry = new FinalizationRegistry(unobserve => unobserve())
-const uninitialized = Symbol()
 
-export const join = dynamic => {
-	let value = uninitialized
+export const _join = (dynamic, initial_inner_dynamic) => {
+	let value = initial_inner_dynamic.run()
 
-	// const updates_reference = Event_forward_reference()
-
+	// TODO: this should be able to use _merge_2_with, _switch_updating, and _map for efficiency.
+	/*
+		TODO: merging adds a lot of work just to get the joined update event to occur at the time the input dynamic update event occurs
+		and the switch implementation is probably already doing the same heavy lifting, almost as though the occurrence we need is right there,
+		and it just doesn't consider it.
+		A lower level function could be made from which this `updates` event for `join` could be derived, and Event's switch could also be derived.
+		It would be especially wild if that function could also derive merging (at least for fun).
+		But keep in mind it would be ideal to generate implementation code at build time for maximum efficiency and byte vs performance options.
+	*/
 	const updates = merge_2_with
-		(a => b => b === public_nothing ? a : b.run())
-		(switch_with (switch_resolver_eager) (initial_inner_dynamic.updates) (inner_dynamics))
-		(inner_dynamics)
-
-	// let value = f (dynamic.run()).run()
-
-	// const mapped = map (f) (dynamic.updates)
+		(a => b => b === public_nothing ? a : get(b))
+		(switch_updating
+			(immediately)
+			(initial_inner_dynamic.updates)
+			(map
+				(Dynamic_updates)
+				(dynamic.updates)
+			)
+		)
+		(dynamic.updates)
 
 	const self = {
-		compute: (time, f) => {
-			dynamic.compute(inner_dynamic => {
-				inner_dynamic.compute(time, x => f(value = x))
-			})
-		},
-		run: () => {
-			value
-		},
+		run: () => value,
 		updates,
-		// updates: merge_2_with
-		// 	(a => b => b === public_nothing ? a : b.run())
-		// 	(switching (x => x.updates) (mapped))
-		// 	(mapped)
 	}
 
-	const unobserve = self.updates.observe({
+	const unobserve = updates.observe({
 		pre_compute: () => {},
 		compute: () => {
-			if (self.updates.value !== nothing) {
-				value = self.updates.value
+			if (updates.value !== nothing) {
+				value = updates.value
 			}
 		}
 	})
@@ -54,3 +53,10 @@ export const join = dynamic => {
 
 	return self
 }
+
+export const join = dynamic =>
+	_use(dynamic, dynamic => {
+		return _use(dynamic.run(), initial_inner_dynamic =>
+			_join(dynamic, initial_inner_dynamic)
+		)
+	})

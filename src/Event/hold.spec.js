@@ -1,7 +1,7 @@
 import { suite } from 'uvu'
 import * as assert from 'uvu/assert'
-import * as Event from './index.js'
 import { gc } from '../test/util.js'
+import { Dynamic, Event } from '../index.js'
 
 const test = suite('Event.hold')
 
@@ -11,35 +11,58 @@ test('value is initially the input initial value', () => {
 	assert.equal(b.run(), 0)
 })
 
-test('value updates simultaneously with the input event', () => {
+test('value is unchanged in the instant the update event is occurring and is the update event value in the subsequent instant', () => {
 	const values = []
 	const a = Event.exposed_producer()
 	const b = Event.hold (0) (a)
-	Event.calling (() => values.push(b.run())) (a)
+	Event.calling (() => values.push(Dynamic.get(b))) (a)
 
 	a.produce(1)
+	assert.equal(Dynamic.get(b), 1)
 	a.produce(2)
+	assert.equal(Dynamic.get(b), 2)
 	a.produce(3)
+	assert.equal(Dynamic.get(b), 3)
 
-	assert.equal(values, [ 1, 2, 3 ])
+	assert.equal(values, [ 0, 1, 2 ])
 })
 
-test('unobserves input event when it completes', async () => {
+test(
+	'when the update event is occurring in the same instant the dynamic is created, the dynamic has its initial value in that instant and the update event value in the subsequent instant',
+	() => {
+		let b
+		let initial_value
+		const a = Event.exposed_producer()
+		Event.calling
+			(() => {
+				b = Event.hold (false) (a)
+				initial_value = Dynamic.get(b)
+			})
+			(Event.take (1) (a))
+		a.produce(true)
+		assert.equal(initial_value, false)
+		assert.equal(Dynamic.get(b), true)
+		a.produce(false)
+		assert.equal(Dynamic.get(b), false)
+	}
+)
+
+test('<implementation detail> unobserves input event when it completes', async () => {
 	const values = []
 	const a = Event.exposed_producer()
 	const a1 = Event.once (a)
 	const b = Event.hold (0) (a1)
-	Event.calling (() => values.push(b.run())) (a1)
+	Event.calling (() => values.push(Dynamic.get(b))) (a1)
 
 	assert.ok(a1.observers.size > 0)
 	assert.ok(b.updates.observers.size > 0)
 	a.produce (1)
-	assert.equal(values, [ 1 ])
+	assert.equal(values, [ 0 ])
 	assert.equal(a1.observers.size, 0)
 	assert.equal(b.updates.observers.size, 0)
 	a.produce (2)
 	a.produce (3)
-	assert.equal(values, [ 1 ])
+	assert.equal(values, [ 0 ])
 })
 
 /*

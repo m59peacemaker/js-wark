@@ -7,7 +7,8 @@ import { pre_compute_observers } from './internal/pre_compute_observers.js'
 import { Error_Cycle_Detected } from './Error_Cycle_Detected.js'
 import { is_same_event_reference } from './internal/is_same_event_reference.js'
 import { never } from './never.js'
-import { _call, _use } from '../reference.js'
+import { _call } from '../Reference/call.js'
+import { _use } from '../Reference/use.js'
 
 // TODO: this shares a ton of code with create_merged_event
 // TODO: does the complete event need the "*_observes_this_event"/cycle logic? If so, write tests for that. If not, remove that logic.

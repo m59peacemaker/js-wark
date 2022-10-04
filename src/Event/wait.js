@@ -5,7 +5,7 @@ export const wait = ({ ms, value }) =>
 	once (
 		contingent_producer (produce => {
 			const timeout = setTimeout (() => produce (value), ms)
-			timeout.unref()
+			timeout.unref && timeout.unref()
 			return () => clearTimeout (timeout)
 		})
 	)

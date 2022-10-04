@@ -1,6 +1,6 @@
 import { suite } from 'uvu'
 import * as assert from 'uvu/assert'
-import { Dynamic } from '../index.js'
+import { Dynamic, Event, Reference, Sample } from '../index.js'
 
 const test = suite('Dynamic.chain')
 
@@ -56,6 +56,37 @@ test('switches between two dynamics with simultaneous updates by updating to the
 	assert.equal(Dynamic.get(e), '3b')
 	a.updates.produce(4)
 	assert.equal(Dynamic.get(e), '4b')
+})
+
+test('', () => {
+	const values = []
+	let n = 0
+	const sample_n = Sample.construct (() => ++n)
+	const a = Reference.create()
+	const b = Event.hold (n) (Event.tag (sample_n) (a))
+	const c = Dynamic.create('foo')
+	const d = Event.hold (b) (a)
+	const e = Dynamic.join (d)
+	Dynamic.calling
+		(x => values.push(x))
+		(e)
+
+	// TODO: specific error
+	assert.throws(() => Dynamic.get(e), error => error instanceof Error)
+
+	const z = a.assign(Event.exposed_producer())
+
+	assert.equal(values, [ 0 ])
+
+	assert.equal(Dynamic.get(e), 0)
+
+	z.produce(b)
+	assert.equal(Dynamic.get(e), 0)
+	assert.equal(values, [ 0, 0 ])
+
+	z.produce(c)
+	assert.equal(Dynamic.get(e), 'foo')
+	assert.equal(values, [ 0, 0, 'foo' ])
 })
 
 test.run()

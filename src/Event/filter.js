@@ -1,7 +1,12 @@
 import { never } from './never.js'
-import { switch as Event_switch } from './switch.js'
+import { switching } from './switching.js'
+import { map } from './map.js'
+
+// TODO: efficient filter implementation (see map.js)
 
 export const filter = f => event =>
-	Event_switch
-		(x => f (x) ? event : never)
-		(event)
+	switching
+		(map
+			(x => f (x) ? event : never)
+			(event)
+		)

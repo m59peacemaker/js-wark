@@ -1,78 +1,19 @@
 import { suite } from 'uvu'
 import * as assert from 'uvu/assert'
-import * as Event from './index.js'
+import { Event, Reference, immediately, subsequently } from '../index.js'
 import { promise_wait } from '../test/util.js'
 
-const test = suite('Event.switch_with')
+const test = suite('Event.switching')
 
 /*
-	const switch_with = resolver => initial => source =>
-		switch
-			(initial)
-			(snapshot
-				(events => _ =>
-					merge_all_with
-						(([ source_event_value, focused_event_value, unfocused_event_value ]) =>
-							resolver
-								(focused_event_value)
-								(source_event_value === nothing ? unfocused_event_value : nothing)
-						)
-						([ source_event, ...events ])
-				)
-				(scan (([ unfocused_event ]) => focused_event => [ focused_event, unfocused_event ]) ([ initial, never ]) (source_event))
-				(source_event)
-			)
-		const focused = scan (([ x ]) => y => [ y, x ]) ([ initial, never ]) (source)
-		switch
-			(a)
-			(map () (source))
-*/
-
-/*
-	const merge_2_with = f => a => b =>
-		switch_map_with
-			(focused => focusing => )
-			(() =>
-				Reference.forward_reference(
-					switch_map_with
-						(todo)
-						(() => merge_2_with (f) (a) (b))
-						(b)
-				)
-			)
-			(a)
-			(b)
-	
-	const a = Event.exposed_producer()
-	const b = Event.map (x => x + 100) (a)
-	const c = merge_2_with (Array.of) (a) (b)
-
-	a.produce (1)
-	// => [ 1, 101 ]
-
-	a is occurring
-	b is occurring
-	sm0 is switching
-	sm1 is occurring (because initial focused b is occurring)
-	sm1 computes its value { focused: 101
-	sm1 is switching because sm1 is occurring
-	sm0 is occurring with {
-		focused: 1,
-		focusing:
-			
-	}
-
-	a.produce (2)
-	// => [ 2, 102 ]
-	a.produce (3)
-	// => [ 3, 103 ]
+	TODO: test garbage collection if possible
 */
 
 test('switches between two regular producer, non-simultaneous events', () => {
 	const a = Event.exposed_producer()
 	const b = Event.exposed_producer()
 	const c = Event.exposed_producer()
-	const d = Event.switch (x => x) (c)
+	const d = Event.switching (c)
 	const values = []
 	Event.calling (x => values.push(x)) (d)
 
@@ -90,17 +31,12 @@ test('switches between two regular producer, non-simultaneous events', () => {
 	assert.equal (values, [ 1, 2, 3, 4, 5 ])
 })
 
-/*
-	x.produce (0)
-	x unsettles switch (unsettled by source event)
-	switch source event observer computes, obsolete inner, inner, source settled
-*/
-test('switch (() => x) (x) is equivalent to x', () => {
+test('`switching (map (() => x) (x))` is equivalent to `x`', () => {
 	const values = []
 	const x = Event.exposed_producer()
 	Event.calling
 		(x => values.push(x))
-		(Event.switch (() => x) (x))
+		(Event.switching (Event.map (() => x) (x)))
 
 	x.produce(0)
 	x.produce(1)
@@ -108,14 +44,11 @@ test('switch (() => x) (x) is equivalent to x', () => {
 	assert.equal (values, [ 0, 1 ])
 })
 
-test('TODO: name this, nesting and simultaneity', () => {
+test('map to switch, all simultaneous', () => {
 	const values = []
 	const a = Event.exposed_producer()
-	a.label = 'a'
-	const b = Event.map (() => Event.switch (() => a) (a)) (a)
-	b.label = 'b'
-	const c = Event.switch (x => x) (b)
-	c.label = 'c'
+	const b = Event.map (() => Event.switching (Event.map (() => a) (a))) (a)
+	const c = Event.switching (b)
 	Event.calling
 		(x => values.push(x))
 		(c)
@@ -130,8 +63,8 @@ test('TODO: name this, nesting and simultaneity', () => {
 	const values = []
 	const a = Event.exposed_producer()
 	const b = Event.map (x => x + 100) (a)
-	const c = Event.map (() => Event.switch (() => a) (b)) (b)
-	const d = Event.switch (x => x) (c)
+	const c = Event.map (() => Event.switching (Event.map (() => a) (b))) (b)
+	const d = Event.switching (c)
 	Event.calling
 		(x => values.push(x))
 		(d)
@@ -148,8 +81,8 @@ test('TODO: name this, nesting and simultaneity', () => {
 	const b = Event.map
 		(() => Event.map (() => a) (a))
 		(a)
-	const c = Event.switch (x => x) (b)
-	const d = Event.switch (x => x) (c)
+	const c = Event.switching (b)
+	const d = Event.switching (c)
 	Event.calling
 		(x => values.push(x))
 		(d)
@@ -178,29 +111,31 @@ test('TODO: name this, nesting and simultaneity', () => {
 			Event Number
 			which is `a`.
 	*/
-	const c = Event.switch
-		/*
-			With the current implementation,
-			at the time this `switch` expression is evaluated, `x` is not settled and its value is nothing.
-			`b` propagates to `c`
-			a starts propagating
-				b observes a, created its inner `map`
-				b starts propagating
-					c observes b, computes the switch, creating this inner switch
-				b is done propagating
-				the inner `map` of b starts propagating
-					this inner switch observes that, and so computes the switch, the switched-to event is ocurring,
-					so it starts propagating
-						c observes that (via its inner event observer)
-						c starts propagating
-							the side effect is performed
-						c is done propagating
-					this inner switch is done propagating
-				the inner `map` of b is done propagating
-			a is done propagating
-		*/
-		(x => Event.switch (y => y) (x))
-		(b)
+	const c = Event.switching
+		(Event.map
+			/*
+				With the current implementation,
+				at the time this `switch` expression is evaluated, `x` is not settled and its value is nothing.
+				`b` propagates to `c`
+				a starts propagating
+					b observes a, created its inner `map`
+					b starts propagating
+						c observes b, computes the switch, creating this inner switch
+					b is done propagating
+					the inner `map` of b starts propagating
+						this inner switch observes that, and so computes the switch, the switched-to event is ocurring,
+						so it starts propagating
+							c observes that (via its inner event observer)
+							c starts propagating
+								the side effect is performed
+							c is done propagating
+						this inner switch is done propagating
+					the inner `map` of b is done propagating
+				a is done propagating
+			*/
+			(Event.switching)
+			(b)
+		)
 	Event.calling
 		(x => values.push(x))
 		(c)
@@ -212,9 +147,11 @@ test('TODO: name this, nesting and simultaneity', () => {
 test('map in simultaneous switch', () => {
 	const values = []
 	const a = Event.exposed_producer()
-	const b = Event.switch
-		(() => Event.map (x => x + 10) (a))
-		(a)
+	const b = Event.switching
+		(Event.map
+			(() => Event.map (x => x + 10) (a))
+			(a)
+		)
 	Event.calling
 		(x => values.push(x))
 		(b)
@@ -230,9 +167,11 @@ test('map in simultaneous switch', () => {
 test('switch to simultaneous in simultaneous switch', () => {
 	const values = []
 	const a = Event.exposed_producer()
-	const b = Event.switch
-		(() => Event.switch (() => a) (a))
-		(a)
+	const b = Event.switching
+		(Event.map
+			(() => Event.switching (Event.map(() => a) (a)))
+			(a)
+		)
 	Event.calling
 		(x => values.push(x))
 		(b)
@@ -247,9 +186,11 @@ test('switch to switch in map in map, all simultaneous', () => {
 	const values = []
 	const a = Event.exposed_producer()
 	const b = Event.map (x => Event.map (y => x + y) (a)) (a)
-	const c = Event.switch
-		(() => Event.switch (y => y) (b))
-		(a)
+	const c = Event.switching
+		(Event.map
+			(() => Event.switching (b))
+			(a)
+		)
 
 	Event.calling
 		(x => values.push(x))
@@ -265,10 +206,8 @@ test('switch to switch in map in map, all simultaneous', () => {
 test('switch to map to switch, all simultaneous', () => {
 	const values = []
 	const a = Event.exposed_producer()
-	const b = Event.map (() => Event.switch (() => a) (a)) (a)
-	const c = Event.switch
-		(x => x)
-		(b)
+	const b = Event.map (() => Event.switching (Event.map (() => a) (a))) (a)
+	const c = Event.switching (b)
 
 	Event.calling
 		(x => values.push(x))
@@ -288,13 +227,15 @@ test('TODO: name this, nesting and simultaneity', () => {
 
 	Event.calling
 		(x => values.push(x))
-		(Event.switch
-			(() =>
-				Event.map
-					(x => x + 100)
-					(Event.switch (() => a) (a))
+		(Event.switching
+			(Event.map
+				(() =>
+					Event.map
+						(x => x + 100)
+						(Event.switching (Event.map (() => a) (a)))
+				)
+				(Event.map (() => 'x') (a))
 			)
-			(Event.map (() => 'x') (a))
 		)
 
 	a.produce(0)
@@ -309,7 +250,7 @@ test('completes when source event was initially complete and focused event compl
 	const b_complete_values = []
 
 	const a = Event.exposed_producer()
-	const b = Event.switch_resolve
+	const b = Event.switch_updating
 		(() => { throw new Error ('should not be doing this') })
 		(Event.take (2) (a))
 		(Event.never)
@@ -337,8 +278,8 @@ test('completes when source event has completed simultaneously as it occurred pr
 	const a = Event.exposed_producer()
 	const b = Event.exposed_producer()
 	const b_x = Event.exposed_producer()
-	const c = Event.switch_resolve
-		(Event.switch_resolver_eager)
+	const c = Event.switch_updating
+		(immediately)
 		(Event.never)
 		(Event.take_until (a) (a))
 
@@ -371,9 +312,8 @@ test('completes when source event has completed simultaneously as it occurred pr
 test('completes when source event has completed previously, focused event completes, and focused event is occurring', () => {
 	const values = []
 	const a = Event.exposed_producer()
-	const b = Event.switch_with
-		(focused => focusing => focused) // NOTE: this doesn't matter for this test
-		(x => x)
+	const b = Event.switch_updating
+		(subsequently) // NOTE: this doesn't matter for this test
 		(Event.take_until (a) (a))
 		(Event.never)
 
@@ -397,9 +337,8 @@ test('completes when source event completes and focused event completes (simulta
 	const a = Event.exposed_producer()
 	const a_complete = Event.exposed_producer()
 	const b = Event.take_until (a_complete) (a)
-	const c = Event.switch_with
-		(focused => focusing => focusing) // NOTE: this doesn't matter for this test
-		(x => x)
+	const c = Event.switch_updating
+		(immediately) // NOTE: this doesn't matter for this test
 		(b)
 		(b)
 	Event.calling
@@ -419,15 +358,15 @@ test('completes when source event completes and (next) focused event completes (
 	const a = Event.exposed_producer()
 	const a_once = Event.take_until (Event.map (() => 'x') (a)) (a)
 	const b = Event.exposed_producer()
-	const c = Event.switch_with
-		(focused => focusing => focusing)
-		(x => x)
+	const c = Event.switch_updating
+		(immediately)
 		(Event.never)
 		(Event.map (Event.map (()  => 'a')) (a_once))
+
 	Event.calling
 		(x => values.push(x))
 		(Event.merge_array
-			([
+		([
 				c,
 				Event.complete(c)
 			])
@@ -444,9 +383,8 @@ test('completes when source event completes and focused event completes (simulta
 	const values = []
 	const a = Event.exposed_producer()
 	const b = Event.exposed_producer()
-	const c = Event.switch_with
-		(focused => focusing => focusing)
-		(x => x)
+	const c = Event.switch_updating
+		(immediately)
 		(Event.take_until (b) (b))
 		(Event.take_until (b) (a))
 	Event.calling
@@ -469,9 +407,8 @@ test('completes when source event completes and (next) focused event completes (
 	const values = []
 	const a = Event.exposed_producer()
 	const b = Event.take_until (Event.map (() => 'x') (a)) (a)
-	const c = Event.switch_with
-		(focused => focusing => focusing)
-		(x => x)
+	const c = Event.switch_updating
+		(immediately)
 		(Event.never)
 		(Event.map (Event.map (()  => 'a')) (b))
 	Event.calling
@@ -489,17 +426,22 @@ test('completes when source event completes and (next) focused event completes (
 	assert.equal(values, [ [ 'a', 'x' ] ])
 })
 
-/*
-	wait (initial) unsettles x (switch, unsettled by inner)
-	x (switch) unsettles x (switch, unsettled by source)
-*/
-test.skip('TODO: ', () => {
-	const x = Reference.forward_reference (pipe (
-		map (() => wait (1000)),
-		switching
-			(eagerly)
-			(wait (1000))
-	))
+test('TODO: name this', async () => {
+	const values = []
+	let i = 0
+	Event.calling
+		(x => values.push(x))
+		(Event.take
+		(4)
+			(Reference.forward_referencing (x =>
+				Event.switch_updating
+					(subsequently)
+					(Event.wait ({ ms: 50, value: i }))
+					(Event.calling (() => Event.wait ({ ms: 50, value: ++i })) (x))
+			))
+		)
+	await promise_wait(500)
+	assert.equal(values, [ 0, 1, 2, 3 ])
 })
 
 /*
@@ -512,34 +454,21 @@ test.skip('TODO: ', () => {
 			x (switch) unsettles y
 			Error_Cycle_Detected
 */
-test.skip('TODO: ', () => {
+
+	// TODO: test/explain deferred version
+test('throws Error_Cycle_Detected when own occurrence causes a switch to an event that is occurring simultaneously', () => {
 	const a = Event.exposed_producer()
 	const x = Reference.create()
-	const y = Event.map (multiply_by (2)) (x)
-	const z = map (() => y) (x)
+	const y = Event.map (x => x * 2) (x)
+	const z = Event.map (() => y) (x)
 	x.assign(
-		switching
-			(eagerly)
+		Event.switch_updating
+			(immediately)
 			(a)
 			(z)
 	)
-	try {
-		a.produce(10)
-	} catch (error) {
-		// TODO:
-		// assert error instanceof Some_Error
-	}
-	/*
-		`a` occurs with a value of `10`
-		`x` occurs with a value of `10`
-		`y` occurs with a value of `20`
-		`z` occurs with a value of `y`
-		`x` switches eagerly to `y`
-		`x` occurs with a value of `20`
-		... (infinite loop)
-	*/
-
-	// TODO: test/explain deferred version
+	Event.calling (console.log) (x)
+	assert.throws(() => a.produce(10), error => error instanceof Event.Error_Cycle_Detected)
 })
 
 /*
@@ -552,7 +481,7 @@ test.skip('TODO: ', () => {
 		b unsettles c (switch, unsettled by source event (b))
 	but both may happen in the same propagation!
 	
-	c (switch) needs to occur with new inner event value (merge_2 (b) (a)), which is `switching (eagerly) (b) (map (etc) (b))`
+	c (switch) needs to occur with new inner event value (merge_2 (b) (a)), which is `switch_updating (immediately) (b) (map (etc) (b))`
 
 	Either:
 		c (switch, inner observer) computes, then c (switch, source observer) computes
@@ -591,8 +520,8 @@ test.skip('TODO: ', () => {
 		pre_computing_from_inner_event
 
 
-		switching
-			(eagerly)
+		switch_updating
+			(immediately)
 			(a)
 			(map (() => merge_2 (b) (a)) (b))
 
@@ -602,8 +531,8 @@ test.skip('TODO: ', () => {
 		so the `switch` should occur with the value of `merge_2 (b) (a)`, if it is occurring.
 
 		merge_2 (b) (a) is:
-			switching
-				(eagerly)
+			switch_updating
+				(immediately)
 				(b)
 				(map (() => merge_2 (a) (b)) (a))
 
@@ -613,8 +542,8 @@ test.skip('TODO: ', () => {
 		so the `switch` should occur with the value of `merge_2 (a) (b)`, if it is occurring.
 
 		merge_2 (a) (b) is:
-			switching
-				(eagerly)
+			switch_updating
+				(immediately)
 				(a)
 				(map (() => merge_2 (b) (a)) (b))
 
@@ -626,14 +555,14 @@ test.skip('TODO: ', () => {
 // See TODO  in focused_event_observer pre_compute
 test.skip('merge_2 built from switch, merges non-simultaneous input events', () => {
 	const merge_2 = a => b =>
-		Event.switch_with
-			(Event.switch_resolver_eager)
+		Event.switch_updating
+			(immediately)
 			(() => merge_2 (b) (a))
 			(a)
 			(b)
 	
 		// switching
-		// 	(eagerly)
+		// 	(immediately)
 		// 	(a)
 		// 	(map
 		// 		(() => {
@@ -662,17 +591,19 @@ test.skip('merge_2 built from switch, merges non-simultaneous input events', () 
 	assert.equal(values, [ 1, 2, 3, 4, 5 ])
 })
 
-// this is fun
+// NOTE: this is fun
 test('recursive map switch can implement merge_2 for non simultaneous events', () => {
 	const values = []
 	const a = Event.exposed_producer()
 	const b = Event.exposed_producer()
 	const merge_2 = a => b =>
-		Event.switch_with
-			(focused => focusing => focusing)
-			(() => merge_2 (b) (a))
+		Event.switch_updating
+			(immediately)
 			(a)
-			(b)
+			(Event.map
+				(() => merge_2 (b) (a))
+				(b)
+			)
 	const c = merge_2 (a) (b)
 	Event.calling (x => values.push(x)) (c)
 
@@ -692,20 +623,22 @@ test('merge_2 built from switch is an infinite loop when the input events are si
 	let switches = 0
 
 	const merge_2 = a => b =>
-		Event.switch_with
-			(Event.switch_resolver_eager)
-			(() => {
-				++switches
-				if (switches === 10) {
-					throw new Error(error_message)
-				}
-				return merge_2 (b) (a)
-			})
+		Event.switch_updating
+			(immediately)
 			(a)
-			(b)
+			(Event.calling
+				(() => {
+					++switches
+					if (switches === 10) {
+						throw new Error(error_message)
+					}
+					return merge_2 (b) (a)
+				})
+				(b)
+			)
 	
-		// switching
-		// 	(eagerly)
+		// switch_updating
+		// 	(immediately)
 		// 	(a)
 		// 	(map
 		// 		(() => {
@@ -732,7 +665,7 @@ test('merge_2 built from switch is an infinite loop when the input events are si
 test.skip('', () => {
 	const skip_until = y => x
 		switch_resolve
-			(focused => focusing => focusing)
+			(immediately)
 			(never)
 			(map
 				(() => x)

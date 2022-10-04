@@ -40,7 +40,7 @@ test('completes when the input event completes', () => {
 
 test('', () => {
 	const foo = initial_value => event =>
-		Reference.forward_reference (x =>
+		Reference.forward_referencing (x =>
 			Event.hold
 			(initial_value)
 			(Event.tag (x) (event))
