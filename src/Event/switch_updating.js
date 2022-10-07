@@ -348,72 +348,7 @@ export const create_switch = (resolve, initial_focused_event, source_event, sour
 		},
 		compute: () => {
 			const { post_propagation } = self.propagation
-			/*
-				TODO: clarify self-reference/not here: TEST!! initial focused event is occurring at the instant the switch is created, switches on own occurrence
-				When the switch event is created in an instant in which its source event is occurring,
-				source_event_observer.compute is called when the source event is observed, to catch up this observer.
-				`resolve_event` is focused during this instant.
-				If `resolve_event` is settled, this event will settle.
-				source_event_observer.compute is then called again during the normal propagation from the source event
-					resolve_event !== null
-					self.settled === true
-					self.value: may or may not be nothing (depends on if resolve_event) is occurring
-					source_event.value !== nothing
-			*/
-			/*
-				If own occurrence is source_event's occurrence (via forward reference / self reference),
-				then the focused event obverser's propagation calls source_event_observer.compute, at which point
-					resolve_event === null
-					self.settled === true
-					self.value !== nothing
-				maybe (self.settled && source_event.value !== nothing),
-				but if this is being called when `self.settled`, then shouldn't it be assumed that this is a self referencing switch: `source_event.value !== nothing` (and self.value !== nothing, for that matter...)
-				Ah, incorrect. `self.settled === true` in both cases: when this is just an extra compute after being caught up, or when it's because of self reference and needs to do the focus change, due to its own occurrence.
-				There are really 3 variations here?
-					Regular:
-						One call to compute: source_event.value !== nothing, focus change / resolve event for this instant, maybe settle (maybe resolved event will cause the settle)
-					Lots o' simultaneity:
-						Two calls to compute:
-							one when catching up:
-								same as "Regular"
-							duplicate: needs to do nothing. TODO: what state are things in?
-					focused event observer propagating to own source event observer:
-						needs to focus change, but `resolve_event` must compute to `focused_event` (switch_updating subsequently), as `self.value` is already computed from `focused_event`.
-						so this is a different branch from the regular resolve_event stuff - no need for resolve_event here
-				if (self.settled) {
-					simultaneity stuff
-					self-reference stuff
-					same: source_event.value !== nothing
-					different: resolve_event
-					if (resolve_event) {
-						already switched and resolved focus from source_event and settled
-					} else {
-						focused event observer is propagating to source event observer
-					}
-				} else {
-					regular
-				}
-				Is there another branch where `self.settled` because `focus_event_observer` maybe_settle settled it, because source_event was already settled?
-				If the switch is created at a time where source_event and focused_event have already computed and settled,
-				and the focused_event propagates to focused_event_observer first
-				or the propagation just works this way other times?
-			*/
-
-			// if  (resolve_event &&  self.value !== nothing) {
-				// throw new Error('')
-			// }
-			// if (self.settled) {
-			// 	// NOTE:
-			// 	if (source_event.value !== nothing) {
-			// 		// TODO: delete this if it's not reachable
-			// 		throw new Error('unexpectedly hit this branch of code.... this branch needs to be handled!')
-			// 	}
-			// 	if (resolve_event) {
-			// 		return
-			// 	} else {
-
-			// 	}
-			// TODO: why did adding `resolve_event === null` here work?
+			// TODO: checking resolve_event === null happened to get a test to pass, but it's such a state disaster and maybe there will be a new failing test at some point
 			if (resolve_event === null && self.value !== nothing) {
 				// own occurrence caused source event occurrence, so own occurrence is causing the focus change
 				// `resolve_event` must be the focused event in this case, because this event (self) is already occurring with its value
@@ -437,9 +372,6 @@ export const create_switch = (resolve, initial_focused_event, source_event, sour
 			}
 
 			if (resolve_event) {
-				// if (!self.settled) {
-					// new Error_Cycle_Detected(`A switching event's occurrence caused its own input event's occurrence, which caused it to switch to an event that is occurring simultaneously.`)
-				// }
 				return
 			}
 

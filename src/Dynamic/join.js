@@ -14,7 +14,6 @@ const registry = new FinalizationRegistry(unobserve => unobserve())
 export const _join = (dynamic, initial_inner_dynamic) => {
 	let value = initial_inner_dynamic.run()
 
-	// TODO: this should be able to use _merge_2_with, _switch_updating, and _map for efficiency.
 	/*
 		TODO: merging adds a lot of work just to get the joined update event to occur at the time the input dynamic update event occurs
 		and the switch implementation is probably already doing the same heavy lifting, almost as though the occurrence we need is right there,
@@ -22,7 +21,18 @@ export const _join = (dynamic, initial_inner_dynamic) => {
 		A lower level function could be made from which this `updates` event for `join` could be derived, and Event's switch could also be derived.
 		It would be especially wild if that function could also derive merging (at least for fun).
 		But keep in mind it would be ideal to generate implementation code at build time for maximum efficiency and byte vs performance options.
+		`switch_updating` may already be this function, except it's not clear how to present the resolve function so all this can be expressed.
+		const get_event_value = event => event.value
+		const event_is_occurring = event => get_value (event) !== public_nothing
+		Example:
+			switch_updating
+				(x => y =>
+					event_is_occurring (updates (dynamic))
+						? calling (get_dynamic_value) (updates (dynamic))
+						: y
+				)
 	*/
+	// TODO: this should be able to use _merge_2_with, _switch_updating, and _map for efficiency.
 	const updates = merge_2_with
 		(a => b => b === public_nothing ? a : get(b))
 		(switch_updating
