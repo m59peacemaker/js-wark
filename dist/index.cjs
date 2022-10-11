@@ -1815,6 +1815,8 @@ const filter = f => event =>
 const from_promise = promise =>
 	producer (produce => promise.then(produce).catch(produce));
 
+const registry$1 = new FinalizationRegistry(cleanup => cleanup());
+
 const _is_complete = event => {
 	const updates = map$2
 		(() => true)
@@ -1839,7 +1841,7 @@ const _is_complete = event => {
 			}
 		});
 
-		registry.register(self, unobserve);
+		registry$1.register(self, unobserve);
 	}
 
 	return self
@@ -1951,7 +1953,7 @@ const take_until_true = dynamic => event =>
 				)
 				(event);
 
-const registry$1 = new FinalizationRegistry(unobserve => unobserve());
+const registry = new FinalizationRegistry(unobserve => unobserve());
 
 /*
 	Number => Event X => Event X
@@ -2038,7 +2040,7 @@ const _take = (n, input_event, input_event_complete) => {
 			unobserve_input_event = input_event_observe(dependency_observer);
 			unobserve_input_complete_event = input_event_complete_observe(dependency_observer);
 
-			registry$1.register(self, () => {
+			registry.register(self, () => {
 				unobserve_input_event();
 				unobserve_input_complete_event();
 			});
