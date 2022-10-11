@@ -1,5 +1,6 @@
 import path from 'path'
 import resolve from '@rollup/plugin-node-resolve'
+import del from 'rollup-plugin-delete'
 import { terser } from 'rollup-plugin-terser'
 import pkg from './package.json'
 
@@ -34,6 +35,11 @@ export default {
 		...Object.keys(pkg.peerDependencies || {})
 	],
 	plugins: [
+		del ({
+			targets: [
+				'dist/esm/*'
+			]
+		}),
 		resolve({ extensions })
 	]
 }

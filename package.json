@@ -27,6 +27,7 @@
     "glob-module-file": "^3.0.2",
     "onchange": "^7.1.0",
     "rollup": "^2.79.0",
+    "rollup-plugin-delete": "^2.0.0",
     "rollup-plugin-terser": "^7.0.2",
     "uvu": "^0.5.6"
   }
