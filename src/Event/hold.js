@@ -20,7 +20,7 @@ export const _hold = (initial_value, event, event_complete) => {
 				compute: () => {
 					if (event.value !== nothing) {
 						const update_value = event.value
-						event.propagation.post_propagation.add(() => {
+						event.computed.post_propagation.add(() => {
 							// NOTE: you cannot check `event.value` here, as it will already be set back to `nothing`.
 							value = update_value
 						})
@@ -28,7 +28,7 @@ export const _hold = (initial_value, event, event_complete) => {
 				}
 			})
 			/*
-				NOTE: In the implementation, whether an Event is complete can be checked by `event.complete.time !== null`.
+				NOTE: In the implementation, whether an Event is complete can be checked by `event.complete.occurred !== null`.
 				Statefully observing an event requires also observing its complete event,
 				so that the complete event's occurrence time property is updated when it should occur.
 			*/

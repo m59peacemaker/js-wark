@@ -17,7 +17,7 @@ const create_switch_complete = (initial_focused_event, source_event, source_even
 	let source_event_complete_observes_this_event = false
 
 	const pre_compute = (dependency, cycle_allowed) => {
-		self.propagation = dependency.propagation
+		self.computed = dependency.computed
 
 		if (self.settled) {
 			self.settled = false
@@ -28,7 +28,7 @@ const create_switch_complete = (initial_focused_event, source_event, source_even
 	}
 
 	const source_event_complete_pre_compute = (dependency, cycle_allowed) => {
-		self.propagation = dependency.propagation
+		self.computed = dependency.computed
 
 		// TODO: verify/test whether the commented code is needed or should be deleted
 		if (unsettling) {
@@ -80,19 +80,20 @@ const create_switch_complete = (initial_focused_event, source_event, source_even
 	}
 
 	const self = {
+		computed: null,
+		occurred: null,
 		observers,
 		settled: true,
-		time: null,
 		value: nothing,
 		observe
 	}
 	self.complete = self
 
 	const settle = () => {
-		const { time, post_propagation } = self.propagation
+		const { post_propagation } = self.computed
 		self.settled = true
-		if (source_event.complete.time !== null && focused_event.time !== null) {
-			self.time = time
+		if (source_event.complete.occurred !== null && focused_event.occurred !== null) {
+			self.occurred = self.computed
 			self.value = source_event.complete.value === nothing ? focused_event.value : source_event.complete.value
 			post_propagation.add(() => self.value = nothing)
 		}
@@ -251,20 +252,21 @@ export const create_switch = (resolve, initial_focused_event, source_event, sour
 	}
 
 	const self = {
+		computed: null,
+		occurred: null,
 		observers,
 		settled: true,
-		time: null,
 		value: nothing,
 		observe
 	}
 
 	const maybe_settle = () => {
-		const { time, post_propagation } = self.propagation
+		const { post_propagation } = self.computed
 		const focus = resolve_event || focused_event
 		if (focus.settled) {
 			self.settled = true
 			if (focus.value !== nothing) {
-				self.time = time
+				self.occurred = self.computed
 				self.value = focus.value
 				post_propagation.add(() => self.value = nothing)
 			}
@@ -279,7 +281,7 @@ export const create_switch = (resolve, initial_focused_event, source_event, sour
 				return
 			}
 
-			self.propagation = dependency.propagation
+			self.computed = dependency.computed
 
 			// if (unsettling) {
 			// 	if (cycle_allowed) {
@@ -326,7 +328,7 @@ export const create_switch = (resolve, initial_focused_event, source_event, sour
 				return
 			}
 
-			self.propagation = dependency.propagation
+			self.computed = dependency.computed
 
 			if (unsettling) {
 				if (cycle_allowed) {
@@ -347,7 +349,7 @@ export const create_switch = (resolve, initial_focused_event, source_event, sour
 			}
 		},
 		compute: () => {
-			const { post_propagation } = self.propagation
+			const { post_propagation } = self.computed
 			// TODO: checking resolve_event === null happened to get a test to pass, but it's such a state disaster and maybe there will be a new failing test at some point
 			if (resolve_event === null && self.value !== nothing) {
 				// own occurrence caused source event occurrence, so own occurrence is causing the focus change
@@ -426,18 +428,18 @@ export const create_switch = (resolve, initial_focused_event, source_event, sour
 		// TODO: should the complete event logic take care of any of this instead?
 		_call(source_event_complete.observe, source_event_complete_observe => {
 			const unobserve_source_event = source_event_observe(source_event_observer)
-			let complete_propagation
+			let instant
 			const unobserve_source_event_complete = source_event_complete_observe({
 				pre_compute: dependency => {
-					complete_propagation = dependency.propagation
+					instant = dependency.computed
 				},
 				compute: () => {
 					// TODO: maybe all references need to be updated from stuff like focused_event.complete to focused_event_complete
 					if (source_event_complete.value !== nothing) {
-						complete_propagation.post_propagation.add(() => {
+						instant.post_propagation.add(() => {
 							unobserve_source_event()
 							unobserve_source_event_complete()
-							if (focused_event.complete.time !== null) {
+							if (focused_event.complete.occurred !== null) {
 								unobserve_focused_event()
 							}
 						})

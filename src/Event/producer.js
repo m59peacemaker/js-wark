@@ -7,10 +7,11 @@ export const producer = producer_function => {
 	const observers = new Map()
 
 	const self = {
+		computed: null,
+		occurred: null,
 		complete: never,
 		observers,
 		settled: true,
-		time: null,
 		value: nothing,
 		observe: observer => {
 			const id = Symbol()

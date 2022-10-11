@@ -8,10 +8,11 @@ const registry = new FinalizationRegistry(cleanup => cleanup())
 // TODO: maybe rename to weak_producer. contingent_producer sounds like something that would take a reference to something and be eligible for garbage collection when that reference is eligible for garbage collection.
 export const contingent_producer = producer_function => {
 	const self = {
+		computed: null,
+		occurred: null,
 		complete: never,
 		observers: new Map(),
 		settled: true,
-		time: null,
 		value: nothing,
 		observe: observer => {
 			const self = ref.deref()
