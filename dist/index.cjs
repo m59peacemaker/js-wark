@@ -1813,7 +1813,9 @@ const filter = f => event =>
 		);
 
 const from_promise = promise =>
-	producer (produce => promise.then(produce).catch(produce));
+	once$1 (
+		producer (produce => promise.then(produce).catch(produce))
+	);
 
 const registry$1 = new FinalizationRegistry(cleanup => cleanup());
 
