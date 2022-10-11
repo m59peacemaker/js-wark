@@ -1,9 +1,13 @@
 export const construct = f => {
-	const cache = { time: Symbol(), value: null }
+	let cache_instant = Symbol()
+	let cache_value = null
 	return {
-		run: time => {
-			cache.time === time || Object.assign(cache, { time, value: f (time) })
-			return cache.value
+		run: instant => {
+			if (instant !== cache_instant) {
+				cache_instant = instant
+				cache_value = f (instant)
+			}
+			return cache_value
 		}
 	}
 }
