@@ -1,6 +1,7 @@
 export * from './construct.js'
 export * from './apply.js'
 export * from './chain.js'
+export * from './from_function.js'
 export * from './join.js'
 export * from './lift2.js'
 export * from './lift3.js'
