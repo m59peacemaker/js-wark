@@ -1,4 +1,7 @@
 import { producer } from './producer.js'
+import { once } from './once.js'
 
 export const from_promise = promise =>
-	producer (produce => promise.then(produce).catch(produce))
+	once (
+		producer (produce => promise.then(produce).catch(produce))
+	)
