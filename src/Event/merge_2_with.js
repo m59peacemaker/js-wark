@@ -24,9 +24,10 @@ const create_merged_complete_event = (a, b) => {
 	let b_observes_this_event = false
 
 	const self = {
+		computed: null,
+		occurred: null,
 		observers,
 		settled: true,
-		time: null,
 		value: nothing,
 		observe: observer => {
 			const id = Symbol()
@@ -59,7 +60,7 @@ const create_merged_complete_event = (a, b) => {
 	*/
 	const dependency_observer = {
 		pre_compute: (dependency, cycle_allowed) => {
-			self.propagation = dependency.propagation
+			self.computed = dependency.computed
 
 			if (unsettling) {
 				if (cycle_allowed) {
@@ -82,7 +83,7 @@ const create_merged_complete_event = (a, b) => {
 			}
 		},
 		compute: () => {
-			const { time, post_propagation } = self.propagation
+			const { post_propagation } = self.computed
 
 			/*
 				if both dependencies are simultaneous,
@@ -96,11 +97,11 @@ const create_merged_complete_event = (a, b) => {
 			if ((a.settled || a_observes_this_event) && (b.settled || b_observes_this_event)) {
 				self.settled = true
 				if (a.value !== nothing || b.value !== nothing) {
-					const value = a.time && b.time
+					const value = a.occurred && b.occurred
 						? a.value === nothing ? b.value : a.value
 						: public_nothing
 					if (value !== public_nothing) {
-						self.time = time
+						self.occurred = self.computed
 						self.value = value
 						post_propagation.add(() => self.value = nothing)
 					}
@@ -130,9 +131,10 @@ const create_merged_event = (f, a, b, a_complete, b_complete) => {
 	let b_is_complete = false
 
 	const self = {
+		computed: null,
+		occurred: null,
 		observers,
 		settled: true,
-		time: null,
 		value: nothing,
 		observe: observer => {
 			const id = Symbol()
@@ -174,7 +176,7 @@ const create_merged_event = (f, a, b, a_complete, b_complete) => {
 	*/
 	const dependency_observer = {
 		pre_compute: (dependency, cycle_allowed) => {
-			self.propagation = dependency.propagation
+			self.computed = dependency.computed
 
 			if (unsettling) {
 				if (cycle_allowed) {
@@ -197,7 +199,7 @@ const create_merged_event = (f, a, b, a_complete, b_complete) => {
 			}
 		},
 		compute: () => {
-			const { time, post_propagation } = self.propagation
+			const { post_propagation } = self.computed
 
 			/*
 				if both dependencies are simultaneous,
@@ -213,7 +215,7 @@ const create_merged_event = (f, a, b, a_complete, b_complete) => {
 				if (a.value !== nothing || b.value !== nothing) {
 					const value = f (a_is_complete ? never : a, b_is_complete ? never : b)
 					if (value !== public_nothing) {
-						self.time = time
+						self.occurred = self.computed
 						self.value = value
 						post_propagation.add(() => self.value = nothing)
 					}
@@ -223,21 +225,21 @@ const create_merged_event = (f, a, b, a_complete, b_complete) => {
 		}
 	}
 
-	let complete_propagation
+	let complete_computed
 	const dependency_complete_observer = {
 		pre_compute: dependency => {
-			complete_propagation = dependency.propagation
+			complete_computed = dependency.computed
 		},
 		compute: dependency => {
 			if (a_complete.value !== nothing && is_same_event_reference(a_complete, dependency)) {
-				complete_propagation.post_propagation.add(() => {
+				complete_computed.post_propagation.add(() => {
 					a_is_complete = true
 					unobserve_a()
 					unobserve_a_complete()
 				})
 			}
 			if (b_complete.value !== nothing && is_same_event_reference(b_complete, dependency)) {
-				complete_propagation.post_propagation.add(() => {
+				complete_computed.post_propagation.add(() => {
 					b_is_complete = true
 					unobserve_b()
 					unobserve_b_complete()

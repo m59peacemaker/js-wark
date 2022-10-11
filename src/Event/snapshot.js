@@ -11,10 +11,11 @@ export const _snapshot = (f, sample, input_event) => {
 	let unobserve_input_event
 
 	const self = {
+		computed: null,
+		occurred: null,
 		complete: input_event.complete,
 		observers,
 		settled: true,
-		time: null,
 		value: nothing,
 		observe: observer => {
 			const id = Symbol()
@@ -38,22 +39,19 @@ export const _snapshot = (f, sample, input_event) => {
 
 	const input_event_observer = {
 		pre_compute: (dependency, cycle_allowed) => {
-			self.propagation = dependency.propagation
+			self.computed = dependency.computed
 			self.settled = false
 			pre_compute_observers(self, cycle_allowed)
 		},
 		compute: () => {
-			const { time, post_propagation } = self.propagation
-			// NOTE: if needed, Dynamic/Sample could have a callback api to fix timing issue, if the update is unsettled
-			// sample.compute(time, x => {
+			const { post_propagation } = self.computed
 			self.settled = true
 			if (input_event.value !== nothing) {
-				self.time = time
-				self.value = f (sample.run(time)) (input_event.value)
+				self.occurred = self.computed
+				self.value = f (sample.run(self.computed)) (input_event.value)
 				post_propagation.add(() => self.value = nothing)
 			}
 			compute_observers(self)
-			// })
 		}
 	}
 

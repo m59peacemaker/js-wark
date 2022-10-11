@@ -10,10 +10,11 @@ export const _calling = (f, input_event, input_event_complete) => {
 	let unobserve_input_event
 
 	const self = {
+		computed: null,
+		occurred: null,
 		complete: input_event_complete,
 		observers,
 		settled: true,
-		time: null,
 		value: nothing,
 		observe: observer => {
 			const id = Symbol()
@@ -30,18 +31,18 @@ export const _calling = (f, input_event, input_event_complete) => {
 		input_event_observe => {
 			unobserve_input_event = input_event_observe({
 				pre_compute: (dependency, cycle_allowed) => {
-					self.propagation = dependency.propagation
+					self.computed = dependency.computed
 					self.settled = false
 					pre_compute_observers(self, cycle_allowed)
 				},
 				compute: () => {
-					const { time, post_propagation } = self.propagation
+					const { post_propagation } = self.computed
 					if (self.settled) {
 						return
 					}
 					self.settled = true
 					if (input_event.value !== nothing) {
-						self.time = time
+						self.occurred = self.computed
 						self.value = f (input_event.value)
 						post_propagation.add(() => self.value = nothing)
 					}
@@ -58,14 +59,14 @@ export const _calling = (f, input_event, input_event_complete) => {
 		making it effectively true that the complete event only occurs once.
 	*/
 	_call(input_event_complete.observe, input_event_complete_observe => {
-		let complete_propagation
+		let instant
 		const unobserve_input_event_complete_event = input_event_complete_observe({
 			pre_compute: dependency => {
-				complete_propagation = dependency.propagation
+				instant = dependency.computed
 			},
 			compute: () => {
 				if (input_event_complete.value !== nothing) {
-					complete_propagation.post_propagation.add(() => {
+					instant.post_propagation.add(() => {
 						unobserve_input_event()
 						unobserve_input_event_complete_event()
 					})

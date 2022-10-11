@@ -37,12 +37,12 @@ const registry = new FinalizationRegistry(unobserve => unobserve())
 */
 export const _take_until = (complete_event, input_event) => {
 	const complete = {
+		get computed () { return complete_event.computed },
+		get occurred () { return complete_event.occurred },
 		get observers () { return complete_event.observers },
 		get settled () { return complete_event.settled },
-		get time () { return complete_event.time },
 		get value () { return complete_event.value },
 		get observe () { return complete_event.observe },
-		get propagation () { return complete_event.propagation },
 		get referenced () { return complete_event }
 	}
 	complete.complete = complete
@@ -59,12 +59,12 @@ export const _take_until = (complete_event, input_event) => {
 	registry.register(complete, unobserve)
 	return {
 		complete,
+		get computed () { return input_event.computed },
+		get occurred () { return input_event.occurred },
 		get observers () { return input_event.observers },
 		get settled () { return input_event.settled },
-		get time () { return input_event.time },
 		get value () { return input_event.value },
 		get observe () { return input_event.observe },
-		get propagation () { return input_event.propagation },
 		get referenced () { return input_event }
 	}
 }

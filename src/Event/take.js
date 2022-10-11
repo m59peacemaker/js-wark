@@ -38,9 +38,10 @@ export const _take = (n, input_event, input_event_complete) => {
 	let i = 0
 
 	const self = {
+		computed: null,
+		occurred: null,
 		observers,
 		settled: true,
-		time: null,
 		value: nothing,
 		observe: observer => {
 			const id = Symbol()
@@ -57,7 +58,7 @@ export const _take = (n, input_event, input_event_complete) => {
 			if (!self.settled) {
 				return
 			}
-			self.propagation = dependency.propagation
+			self.computed = dependency.computed
 			self.settled = false
 			pre_compute_observers(self, cycle_allowed)
 		},
@@ -65,14 +66,14 @@ export const _take = (n, input_event, input_event_complete) => {
 			if (self.settled) {
 				return
 			}
-			const { time, post_propagation } = self.propagation
+			const { post_propagation } = self.computed
 			if (input_event.settled && input_event_complete.settled) {
 				self.settled = true
 				if (input_event.value !== nothing) {
 					++i
 				}
 				if (i === n || input_event_complete.value !== nothing) {
-					self.time = time
+					self.occurred = self.computed
 					self.value = input_event.value !== nothing ? input_event.value : input_event_complete.value
 					post_propagation.add(() => {
 						self.value = nothing
