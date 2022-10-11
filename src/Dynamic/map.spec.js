@@ -24,7 +24,7 @@ test('value remains the same until the subsequent instant of its update', () => 
 	const b = Event.hold (0) (a)
 	const c = Dynamic.map (x => x + 1) (b)
 	const d = Event.tag (c) (a)
-	Event.calling (x => values_c_updates.push(x)) (c.updates)
+	Event.calling (x => values_c_updates.push(x)) (Dynamic.updates (c))
 	Event.calling (x => values_d.push(x)) (d)
 	a.produce(1)
 	a.produce(2)
