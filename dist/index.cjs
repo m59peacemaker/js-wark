@@ -1582,6 +1582,9 @@ const create = initial_value => hold (initial_value) (exposed_producer());
 
 const of$2 = value => ({ run: () => value, updates: never });
 
+// TODO: THIS IS WRONG! Using `get` here will needlessly cause the dynamic and its upstream dynamics to recompute (or worse, upstream plain samples, if that's a thing somehow)
+const switching$1 = dynamic => switch_updating (immediately) (get (dynamic)) (updates (dynamic));
+
 var index$3 = /*#__PURE__*/Object.freeze({
 	__proto__: null,
 	calling: calling$1,
@@ -1593,6 +1596,7 @@ var index$3 = /*#__PURE__*/Object.freeze({
 	_map: _map,
 	map: map,
 	of: of$2,
+	switching: switching$1,
 	updates: updates
 });
 
