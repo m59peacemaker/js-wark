@@ -2096,6 +2096,7 @@ var index$2 = /*#__PURE__*/Object.freeze({
 	on_demand_producer: on_demand_producer,
 	performing: performing,
 	performed: performed,
+	producer: producer,
 	scan: scan,
 	_snapshot: _snapshot,
 	snapshot: snapshot,

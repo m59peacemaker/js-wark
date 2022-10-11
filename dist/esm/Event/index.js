@@ -19,6 +19,7 @@ export { once } from './once.js';
 export { on_demand_producer } from './on_demand_producer.js';
 export { performing } from './performing.js';
 export { performed } from './performed.js';
+export { producer } from './producer.js';
 export { scan } from './scan.js';
 export { _snapshot, snapshot } from './snapshot.js';
 export { create_switch, switch_updating } from './switch_updating.js';
