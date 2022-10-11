@@ -7,6 +7,7 @@ export { delay } from './delay.js';
 export { exposed_producer } from './exposed_producer.js';
 export { Error_Cycle_Detected } from './Error_Cycle_Detected.js';
 export { filter } from './filter.js';
+export { from_promise } from './from_promise.js';
 export { _hold, hold } from './hold.js';
 export { _is_complete, is_complete } from './is_complete.js';
 export { _map, map } from './map.js';

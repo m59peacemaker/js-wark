@@ -27,6 +27,8 @@ const chain$2 = f => x =>
 		map$3 (f) (x)
 	);
 
+const from_function = f => construct$2(() => f());
+
 const lift2$1 = f => x1 => x2 =>
 	construct$2 (
 		instant =>
@@ -84,6 +86,7 @@ var index$5 = /*#__PURE__*/Object.freeze({
 	construct: construct$2,
 	apply: apply,
 	chain: chain$2,
+	from_function: from_function,
 	join: join$1,
 	lift2: lift2$1,
 	lift3: lift3,
@@ -1805,6 +1808,9 @@ const filter = f => event =>
 			(event)
 		);
 
+const from_promise = promise =>
+	producer (produce => promise.then(produce).catch(produce));
+
 const _is_complete = event => {
 	const updates = map$2
 		(() => true)
@@ -2066,6 +2072,7 @@ var index$2 = /*#__PURE__*/Object.freeze({
 	exposed_producer: exposed_producer,
 	Error_Cycle_Detected: Error_Cycle_Detected,
 	filter: filter,
+	from_promise: from_promise,
 	_hold: _hold,
 	hold: hold,
 	_is_complete: _is_complete,
@@ -2138,6 +2145,8 @@ const fetch = ({ url, abort, ...options }) =>
 		)
 	);
 
+const from_async_function = f => map$3 (from_promise) (from_function (f));
+
 const of = value => ({
 	run: instant => {
 		const observers = new Map();
@@ -2164,16 +2173,12 @@ const of = value => ({
 	}
 });
 
-const map_switching$1 = f => event => switching (map$2 (f) (event));
-
-const map_switching = f => map$3 (map_switching$1 (f));
-
 var index = /*#__PURE__*/Object.freeze({
 	__proto__: null,
 	calling: calling,
 	fetch: fetch,
-	of: of,
-	map_switching: map_switching
+	from_async_function: from_async_function,
+	of: of
 });
 
 const subsequently = x => _ => x;
