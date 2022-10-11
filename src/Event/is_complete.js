@@ -1,6 +1,8 @@
 import { map } from './map.js'
 import { _use } from '../Reference/use.js'
 
+const registry = new FinalizationRegistry(cleanup => cleanup())
+
 export const _is_complete = event => {
 	const updates = map
 		(() => true)
