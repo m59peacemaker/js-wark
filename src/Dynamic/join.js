@@ -45,6 +45,7 @@ export const _join = (dynamic, initial_inner_dynamic) => {
 		)
 		(dynamic.updates)
 
+	// TODO: this use Sample.join instead, and not observe its own updates. This should currently be bugged by updating to the new value in the same instant the update event occurs (this is the old behavior)
 	const self = {
 		run: () => value,
 		updates,
