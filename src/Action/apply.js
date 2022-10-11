@@ -1,7 +1,7 @@
 import { construct } from './construct.js'
 
-export const map = f => x =>
+export const apply = xf => xv =>
 	construct (
 		instant =>
-			f (x.run(instant))
+			xf.run(instant) (xv.run(instant))
 	)
