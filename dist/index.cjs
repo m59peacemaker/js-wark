@@ -96,13 +96,13 @@ var index$5 = /*#__PURE__*/Object.freeze({
 });
 
 // TODO: consider changing this to "not_occurring" or something like that, for better distinction from a public api 'nothing' (if that ends up being a thing)
-const nothing$2 = Symbol('nothing');
+const nothing$1 = Symbol('nothing');
 
 const catch_up_observer = (event, observer, cycle_allowed) => {
-	if (!event.settled || event.value !== nothing$2) {
+	if (!event.settled || event.value !== nothing$1) {
 		observer.pre_compute(event, cycle_allowed);
 	}
-	if (event.value !== nothing$2) {
+	if (event.value !== nothing$1) {
 		observer.compute(event);
 	}
 };
@@ -221,7 +221,7 @@ const _calling$1 = (f, input_event, input_event_complete) => {
 		complete: input_event_complete,
 		observers,
 		settled: true,
-		value: nothing$2,
+		value: nothing$1,
 		observe: observer => {
 			const id = Symbol();
 
@@ -247,10 +247,10 @@ const _calling$1 = (f, input_event, input_event_complete) => {
 						return
 					}
 					self.settled = true;
-					if (input_event.value !== nothing$2) {
+					if (input_event.value !== nothing$1) {
 						self.occurred = self.computed;
 						self.value = f (input_event.value);
-						post_propagation.add(() => self.value = nothing$2);
+						post_propagation.add(() => self.value = nothing$1);
 					}
 					compute_observers(self);
 				}
@@ -271,7 +271,7 @@ const _calling$1 = (f, input_event, input_event_complete) => {
 				instant = dependency.computed;
 			},
 			compute: () => {
-				if (input_event_complete.value !== nothing$2) {
+				if (input_event_complete.value !== nothing$1) {
 					instant.post_propagation.add(() => {
 						unobserve_input_event();
 						unobserve_input_event_complete_event();
@@ -299,7 +299,7 @@ const _calling = (f, dynamic, dynamic_updates, dynamic_updates_complete) => {
 	const unobserve = updates.observe({
 		pre_compute: () => {},
 		compute: () => {
-			if (updates.value !== nothing$2) {
+			if (updates.value !== nothing$1) {
 				value = updates.value;
 			}
 		}
@@ -308,7 +308,7 @@ const _calling = (f, dynamic, dynamic_updates, dynamic_updates_complete) => {
 	const unobserve_complete = dynamic_updates_complete.observe({
 		pre_compute: () => {},
 		compute: dependency => {
-			if (dependency.value !== nothing$2) {
+			if (dependency.value !== nothing$1) {
 				dependency.propagation.post_propagation.add(() => {
 					unobserve();
 					unobserve_complete();
@@ -343,7 +343,7 @@ const _map$1 = (f, input_event) => {
 		complete: input_event.complete,
 		observers,
 		settled: true,
-		value: nothing$2,
+		value: nothing$1,
 		observe: observer => {
 			const id = Symbol();
 			observers.set(id, observer);
@@ -373,10 +373,10 @@ const _map$1 = (f, input_event) => {
 		compute: () => {
 			const { post_propagation } = self.computed;
 			self.settled = true;
-			if (input_event.value !== nothing$2) {
+			if (input_event.value !== nothing$1) {
 				self.occurred = self.computed;
 				self.value = f (input_event.value);
-				post_propagation.add(() => self.value = nothing$2);
+				post_propagation.add(() => self.value = nothing$1);
 			}
 			compute_observers(self);
 		}
@@ -390,7 +390,7 @@ const map$2 = f => input_event =>
 		_map$1 (f, input_event)
 	);
 
-const nothing$1 = Symbol();
+const nothing = Symbol();
 
 const identity = x => x;
 
@@ -424,7 +424,7 @@ const completed = (x => {
 	occurred: initial_instant,
 	observe: () => noop,
 	settled: true,
-	value: nothing$2
+	value: nothing$1
 });
 
 const never = {
@@ -433,7 +433,7 @@ const never = {
 	complete: completed,
 	observe: () => noop,
 	settled: true,
-	value: nothing$2
+	value: nothing$1
 };
 
 // TODO: this shares a ton of code with create_merged_event
@@ -454,7 +454,7 @@ const create_merged_complete_event = (a, b) => {
 		occurred: null,
 		observers,
 		settled: true,
-		value: nothing$2,
+		value: nothing$1,
 		observe: observer => {
 			const id = Symbol();
 			observers.set(id, observer);
@@ -522,14 +522,14 @@ const create_merged_complete_event = (a, b) => {
 
 			if ((a.settled || a_observes_this_event) && (b.settled || b_observes_this_event)) {
 				self.settled = true;
-				if (a.value !== nothing$2 || b.value !== nothing$2) {
+				if (a.value !== nothing$1 || b.value !== nothing$1) {
 					const value = a.occurred && b.occurred
-						? a.value === nothing$2 ? b.value : a.value
-						: nothing$1;
-					if (value !== nothing$1) {
+						? a.value === nothing$1 ? b.value : a.value
+						: nothing;
+					if (value !== nothing) {
 						self.occurred = self.computed;
 						self.value = value;
-						post_propagation.add(() => self.value = nothing$2);
+						post_propagation.add(() => self.value = nothing$1);
 					}
 				}
 				compute_observers(self);
@@ -561,7 +561,7 @@ const create_merged_event = (f, a, b, a_complete, b_complete) => {
 		occurred: null,
 		observers,
 		settled: true,
-		value: nothing$2,
+		value: nothing$1,
 		observe: observer => {
 			const id = Symbol();
 			observers.set(id, observer);
@@ -638,12 +638,12 @@ const create_merged_event = (f, a, b, a_complete, b_complete) => {
 
 			if ((a.settled || a_observes_this_event) && (b.settled || b_observes_this_event)) {
 				self.settled = true;
-				if (a.value !== nothing$2 || b.value !== nothing$2) {
+				if (a.value !== nothing$1 || b.value !== nothing$1) {
 					const value = f (a_is_complete ? never : a, b_is_complete ? never : b);
-					if (value !== nothing$1) {
+					if (value !== nothing) {
 						self.occurred = self.computed;
 						self.value = value;
-						post_propagation.add(() => self.value = nothing$2);
+						post_propagation.add(() => self.value = nothing$1);
 					}
 				}
 				compute_observers(self);
@@ -657,14 +657,14 @@ const create_merged_event = (f, a, b, a_complete, b_complete) => {
 			complete_computed = dependency.computed;
 		},
 		compute: dependency => {
-			if (a_complete.value !== nothing$2 && is_same_event_reference(a_complete, dependency)) {
+			if (a_complete.value !== nothing$1 && is_same_event_reference(a_complete, dependency)) {
 				complete_computed.post_propagation.add(() => {
 					a_is_complete = true;
 					unobserve_a();
 					unobserve_a_complete();
 				});
 			}
-			if (b_complete.value !== nothing$2 && is_same_event_reference(b_complete, dependency)) {
+			if (b_complete.value !== nothing$1 && is_same_event_reference(b_complete, dependency)) {
 				complete_computed.post_propagation.add(() => {
 					b_is_complete = true;
 					unobserve_b();
@@ -679,8 +679,8 @@ const create_merged_event = (f, a, b, a_complete, b_complete) => {
 
 const _merge_2_with = (f, a, b, a_complete, b_complete) => {
 	const merge_f = (a, b) => f
-		(a.value === nothing$2 ? nothing$1 : a.value)
-		(b.value === nothing$2 ? nothing$1 : b.value);
+		(a.value === nothing$1 ? nothing : a.value)
+		(b.value === nothing$1 ? nothing : b.value);
 	const self = create_merged_event (merge_f, a, b, a_complete, b_complete);
 	const complete = create_merged_complete_event (a_complete, b_complete);
 	complete.complete = complete;
@@ -754,13 +754,13 @@ const create_switch_complete = (initial_focused_event, source_event, source_even
 		}
 
 		// TODO: unsure what `cycle_allowed` should be here...
-		if (!source_event.settled || source_event.value !== nothing$2) {
+		if (!source_event.settled || source_event.value !== nothing$1) {
 			observer.pre_compute(self, false);
 		}
-		if (!focused_event.settled || focused_event.value !== nothing$2) {
+		if (!focused_event.settled || focused_event.value !== nothing$1) {
 			observer.pre_compute(self, false);
 		}
-		if (self.value !== nothing$2) {
+		if (self.value !== nothing$1) {
 			observer.compute(self);
 		}
 
@@ -777,7 +777,7 @@ const create_switch_complete = (initial_focused_event, source_event, source_even
 		occurred: null,
 		observers,
 		settled: true,
-		value: nothing$2,
+		value: nothing$1,
 		observe
 	};
 	self.complete = self;
@@ -787,8 +787,8 @@ const create_switch_complete = (initial_focused_event, source_event, source_even
 		self.settled = true;
 		if (source_event.complete.occurred !== null && focused_event.occurred !== null) {
 			self.occurred = self.computed;
-			self.value = source_event.complete.value === nothing$2 ? focused_event.value : source_event.complete.value;
-			post_propagation.add(() => self.value = nothing$2);
+			self.value = source_event.complete.value === nothing$1 ? focused_event.value : source_event.complete.value;
+			post_propagation.add(() => self.value = nothing$1);
 		}
 		compute_observers(self);
 	};
@@ -810,7 +810,7 @@ const create_switch_complete = (initial_focused_event, source_event, source_even
 	const source_event_observer = {
 		pre_compute,
 		compute: () => {
-			if (source_event.value !== nothing$2) {
+			if (source_event.value !== nothing$1) {
 				_call(source_event.value, source_event_value => {
 					_call(source_event_value.complete, source_event_value_complete => {
 						focused_event = source_event_value_complete;
@@ -929,10 +929,10 @@ const create_switch = (resolve, initial_focused_event, source_event, source_even
 		// if (!focused_event.settled || focused_event.value !== nothing) {
 		// 	observer.pre_compute(self, true)
 		// }
-		if (!self.settled || self.value !== nothing$2) {
+		if (!self.settled || self.value !== nothing$1) {
 			observer.pre_compute(self, true);
 		}
-		if (self.value !== nothing$2) {
+		if (self.value !== nothing$1) {
 			observer.compute(self);
 		}
 
@@ -949,7 +949,7 @@ const create_switch = (resolve, initial_focused_event, source_event, source_even
 		occurred: null,
 		observers,
 		settled: true,
-		value: nothing$2,
+		value: nothing$1,
 		observe
 	};
 
@@ -958,10 +958,10 @@ const create_switch = (resolve, initial_focused_event, source_event, source_even
 		const focus = resolve_event || focused_event;
 		if (focus.settled) {
 			self.settled = true;
-			if (focus.value !== nothing$2) {
+			if (focus.value !== nothing$1) {
 				self.occurred = self.computed;
 				self.value = focus.value;
-				post_propagation.add(() => self.value = nothing$2);
+				post_propagation.add(() => self.value = nothing$1);
 			}
 			compute_observers(self);
 		}
@@ -1044,7 +1044,7 @@ const create_switch = (resolve, initial_focused_event, source_event, source_even
 		compute: () => {
 			const { post_propagation } = self.computed;
 			// TODO: checking resolve_event === null happened to get a test to pass, but it's such a state disaster and maybe there will be a new failing test at some point
-			if (resolve_event === null && self.value !== nothing$2) {
+			if (resolve_event === null && self.value !== nothing$1) {
 				// own occurrence caused source event occurrence, so own occurrence is causing the focus change
 				// `resolve_event` must be the focused event in this case, because this event (self) is already occurring with its value
 
@@ -1070,7 +1070,7 @@ const create_switch = (resolve, initial_focused_event, source_event, source_even
 				return
 			}
 
-			if (source_event.value !== nothing$2) {
+			if (source_event.value !== nothing$1) {
 				_call(source_event.value, focusing_event =>
 					// This is especially nasty - be sure to mutate `resolve_event` correctly - setting it to the value, NOT THE REFERENCE, or stuff like `resolve_event.settled` will be broken!
 					_call(resolve (focused_event) (focusing_event), _resolve_event => {
@@ -1128,7 +1128,7 @@ const create_switch = (resolve, initial_focused_event, source_event, source_even
 				},
 				compute: () => {
 					// TODO: maybe all references need to be updated from stuff like focused_event.complete to focused_event_complete
-					if (source_event_complete.value !== nothing$2) {
+					if (source_event_complete.value !== nothing$1) {
 						instant.post_propagation.add(() => {
 							unobserve_source_event();
 							unobserve_source_event_complete();
@@ -1312,7 +1312,7 @@ const _join = (dynamic, initial_inner_dynamic) => {
 	*/
 	// TODO: this should be able to use _merge_2_with, _switch_updating, and _map for efficiency.
 	const updates$1 = merge_2_with
-		(a => b => b === nothing$1 ? a : get(b))
+		(a => b => b === nothing ? a : get(b))
 		(switch_updating
 			(immediately)
 			(initial_inner_dynamic.updates)
@@ -1332,7 +1332,7 @@ const _join = (dynamic, initial_inner_dynamic) => {
 	const unobserve = updates$1.observe({
 		pre_compute: () => {},
 		compute: () => {
-			if (updates$1.value !== nothing$2) {
+			if (updates$1.value !== nothing$1) {
 				value = updates$1.value;
 			}
 		}
@@ -1490,7 +1490,7 @@ const _hold = (initial_value, event, event_complete) => {
 			const unobserve = event_observe({
 				pre_compute: () => {},
 				compute: () => {
-					if (event.value !== nothing$2) {
+					if (event.value !== nothing$1) {
 						const update_value = event.value;
 						event.computed.post_propagation.add(() => {
 							// NOTE: you cannot check `event.value` here, as it will already be set back to `nothing`.
@@ -1507,7 +1507,7 @@ const _hold = (initial_value, event, event_complete) => {
 			const unobserve_complete = event_complete_observe({
 				pre_compute: noop,
 				compute: () => {
-					if (event_complete.value !== nothing$2) {
+					if (event_complete.value !== nothing$1) {
 						// TODO: this breaks garbage collection because it references `self`... so does this need to be done differently or is it unnecessary?
 						// registry.unregister(self)
 						unobserve();
@@ -1540,7 +1540,7 @@ const produce = (event, value) => {
 	event.value = value;
 	pre_compute_observers(event, false);
 	compute_observers(event);
-	event.value = nothing$2;
+	event.value = nothing$1;
 	run_post_instant(instant);
 };
 
@@ -1553,7 +1553,7 @@ const producer = producer_function => {
 		complete: never,
 		observers,
 		settled: true,
-		value: nothing$2,
+		value: nothing$1,
 		observe: observer => {
 			const id = Symbol();
 			observers.set(id, observer);
@@ -1600,7 +1600,7 @@ var index$3 = /*#__PURE__*/Object.freeze({
 	updates: updates
 });
 
-const alt = merge_2_with (a => b => a === nothing$1 ? b : a);
+const alt = merge_2_with (a => b => a === nothing ? b : a);
 
 const complete = event => _use(event, event => event.complete);
 
@@ -1615,7 +1615,7 @@ const _snapshot = (f, sample, input_event) => {
 		complete: input_event.complete,
 		observers,
 		settled: true,
-		value: nothing$2,
+		value: nothing$1,
 		observe: observer => {
 			const id = Symbol();
 			observers.set(id, observer);
@@ -1645,10 +1645,10 @@ const _snapshot = (f, sample, input_event) => {
 		compute: () => {
 			const { post_propagation } = self.computed;
 			self.settled = true;
-			if (input_event.value !== nothing$2) {
+			if (input_event.value !== nothing$1) {
 				self.occurred = self.computed;
 				self.value = f (sample.run(self.computed)) (input_event.value);
-				post_propagation.add(() => self.value = nothing$2);
+				post_propagation.add(() => self.value = nothing$1);
 			}
 			compute_observers(self);
 		}
@@ -1722,7 +1722,7 @@ const _take_until = (complete_event, input_event) => {
 	const unobserve = complete_event.observe({
 		pre_compute: noop,
 		compute: () => {
-			if (complete_event.value !== nothing$2) {
+			if (complete_event.value !== nothing$1) {
 				// TODO: this breaks garbage collection because it references `self`... so does this need to be done differently or is it unnecessary?
 				// registry.unregister(complete)
 				unobserve();
@@ -1761,7 +1761,7 @@ const contingent_producer = producer_function => {
 		complete: never,
 		observers: new Map(),
 		settled: true,
-		value: nothing$2,
+		value: nothing$1,
 		observe: observer => {
 			const self = ref.deref();
 			if (!self) { return }
@@ -1835,7 +1835,7 @@ const _is_complete = event => {
 		const unobserve = event.complete.observe({
 			pre_compute: () => {},
 			compute: () => {
-				if (event.complete.value !== nothing) {
+				if (event.complete.value !== nothing$1) {
 					event.complete.computed.post_propagation.add(() => {
 						value = true;
 					});
@@ -1855,13 +1855,13 @@ const is_complete = event =>
 
 // TODO: implement efficient merge for many events rather than implementing this from merge_2_with
 const merge_array = events => {
-	const nothings = events.map(() => nothing$1);
+	const nothings = events.map(() => nothing);
 	return events
 		.slice(1)
 		.reduce(
 			(acc, x, i) =>
 				merge_2_with
-					(a => b => update (i + 1) (b) (a === nothing$1 ? nothings : a))
+					(a => b => update (i + 1) (b) (a === nothing ? nothings : a))
 					(acc)
 					(x)
 			,
@@ -1886,7 +1886,7 @@ const on_demand_producer = producer_function => {
 		complete: never,
 		observers,
 		settled: true,
-		value: nothing$2,
+		value: nothing$1,
 		observe: observer => {
 			const id = Symbol();
 			observers.set(id, observer);
@@ -1988,7 +1988,7 @@ const _take = (n, input_event, input_event_complete) => {
 		occurred: null,
 		observers,
 		settled: true,
-		value: nothing$2,
+		value: nothing$1,
 		observe: observer => {
 			const id = Symbol();
 			observers.set(id, observer);
@@ -2015,14 +2015,14 @@ const _take = (n, input_event, input_event_complete) => {
 			const { post_propagation } = self.computed;
 			if (input_event.settled && input_event_complete.settled) {
 				self.settled = true;
-				if (input_event.value !== nothing$2) {
+				if (input_event.value !== nothing$1) {
 					++i;
 				}
-				if (i === n || input_event_complete.value !== nothing$2) {
+				if (i === n || input_event_complete.value !== nothing$1) {
 					self.occurred = self.computed;
-					self.value = input_event.value !== nothing$2 ? input_event.value : input_event_complete.value;
+					self.value = input_event.value !== nothing$1 ? input_event.value : input_event_complete.value;
 					post_propagation.add(() => {
-						self.value = nothing$2;
+						self.value = nothing$1;
 						unobserve_input_event();
 						unobserve_input_complete_event();
 					});
@@ -2091,7 +2091,7 @@ var index$2 = /*#__PURE__*/Object.freeze({
 	_merge_2_with: _merge_2_with,
 	merge_2_with: merge_2_with,
 	never: never,
-	nothing: nothing$1,
+	nothing: nothing,
 	once: once$1,
 	on_demand_producer: on_demand_producer,
 	performing: performing,
