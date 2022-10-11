@@ -1,5 +1,6 @@
 import { map } from './map.js'
 import { _use } from '../Reference/use.js'
+import { nothing } from './internal/nothing.js'
 
 const registry = new FinalizationRegistry(cleanup => cleanup())
 
