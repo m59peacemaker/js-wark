@@ -1,22 +1,29 @@
 import { _nothing } from './internal/_nothing.js'
 
 export const tag = y => x => {
+	const dependants = new Map()
+
 	const self = {
 		instant: x.instant,
 		compute: y.perform,
 		observe: x.observe,
-		propagate: instant => {
-			if (!instant.cache.has(self)) {
-				instant.cache.set(self, { computed: false, value: _nothing })
-				for (const dependant of self.dependants) {
-					dependant.propagate(instant)
-				}
-			}
-		},
-		dependants: new Set(),
+		join_propagation: f => {
+			const id = Symbol()
+			dependants.set(id, f)
+			return () => dependants.delete(id)
+		}
 	}
 
-	x.dependants.add(self)
+	const leave_propagation = x.join_propagation(
+		instant => {
+			if (!instant.cache.has(self)) {
+				instant.cache.set(self, { computed: false, value: _nothing })
+				for (const f of dependants.values()) {
+					f(instant)
+				}
+			}
+		}
+	)
 
 	const instant = x.instant()
 	if (instant !== null) {

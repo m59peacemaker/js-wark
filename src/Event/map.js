@@ -2,6 +2,8 @@ import { get_value } from './internal/get_value.js'
 import { _nothing } from './internal/_nothing.js'
 
 export const map = f => x => {
+	const dependants = new Map()
+
 	const self = {
 		instant: x.instant,
 		compute: instant => {
@@ -9,19 +11,23 @@ export const map = f => x => {
 			return x_value === _nothing ? _nothing : f(x_value)
 		},
 		observe: x.observe,
-		propagate: instant => {
-			if (!instant.cache.has(self)) {
-				instant.cache.set(self, { computed: false, value: _nothing })
-				// TODO: dependants can just be the propagate functions, instead of the objects
-				for (const d of self.dependants) {
-					d.propagate(instant)
-				}
-			}
-		},
-		dependants: new Set(),
+		join_propagation: f => {
+			const id = Symbol()
+			dependants.set(id, f)
+			return () => dependants.delete(id)
+		}
 	}
 
-	x.dependants.add(self)
+	const leave_propagation = x.join_propagation(
+		instant => {
+			if (!instant.cache.has(self)) {
+				instant.cache.set(self, { computed: false, value: _nothing })
+				for (const f of dependants.values()) {
+					f(instant)
+				}
+			}
+		}
+	)
 
 	const instant = x.instant()
 	if (instant !== null) {

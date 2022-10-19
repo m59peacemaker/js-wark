@@ -3,6 +3,8 @@ import { get_value_with_cache } from './internal/get_value_with_cache.js'
 import { _nothing } from './internal/_nothing.js'
 
 export const calling = f => x => {
+	const dependants = new Map()
+
 	const self = {
 		instant: x.instant,
 		compute: instant => {
@@ -10,22 +12,27 @@ export const calling = f => x => {
 			return x_value === _nothing ? _nothing : f(x_value)
 		},
 		observe: x.observe,
-		propagate: instant => {
+		join_propagation: f => {
+			const id = Symbol()
+			dependants.set(id, f)
+			return () => dependants.delete(id)
+		}
+	}
+
+	const stop_observing = x.observe()
+	const leave_propagation = x.join_propagation(
+		instant => {
 			if (!instant.cache.has(self)) {
 				const cache = { computed: false, value: _nothing }
 				instant.cache.set(self, cache)
-				for (const d of self.dependants) {
-					d.propagate(instant)
+				for (const f of dependants.values()) {
+					f(instant)
 				}
 				// Ensure this is computed, regardless of dependants.
 				instant.computations.push(instant => get_value_with_cache(instant, cache, self))
 			}
-		},
-		dependants: new Set()
-	}
-
-	x.observe()
-	x.dependants.add(self)
+		}
+	)
 
 	const instant = x.instant()
 	if (instant !== null) {

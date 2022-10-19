@@ -3,6 +3,17 @@ import { _nothing } from './internal/_nothing.js'
 import { nothing } from './nothing.js'
 
 export const merge_2_with = f => a => b => {
+	const dependants = new Map()
+
+	const propagate = instant => {
+		if (!instant.cache.has(self)) {
+			instant.cache.set(self, { computed: false, value: _nothing })
+			for (const f of dependants.values()) {
+				f(instant)
+			}
+		}
+	}
+
 	const self = {
 		instant: () => a.instant() || b.instant(),
 		compute: instant => {
@@ -24,19 +35,15 @@ export const merge_2_with = f => a => b => {
 				stop_observing_b()
 			}
 		},
-		propagate: instant => {
-			if (!instant.cache.has(self)) {
-				instant.cache.set(self, { computed: false, value: _nothing })
-				for (const dependant of self.dependants) {
-					dependant.propagate(instant)
-				}
-			}
-		},
-		dependants: new Set()
+		join_propagation: f => {
+			const id = Symbol()
+			dependants.set(id, f)
+			return () => dependants.delete(id)
+		}
 	}
 
-	a.dependants.add(self)
-	b.dependants.add(self)
+	const leave_a_propagation = a.join_propagation(propagate)
+	const leave_b_propagation = b.join_propagation(propagate)
 
 	const instant = self.instant()
 	if (instant !== null) {

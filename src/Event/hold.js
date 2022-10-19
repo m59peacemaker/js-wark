@@ -17,16 +17,15 @@ export const hold = initial_value => updates => {
 
 	const self = {
 		updates,
-		perform: () => value,
-		propagate: receive_update
+		perform: () => value
 	}
 
-	const stop_observing_updates = updates.observe()
-	updates.dependants.add(self)
+	const stop_observing = updates.observe()
+	const leave_propagation = updates.join_propagation(receive_update)
 
 	register_finalizer(self, () => {
-		stop_observing_updates()
-		updates.dependants.delete(self)
+		stop_observing()
+		leave_propagation()
 	})
 
 	const instant = updates.instant()

@@ -9,6 +9,20 @@ export const switch_updating = resolve => initial_focused_event => source_event 
 	let focused_event = initial_focused_event
 	let observers = 0
 	let stop_observing_focused_event = no_op
+	let leave_focused_event_propagation = no_op
+	const dependants = new Map()
+
+	const propagate = instant => {
+		if (!instant.cache.has(self)) {
+			const cache = { computed: false, value: _nothing }
+			instant.cache.set(self, cache)
+			for (const f of dependants.values()) {
+				f(instant)
+			}
+			// Ensure this computes, regardless of dependants.
+			instant.computations.push(instant => get_value_with_cache(instant, cache, self))
+		}
+	}
 
 	const self = {
 		instant: () => initial_focused_event.instant() || source_event.instant(),
@@ -19,8 +33,8 @@ export const switch_updating = resolve => initial_focused_event => source_event 
 			} else {
 				instant.post_computations.push(() => {
 					stop_observing_focused_event()
-					focused_event.dependants.delete(self)
-					focusing_event.dependants.add(self)
+					leave_focused_event_propagation()
+					leave_focused_event_propagation = focusing_event.join_propagation(propagate)
 					focused_event = focusing_event
 					if (observers !== 0) {
 						stop_observing_focused_event = focused_event.observe()
@@ -42,29 +56,22 @@ export const switch_updating = resolve => initial_focused_event => source_event 
 				}
 			}
 		},
-		propagate: instant => {
-			if (!instant.cache.has(self)) {
-				const cache = { computed: false, value: _nothing }
-				instant.cache.set(self, cache)
-				for (const dependants of self.dependants) {
-					dependants.propagate(instant)
-				}
-				// Ensure this computes, regardless of dependants.
-				instant.computations.push(instant => get_value_with_cache(instant, cache, self))
-			}
-		},
-		dependants: new Set()
+		join_propagation: f => {
+			const id = Symbol()
+			dependants.set(id, f)
+			return () => dependants.delete(id)
+		}
 	}
 
 	const stop_observing_source_event = source_event.observe()
-	source_event.dependants.add(self)
-	focused_event.dependants.add(self)
+	const leave_source_event_propagation = source_event.join_propagation(propagate)
+	leave_focused_event_propagation = focused_event.join_propagation(propagate)
 
 	register_finalizer(self, () => {
 		stop_observing_source_event()
 		stop_observing_focused_event()
-		source_event.dependants.delete(self)
-		focused_event.dependants.delete(self)
+		leave_source_event_propagation()
+		leave_focused_event_propagation()
 	})
 
 	const instant = self.instant()

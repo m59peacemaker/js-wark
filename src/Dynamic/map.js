@@ -28,11 +28,10 @@ export const map = f => dynamic => {
 				value = f (dynamic.perform())
 			}
 			return value
-		},
-		propagate: receive_update
+		}
 	}
 
-	updates.dependants.add(self)
+	updates.join_propagation(receive_update)
 
 	const instant = dynamic.updates.instant()
 	if (instant !== null) {

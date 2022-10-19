@@ -1,10 +1,10 @@
-export const produce = (self, instant, value) => {
+export const produce = (instant, dependants, self, value) => {
 	instant.cache.set(self, {
 		computed: true,
 		value
 	})
-	for (const dependant of self.dependants) {
-		dependant.propagate(instant)
+	for (const f of dependants.values()) {
+		f(instant)
 	}
 	for (const f of instant.computations) {
 		f(instant)

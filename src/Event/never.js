@@ -1,11 +1,9 @@
-import { _nothing } from './internal/_nothing.js'
-import { no_op } from '../util/no_op.js'
-import { no_op_x2 } from '../util/no_op_x2.js'
+import { no_more_occurrences } from './internal/no_more_occurrences.js'
+import { completed } from './completed.js'
 
-export const never = ({
-	instant: () => null,
-	compute: () => _nothing,
-	observe: no_op_x2,
-	propagate: no_op,
-	dependants: { add: no_op, delete: no_op }
+export const _never = ({
+	completion: completed,
+	occurrences: no_more_occurrences (false)
 })
+
+export const never = no_more_occurrences (false)

@@ -5,6 +5,7 @@ import { _nothing } from './internal/_nothing.js'
 import { register_finalizer } from '../finalization.js'
 
 export const scan = reducer => initial_value => event => {
+	const dependants = new Map()
 	let value = initial_value
 
 	const updates = {
@@ -19,18 +20,11 @@ export const scan = reducer => initial_value => event => {
 			return update_value
 		},
 		observe: event.observe,
-		propagate: instant => {
-			if (!instant.cache.has(updates)) {
-				const cache = { computed: false, value: _nothing }
-				instant.cache.set(updates, cache)
-				for (const dependant of updates.dependants) {
-					dependant.propagate(instant)
-				}
-				// Ensure this is computed, regardless of dependants.
-				instant.computations.push(instant => get_value_with_cache(instant, cache, updates))
-			}
-		},
-		dependants: new Set()
+		join_propagation: f => {
+			const id = Symbol()
+			dependants.set(id, f)
+			return () => dependants.delete(id)
+		}
 	}
 
 	const self = {
@@ -38,11 +32,24 @@ export const scan = reducer => initial_value => event => {
 		perform: () => value
 	}
 
-	const stop_observing_event = event.observe()
-	event.dependants.add(updates)
+	const stop_observing = event.observe()
+	const leave_propagation = event.join_propagation(
+		instant => {
+			if (!instant.cache.has(updates)) {
+				const cache = { computed: false, value: _nothing }
+				instant.cache.set(updates, cache)
+				for (const f of dependants.values()) {
+					f(instant)
+				}
+				// Ensure this is computed, regardless of dependants.
+				instant.computations.push(instant => get_value_with_cache(instant, cache, updates))
+			}
+		}
+	)
+
 	register_finalizer(self, () => {
-		stop_observing_event()
-		event.dependants.delete(updates)
+		stop_observing()
+		leave_propagation()
 	})
 
 	const instant = event.instant()

@@ -5,12 +5,17 @@ import { register_finalizer } from '../finalization.js'
 import { no_op_x2 } from '../util/no_op_x2.js'
 
 export const construct_weak_producer = f => {
+	const dependants = new Map()
 	let instant = null
 
 	const self = {
 		instant: () => instant,
-		dependants: new Set(),
-		observe: no_op_x2
+		observe: no_op_x2,
+		join_propagation: f => {
+			const id = Symbol()
+			dependants.set(id, f)
+			return () => dependants.delete(id)
+		}
 	}
 
 	const self_ref = new WeakRef(self)
@@ -20,7 +25,7 @@ export const construct_weak_producer = f => {
 		f(x => {
 			const self = self_ref.deref()
 			instant = create_instant()
-			produce(self, instant, x)
+			produce(instant, dependants, self, x)
 			instant = null
 		})
 	)
