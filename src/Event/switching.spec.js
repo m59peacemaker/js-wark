@@ -42,23 +42,13 @@ test('`switching (map (() => x) (x))` is equivalent to `x`', () => {
 test('map to switch, all simultaneous', () => {
 	const values = []
 	const a = Event.create()
-	a.label = 'a'
 	const b = Event.calling
-		(() => {
-			const x = Event.calling (() => a) (a)
-			x.label = 'x'
-			const y = Event.switching (x)
-			y.label = 'y'
-			return y
-		})
+		(() => Event.switching (Event.calling (() => a) (a)))
 		(a)
-	b.label = 'b'
 	const c = Event.switching (b)
-	c.label = 'c'
 	const d = Event.calling
 		(x => values.push(x))
 		(c)
-	d.label = 'd'
 
 	a.produce(0)
 	a.produce(10)
@@ -120,26 +110,6 @@ test('TODO: name this, nesting and simultaneity', () => {
 	*/
 	const c = Event.switching
 		(Event.map
-			/*
-				With the current implementation,
-				at the time this `switch` expression is evaluated, `x` is not settled and its value is nothing.
-				`b` propagates to `c`
-				a starts propagating
-					b observes a, created its inner `map`
-					b starts propagating
-						c observes b, computes the switch, creating this inner switch
-					b is done propagating
-					the inner `map` of b starts propagating
-						this inner switch observes that, and so computes the switch, the switched-to event is ocurring,
-						so it starts propagating
-							c observes that (via its inner event observer)
-							c starts propagating
-								the side effect is performed
-							c is done propagating
-						this inner switch is done propagating
-					the inner `map` of b is done propagating
-				a is done propagating
-			*/
 			(Event.switching)
 			(b)
 		)
