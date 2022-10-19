@@ -56,11 +56,13 @@ export const switch_updating = resolve => initial_focused_event => source_event 
 		dependants: new Set()
 	}
 
-	source_event.observe()
+	const stop_observing_source_event = source_event.observe()
 	source_event.dependants.add(self)
 	focused_event.dependants.add(self)
 
 	register_finalizer(self, () => {
+		stop_observing_source_event()
+		stop_observing_focused_event()
 		source_event.dependants.delete(self)
 		focused_event.dependants.delete(self)
 	})

@@ -21,10 +21,13 @@ export const hold = initial_value => updates => {
 		propagate: receive_update
 	}
 
-	updates.observe()
+	const stop_observing_updates = updates.observe()
 	updates.dependants.add(self)
 
-	register_finalizer(self, () => updates.dependants.delete(self))
+	register_finalizer(self, () => {
+		stop_observing_updates()
+		updates.dependants.delete(self)
+	})
 
 	const instant = updates.instant()
 	if (instant !== null) {
