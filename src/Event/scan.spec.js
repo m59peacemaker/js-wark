@@ -25,9 +25,9 @@ test('starts with the initial value and updates to the result of the reducer whe
 test.skip('completes when the input event completes', () => {
 	const update_values = []
 
-	const a = Event.exposed_producer()
+	const a = Event.create()
 	const b = Event.scan (a => b => b) (0) (Event.take (2) (a))
-	const c = Event.complete (Dynamic.updates(b))
+	const c = Event.completion (Dynamic.updates(b))
 
 	Event.calling (x => update_values.push(x)) (c)
 
@@ -46,7 +46,7 @@ test.skip('', () => {
 			(Event.tag (x) (event))
 		)
 
-	const a = Event.exposed_producer()
+	const a = Event.create()
 	const b = foo (0) (a)
 
 	assert.equal (Sample.get (b), 0)
