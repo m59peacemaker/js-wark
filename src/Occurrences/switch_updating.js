@@ -23,30 +23,13 @@ import { no_op } from '../util/no_op.js'
 
 export const switch_updating = resolve => initial_focused_event => source_event => {
 	let focused_event = initial_focused_event
-	// let observers = 0
-	// let stop_observing_focused_event = no_op
 	let leave_focused_event_propagation = no_op
 	const dependants = new Map()
 
-	// const on_source_event_propagation = instant => {
-	// 	instant.computations.push(instant => {
-	// 		if (computed_in_instant(instant, source_event.updates)) {
-	// 			const update_value = get_value(instant, source_event.updates)
-	// 			if (update_value !== _nothing) {
-	// 				focusing_event = update_value
-	// 				instant.post_computations.push(() => {
-	// 					focused_event = focusing_event
-	// 					focusing_event = null
-	// 				})
-	// 			}
-	// 		}
-	// 	})
-	// }
 
 	const self = {
 		compute: instant => {
 			const source_event_computation = get_computation(source_event, instant)
-			// const focusing_event = get_value(source_event_computation)
 			if (is_occurring(source_event_computation)) {
 				const focusing_event = get_value(source_event_computation)
 				instant.post_computations.push(() => {
@@ -76,20 +59,7 @@ export const switch_updating = resolve => initial_focused_event => source_event 
 						false
 			}
 		},
-		// observe: () => {
-		// 	++observers
-		// 	if (observers === 1) {
-		// 		stop_observing_focused_event = focused_event.observe()
-		// 	}
-		// 	return () => {
-		// 		--observers
-		// 		if (observers === 0) {
-		// 			stop_observing_focused_event()
-		// 		}
-		// 	}
-		// },
 		join_propagation: f => {
-			// const leave_source_event_propagation = source_event.join_propagation(f)
 			const id = Symbol()
 			dependants.set(id, f)
 			if (dependants.size === 1) {
@@ -105,15 +75,10 @@ export const switch_updating = resolve => initial_focused_event => source_event 
 					leave_focused_event_propagation()
 					leave_focused_event_propagation = no_op
 				}
-				// leave_source_event_propagation()
-				// leave_focused_event_propagation()
-				// leave_source_event_propagation()
-				// focused_event_listeners.get(f) // TODO: remove one and call it?
 			}
 		}
 	}
 
-	// const stop_observing_source_event = source_event.observe()
 	const leave_source_event_propagation = source_event.join_propagation(instant => {
 		for (const f of dependants.values()) {
 			f(instant)
@@ -125,32 +90,10 @@ export const switch_updating = resolve => initial_focused_event => source_event 
 				get_value(computation)
 			}
 		})
-		// if (!instant.cache.has(self)) {
-		// 	const state = { computed: false, value: _nothing }
-		// 	instant.cache.set(self, state)
-		// 	// for (const f of dependants.values()) {
-		// 	// 	f(instant)
-		// 	// }
-		// 	// Ensure this computes, regardless of dependants.
-		// 	instant.computations.push(instant => get_value_with_state(instant, state, self))
-		// }
 	})
 
-	// leave_focused_event_propagation = focused_event.join_propagation(propagate)
 
-	register_finalizer(self, () => {
-		// stop_observing_source_event()
-		// stop_observing_focused_event()
-		leave_source_event_propagation()
-		// leave_focused_event_propagation()
-	})
-
-	// const instant = self.instant
-	// if (instant !== null) {
-	// 	const state = { computed: false, value: _nothing }
-	// 	instant.cache.set(self, state)
-	// 	instant.computations.push(instant => get_value_with_state(instant, state, self))
-	// }
+	register_finalizer(self, leave_source_event_propagation)
 
 	return self
 }
