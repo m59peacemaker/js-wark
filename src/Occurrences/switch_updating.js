@@ -32,6 +32,7 @@ export const switch_updating = resolve => initial_focused_event => source_event 
 			const source_event_computation = get_computation(source_event, instant)
 			if (is_occurring(source_event_computation)) {
 				const focusing_event = get_value(source_event_computation)
+
 				instant.post_computations.push(() => {
 					leave_focused_event_propagation()
 					focused_event = focusing_event
@@ -43,6 +44,7 @@ export const switch_updating = resolve => initial_focused_event => source_event 
 						})
 					}
 				})
+
 				const resolved_event = resolve (focused_event) (focusing_event)
 				const resolved_event_computation = get_computation(resolved_event, instant)
 				return is_occurring(resolved_event_computation)

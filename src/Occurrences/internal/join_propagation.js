@@ -12,7 +12,6 @@ export const join_propagation = (f, { instant, propagation, propagation_counts }
 				as this will inappropriately invoke it when dependants join propagation in post_propagation.
 				Adding the function to `computations` will only cause it to be invoked if it is added while `computations` are being iterated and invoked.
 		*/
-		// TODO: there may be cases where this causes the function to be pushed to `computations` more than once in an instant
 		instant.computations.push(f)
 	}
 	return () => {
