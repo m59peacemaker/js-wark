@@ -1,4 +1,4 @@
-import { _map } from '../Occurrences/map.js'
+import { map as _map } from '../Occurrences/map.js'
 import { never } from './never.js'
 
 export const map = f => x => {

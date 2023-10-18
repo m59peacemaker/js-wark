@@ -10,8 +10,10 @@ import { register_finalizer } from '../finalization.js'
 export const join = x => {
 	let value = undetermined
 
+	// TODO: name stuff, or better yet, implement this directly instead of by composition
+	const [ a, _a ] = switch_updating (immediately) (x.perform().updates) (map (x => x.updates) (x.updates))
 	const updates = alt
-		(switch_updating (immediately) (x.perform().updates) (map (x => x.updates) (x.updates)))
+		(a)
 		(sampling (x.updates))
 
 	const self = {
@@ -37,7 +39,12 @@ export const join = x => {
 		})
 	})
 
-	register_finalizer(self, leave_propagation)
+	const cleanup = () => {
+		leave_propagation()
+		_a()
+	}
 
-	return [ self, leave_propagation ]
+	register_finalizer(self, cleanup)
+
+	return [ self, cleanup ]
 }

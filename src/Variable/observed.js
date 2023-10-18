@@ -1,12 +1,14 @@
 import { register_finalizer } from '../finalization.js'
 import { get_computation, is_occurring } from '../Occurrences/internal/computation.js'
+import { map } from '../Occurrences/map.js'
 
 // toggle (false) (take (1) (occurrences))
 export const observed = occurrences => {
 	let value = false
 
 	const self = {
-		updates: occurrences,
+		// TODO: inline this instead of using `map`
+		updates: map (() => true) (occurrences),
 		perform: () => value
 	}
 

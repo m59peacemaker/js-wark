@@ -5,7 +5,7 @@ import * as Occurrences from './index.js'
 
 const test = suite('Occurrences.switching')
 
-test('switches between two regular producer, non-simultaneous events', () => {
+test('switches between two non-simultaneous producers', () => {
 	const a = Occurrences.create()
 	const b = Occurrences.create()
 	const c = Occurrences.create()

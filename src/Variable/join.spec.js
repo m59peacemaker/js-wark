@@ -4,15 +4,45 @@ import * as Variable from './index.js'
 
 const test = suite('Variable.join')
 
-test('switches between two dynamics with non-simultaneous updates', () => {
+test('switches between two dynamics with non-simultaneous updates (initial inner event occurrence)', () => {
 	const a = Variable.create('a')
 	const b = Variable.create(0)
 	const c = Variable.create(a)
 	const [ d ] = Variable.join(c)
 
-	// TODO: test initial inner dynamic update
-
 	assert.equal(d.perform(), 'a')
+
+	c.updates.produce(b)
+	assert.equal(d.perform(), 0)
+
+	c.updates.produce(a)
+	assert.equal(d.perform(), 'a')
+
+	a.updates.produce('b')
+	assert.equal(d.perform(), 'b')
+
+	c.updates.produce(b)
+	assert.equal(d.perform(), 0)
+
+	a.updates.produce('x')
+	assert.equal(d.perform(), 0)
+
+	b.updates.produce(1)
+	assert.equal(d.perform(), 1)
+	b.updates.produce(2)
+	assert.equal(d.perform(), 2)
+	c.updates.produce(a)
+	a.updates.produce('c')
+	assert.equal(d.perform(), 'c')
+	b.updates.produce('x')
+	assert.equal(d.perform(), 'c')
+})
+
+test('switches between two dynamics with non-simultaneous updates (initial source event occurrence)', () => {
+	const a = Variable.create('a')
+	const b = Variable.create(0)
+	const c = Variable.create(a)
+	const [ d ] = Variable.join(c)
 
 	c.updates.produce(b)
 	assert.equal(d.perform(), 0)

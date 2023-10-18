@@ -94,8 +94,11 @@ export const switch_updating = resolve => initial_focused_event => source_event 
 		})
 	})
 
-
 	register_finalizer(self, leave_source_event_propagation)
 
-	return self
+	return [
+		self,
+		leave_source_event_propagation
+		// () => leave_focused_event_propagation()
+	]
 }

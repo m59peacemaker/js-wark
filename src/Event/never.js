@@ -1,7 +1,7 @@
-import { _never } from '../Occurrences/never.js'
+import { never_occurs } from '../Occurrences/never_occurs.js'
+import { of } from '../Variable/of.js'
 
 export const never = ({
-	occurrences: _never,
-	completion: _never,
-	is_complete: { value: true }
+	occurrences: never_occurs,
+	is_complete: of(true)
 })

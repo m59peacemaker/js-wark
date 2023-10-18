@@ -1,10 +1,11 @@
 import { suite } from 'uvu'
 import * as assert from 'uvu/assert'
-import { Event, immediately, subsequently } from '../index.js'
+import { immediately } from '../immediately.js'
+import * as Event from './index.js'
 
 const test = suite('Event.switching')
 
-test('switches between two regular producer, non-simultaneous events', () => {
+test('switches between two non-simultaneous producers', () => {
 	const a = Event.create()
 	const b = Event.create()
 	const c = Event.create()
@@ -25,6 +26,63 @@ test('switches between two regular producer, non-simultaneous events', () => {
 
 	assert.equal (values, [ 1, 2, 3, 4, 5 ])
 })
+
+test.only('completes when source event completes if focused event is already complete', () => {
+	const a = Event.create()
+	const a_x = Event.create()
+	const b = Event.complete_when (a_x) (a)
+	const c = Event.switching (b)
+	const d = Event.create()
+
+	const values = []
+	const completion_update_values = []
+
+	Event.calling (x => values.push(x)) (c)
+	Event.calling (x => completion_update_values.push(x)) (Event.completion (c))
+
+	a.produce(d)
+	d.produce(1)
+	a.produce(Event.never)
+	assert.equal(c.is_complete.perform(), false) // TODO: Sample.get (Event.is_complete (c))
+	a_x.produce('x')
+	assert.equal(c.is_complete.perform(), true) // TODO: Sample.get (Event.is_complete (c))
+	a_x.produce('x')
+	a.produce(d)
+	d.produce('x')
+	a_x.produce('x')
+
+	assert.equal (values, [ 1 ])
+	assert.equal (completion_update_values, [ true ])
+})
+
+test.only('completes when focused event completes if source event is already complete', () => {
+	const a = Event.create()
+	const a_x = Event.create()
+	const b = Event.complete_when (a_x) (a)
+	const c = Event.switching (b)
+	const d = Event.create()
+	const d_x = Event.create()
+
+	const values = []
+	const completion_update_values = []
+
+	Event.calling (x => values.push(x)) (c)
+	Event.calling (x => completion_update_values.push(x)) (Event.completion (c))
+
+	a.produce(d)
+	d.produce(1)
+	a_x.produce('x')
+	assert.equal(c.is_complete.perform(), false) // TODO: Sample.get (Event.is_complete (c))
+	a.produce(Event.never)
+	d.produce(2)
+	d_x.produce('x')
+	d.produce(3)
+	assert.equal(c.is_complete.perform(), true) // TODO: Sample.get (Event.is_complete (c))
+
+	assert.equal (values, [ 1, 2 ])
+	assert.equal (completion_update_values, [ true ])
+})
+
 
 test('`switching (map (() => x) (x))` is equivalent to `x`', () => {
 	const values = []
@@ -86,7 +144,7 @@ test('TODO: name this, nesting and simultaneity', () => {
 		(d)
 	a.produce(0)
 	a.produce(1)
-	assert.equal(values, [ 0 , 1 ])
+	assert.equal(values, [ 0, 1 ])
 })
 
 test('TODO: name this, nesting and simultaneity', () => {
@@ -308,7 +366,7 @@ test.skip('', () => {
 })
 */
 
-test.skip('can implement filter (occurrences)', () => {
+test('can implement filter (occurrences)', () => {
 	const filter = f => x =>
 		Event.switching
 			(Event.map
