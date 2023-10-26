@@ -12,14 +12,18 @@ export const observed = occurrences => {
 		perform: () => value
 	}
 
-	const leave_propagation = occurrences.join_propagation(instant => {
-		instant.post_computations.push(instant => {
-			const computation = get_computation(occurrences, instant)
-			if (is_occurring(computation)) {
+	const compute_update = instant => {
+		const computation = get_computation(occurrences.compute, instant)
+		if (is_occurring(computation)) {
+			instant.post_computations.push(instant => {
 				value = true
 				leave_propagation()
-			}
-		})
+			})
+		}
+	}
+
+	const leave_propagation = occurrences.join_propagation(instant => {
+		get_computation(compute_update, instant)
 	})
 
 	register_finalizer(self, leave_propagation)

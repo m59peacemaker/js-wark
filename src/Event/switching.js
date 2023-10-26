@@ -1,5 +1,4 @@
-import { immediately } from '../immediately.js'
 import { never } from './never.js'
-import { switch_updating } from './switch_updating.js'
+import { switching_from } from './switching_from.js'
 
-export const switching = switch_updating (immediately) (never)
+export const switching = switching_from (never)

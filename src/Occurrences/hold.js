@@ -5,10 +5,13 @@ export const hold = initial_value => updates => {
 	let value = initial_value
 
 	const receive_update = instant => {
-		instant.post_computations.push(instant => {
+		instant.computations.push(instant => {
 			const updates_computation = get_computation(updates, instant)
 			if (is_occurring(updates_computation)) {
-				value = get_value(updates_computation)
+				const updated_value = get_value(updates_computation)
+				instant.post_computations.push(() => {
+					value = updated_value
+				})
 			}
 		})
 	}

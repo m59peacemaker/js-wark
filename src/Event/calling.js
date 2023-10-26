@@ -1,24 +1,61 @@
 import { calling as _calling } from '../Occurrences/calling.js'
 import { never } from './never.js'
-import { is_occurring, get_computation } from '../Occurrences/internal/computation.js'
+import { get_computation, get_value, is_occurring } from '../Occurrences/internal/computation.js'
 
-export const calling = f => input_event => {
-	if (input_event.is_complete.perform()) {
+export const calling = f => x => {
+	if (x.is_complete.perform()) {
 		return never
 	} else {
-		const [ occurrences, leave_propagation ] = _calling (f) (input_event.occurrences)
-		const leave_completion_propagation = input_event.is_complete.updates.join_propagation(instant => {
-			instant.post_computations.push(() => {
-				if (is_occurring(get_computation(input_event.is_complete.updates, instant))) {
+		const occurrences = {
+			compute: instant => {
+				const x_computation = get_computation(x.occurrences.compute, instant)
+				return is_occurring(x_computation)
+					?
+						() => f(get_value(x_computation))
+					:
+						false
+			},
+			join_propagation: x.occurrences.join_propagation
+		}
+
+		const compute_occurrence = instant => {
+			const computation = get_computation(occurrences.compute, instant)
+			if (is_occurring(computation)) {
+				get_value(computation)
+			}
+		}
+
+		const leave_propagation = x.occurrences.join_propagation(instant => {
+			get_computation(compute_occurrence, instant)
+		})
+
+		const compute_completion = instant => {
+			if (is_occurring(get_computation(x.is_complete.updates.compute, instant))) {
+				instant.post_computations.push(() => {
 					leave_propagation()
 					leave_completion_propagation()
-				}
-			})
+				})
+			}
+		}
+
+		const leave_completion_propagation = x.is_complete.updates.join_propagation(instant => {
+			/*
+				TODO:
+				As long as get_computation calls the compute function, this only needs to get the computation
+				This could all be implemented better, though.
+				At least, `get_computation` could be renamed to `compute`:
+				const x_state = compute(x.occurrences.compute, instant)
+				is_occurring(x_state)
+				get_value(x_state)
+			*/
+			get_computation(compute_completion, instant)
+			// compute(compute_completion, instant)
+			// instant.computations.push(instant => get_computation(compute_completion, instant))
 		})
 
 		const self = {
 			occurrences,
-			is_complete: input_event.is_complete
+			is_complete: x.is_complete
 		}
 
 		return self

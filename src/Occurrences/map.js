@@ -2,7 +2,7 @@ import { get_computation, get_value, is_occurring } from './internal/computation
 
 export const map = f => x => ({
 	compute: instant => {
-		const x_computation = get_computation(x, instant)
+		const x_computation = get_computation(x.compute, instant)
 		return is_occurring(x_computation)
 			?
 				() => f(get_value(x_computation))

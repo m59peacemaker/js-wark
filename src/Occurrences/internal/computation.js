@@ -1,10 +1,10 @@
-export const get_computation = (x, instant) => {
-	const cache = instant.cache.get(x.compute)
+export const get_computation = (compute, instant) => {
+	const cache = instant.cache.get(compute)
 	if (cache) {
 		return cache
 	} else {
 		const cache = {}
-		instant.cache.set(x.compute, cache)
+		instant.cache.set(compute, cache)
 		/*
 			It is odd to call `compute` here,
 			but the calling code always at least calls `is_occurring` next,
@@ -12,12 +12,12 @@ export const get_computation = (x, instant) => {
 			so it is efficient to call and cache it now,
 			so `is_occurring` can always use the cached value.
 		*/
-		cache.compute_value = typeof x.compute === 'symbol'
+		cache.compute_value = typeof compute === 'symbol'
 			?
-				// x is a producer and is not occurring right now
+				// compute function belongs to a producer and it is not occurring right now
 				false
 			:
-				x.compute(instant)
+				compute(instant)
 		return cache
 	}
 }

@@ -1,30 +1,28 @@
-import { create_state } from './internal/create_state.js'
-import { compute_nothing } from './internal/compute_nothing.js'
-import { join_propagation } from './internal/join_propagation.js'
-import { produce } from './internal/produce.js'
+import { create_state } from '../Occurrences/internal/create_state.js'
+import { join_propagation } from '../Occurrences/internal/join_propagation.js'
+import { produce } from '../Occurrences/internal/produce.js'
+import { of } from '../Variable/of.js'
 import { register_finalizer } from '../finalization.js'
-import { never_occurs } from './internal/never_occurs.js'
 
-export const construct_weak_producer = f => {
+export const construct_weak_producer = producer_f => {
 	const state = create_state()
 
 	const self = {
 		occurrences: {
-			compute: instant => instant.cache.get(self.occurrences).value,
+			compute: Symbol(),
 			join_propagation: f => join_propagation(f, state),
 		},
-		completion: never_occurs,
-		is_complete: false
+		is_complete: of (false)
 	}
 
 	const self_ref = new WeakRef(self)
 
 	register_finalizer(
 		self,
-		f(value => {
+		producer_f(value => {
 			const self = self_ref.deref()
 			if (self !== undefined) {
-				produce(self, state, value)
+				produce(self.occurrences, state, value)
 			}
 		})
 	)

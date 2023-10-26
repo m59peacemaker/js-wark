@@ -14,7 +14,7 @@ import { no_op } from '../util/no_op.js'
 const a_merge_2_with = (f, x, _) => ({
 	occurrences: {
 		compute: instant => {
-			const computation = get_computation(x.occurrences, instant)
+			const computation = get_computation(x.occurrences.compute, instant)
 			const value = is_occurring(computation)
 				?
 					f
@@ -32,7 +32,7 @@ const a_merge_2_with = (f, x, _) => ({
 const b_merge_2_with = (f, _, x) => ({
 	occurrences: {
 		compute: instant => {
-			const computation = get_computation(x.occurrences, instant)
+			const computation = get_computation(x.occurrences.compute, instant)
 			const value = is_occurring(computation)
 				?
 					f
@@ -60,55 +60,28 @@ const a_b_merge_2_with = (f, a, b) => {
 			for (const f of completion_dependants.values()) {
 				f(instant)
 			}
-			instant.post_computations.push(instant => {
-				if (is_occurring(get_computation(a.is_complete.updates, instant))) {
-					leave_a_propagation()
-					leave_a_completion_propagation()
+			// instant.computations.push(instant => {
+				if (is_occurring(get_computation(a.is_complete.updates.compute, instant))) {
+					instant.post_computations.push(() => {
+						leave_a_propagation()
+						leave_a_completion_propagation()
+					})
 				}
-			})
+			// })
 		})
 		leave_b_completion_propagation = b.is_complete.updates.join_propagation(instant => {
 			for (const f of completion_dependants.values()) {
 				f(instant)
 			}
-			instant.post_computations.push(instant => {
-				if (is_occurring(get_computation(b.is_complete.updates, instant))) {
-					leave_b_propagation()
-					leave_b_completion_propagation()
-				}
-			})
-		})
-	}
-
-	const is_complete = {
-		updates: {
-			compute: instant => {
-				const a_computation = get_computation(a.is_complete.updates, instant)
-				const b_computation = get_computation(b.is_complete.updates, instant)
-				const a_is_complete = a.is_complete.perform() || is_occurring(a_computation)
-				const b_is_complete = b.is_complete.perform() || is_occurring(b_computation)
-				const is_complete = a_is_complete && b_is_complete
-				return is_complete
-					?
-						() => true
-					: false
-			},
-			join_propagation: f => {
-				const id = Symbol()
-				completion_dependants.set(id, f)
-				if (completion_dependants.size + dependants.size === 1) {
-					join_completion_propagation()
-				}
-				return () => {
-					completion_dependants.delete(id)
-					if (completion_dependants.size + dependants.size === 0) {
-						leave_a_completion_propagation()
+			// instant.computations.push(instant => {
+				if (is_occurring(get_computation(b.is_complete.updates.compute, instant))) {
+					instant.post_computations.push(() => {
+						leave_b_propagation()
 						leave_b_completion_propagation()
-					}
+					})
 				}
-			}
-		},
-		perform: () => a.is_complete.perform() && b.is_complete.perform()
+			// })
+		})
 	}
 
 	const join_propagation = () => {
@@ -130,11 +103,40 @@ const a_b_merge_2_with = (f, a, b) => {
 	}
 
 	return {
-		is_complete,
+		is_complete: {
+			updates: {
+				compute: instant => {
+					const a_computation = get_computation(a.is_complete.updates.compute, instant)
+					const b_computation = get_computation(b.is_complete.updates.compute, instant)
+					const a_is_complete = a.is_complete.perform() || is_occurring(a_computation)
+					const b_is_complete = b.is_complete.perform() || is_occurring(b_computation)
+					const is_complete = a_is_complete && b_is_complete
+					return is_complete
+						?
+							() => true
+						: false
+				},
+				join_propagation: f => {
+					const id = Symbol()
+					completion_dependants.set(id, f)
+					if (completion_dependants.size + dependants.size === 1) {
+						join_completion_propagation()
+					}
+					return () => {
+						completion_dependants.delete(id)
+						if (completion_dependants.size + dependants.size === 0) {
+							leave_a_completion_propagation()
+							leave_b_completion_propagation()
+						}
+					}
+				}
+			},
+			perform: () => a.is_complete.perform() && b.is_complete.perform()
+		},
 		occurrences: {
 			compute: instant => {
 				if (a.is_complete.perform()) {
-					const b_computation = get_computation(b.occurrences, instant)
+					const b_computation = get_computation(b.occurrences.compute, instant)
 					const value = is_occurring(b_computation)
 						?
 							f
@@ -144,7 +146,7 @@ const a_b_merge_2_with = (f, a, b) => {
 								nothing
 					return value === nothing ? false : () => value
 				} else if (b.is_complete.perform()) {
-					const a_computation = get_computation(a.occurrences, instant)
+					const a_computation = get_computation(a.occurrences.compute, instant)
 					const value = is_occurring(a_computation)
 						?
 							f
@@ -154,8 +156,8 @@ const a_b_merge_2_with = (f, a, b) => {
 								nothing
 					return value === nothing ? false : () => value
 				} else {
-					const a_computation = get_computation(a.occurrences, instant)
-					const b_computation = get_computation(b.occurrences, instant)
+					const a_computation = get_computation(a.occurrences.compute, instant)
+					const b_computation = get_computation(b.occurrences.compute, instant)
 					const a_is_occurring = is_occurring(a_computation)
 					const b_is_occurring = is_occurring(b_computation)
 					const value = a_is_occurring || b_is_occurring
