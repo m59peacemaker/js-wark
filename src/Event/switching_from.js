@@ -3,9 +3,6 @@ import { never } from './never.js'
 import { register_finalizer } from '../finalization.js'
 
 /*
-	johnny:
-		must finish frp
-
 	source event:
 		it must always be in the propagation of the source event, until it completes, to keep track of the current focused event (a Dynamic)
 		the source event's occurrence and value must be checked during computation phase
@@ -33,7 +30,7 @@ import { register_finalizer } from '../finalization.js'
 		if not for cache.
 		Here are some thoughts (take with grain of salt):
 		`compute_focus_update` is cached so that it can be computed from the source event propagation, focused_event_propagation, or when dependants compute it from the focused event propagation.
-		`compute_focused_event_propagation` is cached so that 
+		TODO: finish these thoughts
 */
 const source_switching_from = (initial_focused_event, source_event) => {
 	const dependants = new Map()
@@ -88,7 +85,7 @@ const source_switching_from = (initial_focused_event, source_event) => {
 						leave_focused_event_propagation = join_focused_event_propagation(focused_event)
 					}
 					// this is probably equivalent to checking if `dependants.size + completion_dependants.size > 0`
-					if (dependants.size + completion_dependants.size > 0) {
+					if (leave_focused_event_completion_propagation !== null) {
 							leave_focused_event_completion_propagation()
 							leave_focused_event_completion_propagation = join_focused_event_completion_propagation(focused_event)
 					}
@@ -135,7 +132,6 @@ const source_switching_from = (initial_focused_event, source_event) => {
 				// ensure focused event has been updated (avoid race with compute_focus_update from source event propagation)
 				get_computation(compute_focus_update, instant)
 			}
-			get_computation(compute_focus_update, instant)
 			get_computation(compute_focused_event_propagation, instant)
 		})
 
@@ -182,11 +178,13 @@ const source_switching_from = (initial_focused_event, source_event) => {
 			dependants.set(id, f)
 			if (dependants.size === 1) {
 				leave_focused_event_propagation = join_focused_event_propagation(focused_event)
+				// TODO: shouldn't this check completion dependants?
 				leave_focused_event_completion_propagation = join_focused_event_completion_propagation(focused_event)
 			}
 			return () => {
 				dependants.delete(id)
-				if (dependants.length === 0) {
+				if (dependants.size === 0) {
+					// TODO: shouldn't this leave completion propagation, and shouldn't it check completion_dependants?
 					leave_focused_event_propagation()
 					leave_focused_event_propagation = null
 				}
@@ -196,37 +194,16 @@ const source_switching_from = (initial_focused_event, source_event) => {
 	const is_complete = {
 		updates: {
 			compute: instant => {
-				// console.log([
-				// 	source_event.is_complete.perform(),
-				// 	focused_event.is_complete.perform(),
-				// 	is_occurring(get_computation(source_event.is_complete.updates.compute, instant)),
-				// 	is_occurring(get_computation(focused_event.is_complete.updates.compute, instant))
-				// ])
-
 				if (source_event.is_complete.perform()) {
 					const is_complete = focused_event.is_complete.perform()
 						|| is_occurring(get_computation(focused_event.is_complete.updates.compute, instant))
 					return is_complete && (() => true)
 				} else {
 					get_computation(compute_focus_update, instant)
-					// TODO: this is redundant, should just need `focused_event` here, since focus update was computed
-					// if (is_occurring(get_computation(source_event.is_complete.updates.compute, instant))) {
-					// 	const source_event_computation = get_computation(source_event.occurrences.compute, instant)
-					// 	const updated_focused_event = is_occurring(source_event_computation)
-					// 		?
-					// 			get_value(source_event_computation)
-					// 		:
-					// 			focused_event
-					// 	const is_complete = is_occurring(get_computation(updated_focused_event.is_complete.updates.compute, instant)) && is_occurring(get_computation(source_event.is_complete.updates.compute, instant))
-						// const is_complete = focused_event.is_complete.perform()
-						// 	|| is_occurring(get_computation(focused_event.is_complete.updates.compute, instant))
-						const focused_event_is_complete = focused_event.is_complete.perform()
-							|| is_occurring(get_computation(focused_event.is_complete.updates.compute, instant))
-						const is_complete = focused_event_is_complete && is_occurring(get_computation(source_event.is_complete.updates.compute, instant))
-						return is_complete && (() => true)
-					// } else {
-					// 	return false
-					// }
+					const focused_event_is_complete = focused_event.is_complete.perform()
+						|| is_occurring(get_computation(focused_event.is_complete.updates.compute, instant))
+					const is_complete = focused_event_is_complete && is_occurring(get_computation(source_event.is_complete.updates.compute, instant))
+					return is_complete && (() => true)
 				}
 			},
 			join_propagation: f => {
@@ -265,11 +242,18 @@ const source_switching_from = (initial_focused_event, source_event) => {
 	return self
 }
 
+/*
+// TODO: ?
+export const switching_from = initial_focused_event => source_event =>
+	Dynamic_switching (hold (initial_focused_event) (source_event))
+*/
 export const switching_from = initial_focused_event => source_event => {
-	if (source_event.is_complete.perform() && initial_focused_event.is_complete.perform()) {
-		return never
-	} else if (source_event.is_complete.perform()) {
-		return initial_focused_event
+	if (source_event.is_complete.perform()) {
+		if (initial_focused_event.is_complete.perform()) {
+			return never
+		} else {
+			return initial_focused_event
+		}
 	} else {
 		return source_switching_from(initial_focused_event, source_event)
 	}

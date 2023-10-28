@@ -1,4 +1,4 @@
-import { map as _map } from '../Occurrences/map.js'
+import { map as Occurrences_map } from '../Occurrences/map.js'
 import { never } from './never.js'
 
 export const map = f => x => {
@@ -7,7 +7,7 @@ export const map = f => x => {
 			never
 		:
 			{
-				occurrences: _map (f) (x.occurrences),
+				occurrences: Occurrences_map (f) (x.occurrences),
 				is_complete: x.is_complete
 			}
 }

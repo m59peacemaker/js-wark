@@ -55,49 +55,49 @@ const a_b_merge_2_with = (f, a, b) => {
 	let leave_a_completion_propagation = no_op
 	let leave_b_completion_propagation = no_op
 
+	const propagate = instant => {
+		for (const f of dependants.values()) {
+			f(instant)
+		}
+	}
+
+	const propagate_completion = instant => {
+		for (const f of completion_dependants.values()) {
+			f(instant)
+		}
+	}
+
 	const join_completion_propagation = () => {
 		leave_a_completion_propagation = a.is_complete.updates.join_propagation(instant => {
-			for (const f of completion_dependants.values()) {
-				f(instant)
+			if (is_occurring(get_computation(a.is_complete.updates.compute, instant))) {
+				get_computation(propagate_completion, instant)
+				instant.post_computations.push(() => {
+					leave_a_propagation()
+					leave_a_completion_propagation()
+				})
 			}
-			// instant.computations.push(instant => {
-				if (is_occurring(get_computation(a.is_complete.updates.compute, instant))) {
-					instant.post_computations.push(() => {
-						leave_a_propagation()
-						leave_a_completion_propagation()
-					})
-				}
-			// })
 		})
 		leave_b_completion_propagation = b.is_complete.updates.join_propagation(instant => {
-			for (const f of completion_dependants.values()) {
-				f(instant)
+			if (is_occurring(get_computation(b.is_complete.updates.compute, instant))) {
+				get_computation(propagate_completion, instant)
+				instant.post_computations.push(() => {
+					leave_b_propagation()
+					leave_b_completion_propagation()
+				})
 			}
-			// instant.computations.push(instant => {
-				if (is_occurring(get_computation(b.is_complete.updates.compute, instant))) {
-					instant.post_computations.push(() => {
-						leave_b_propagation()
-						leave_b_completion_propagation()
-					})
-				}
-			// })
 		})
 	}
 
 	const join_propagation = () => {
 		if (a.is_complete.perform() === false) {
 			leave_a_propagation = a.occurrences.join_propagation(instant => {
-				for (const f of dependants.values()) {
-					f(instant)
-				}
+				get_computation(propagate, instant)
 			})
 		}
 
 		if (b.is_complete.perform() === false) {
 			leave_b_propagation = b.occurrences.join_propagation(instant => {
-				for (const f of dependants.values()) {
-					f(instant)
-				}
+				get_computation(propagate, instant)
 			})
 		}
 	}
