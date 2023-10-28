@@ -8,22 +8,6 @@ export const join = outer_dynamic => {
 	let leave_outer_dynamic_updates_completion_propagation = null
 	let leave_inner_dynamic_updates_completion_propagation = null
 
-	const get_inner_dynamic = instant => {
-		if (outer_dynamic.updates.is_complete.perform()) {
-			return outer_dynamic.perform()
-		} else {
-			const outer_dynamic_updates_computation = get_computation(
-				outer_dynamic.updates.occurrences.compute,
-				instant
-			)
-			return is_occurring(outer_dynamic_updates_computation)
-				?
-					get_value(outer_dynamic_updates_computation)
-				:
-					outer_dynamic.perform()
-		}
-	}
-
 	const propagate = instant => {
 		for (const f of dependants.values()) {
 			f(instant)
@@ -57,29 +41,39 @@ export const join = outer_dynamic => {
 	const updates = {
 		occurrences: {
 			compute: instant => {
-				// TODO: inline this (the first if condition is currently inefficiently repeated)
-				const inner_dynamic = get_inner_dynamic(instant)
-				const inner_updates_computation = get_computation(inner_dynamic.updates.occurrences.compute, instant)
 				// TODO: simplify these conditions if possible
 				if (outer_dynamic.updates.is_complete.perform()) {
+					const inner_dynamic = outer_dynamic.perform()
+					const inner_updates_computation = get_computation(inner_dynamic.updates.occurrences.compute, instant)
 					return is_occurring(inner_updates_computation)
 						?
 							() => get_value (inner_updates_computation)
 						:
 							false
-				}
-				if (is_occurring(get_computation(outer_dynamic.updates.occurrences.compute, instant))) {
-					return is_occurring(inner_updates_computation)
-						?
-							() => get_value(inner_updates_computation)
-						:
-							inner_dynamic.perform
 				} else {
-					return is_occurring(get_computation(outer_dynamic.updates.occurrences.compute, instant)) || is_occurring(inner_updates_computation)
-					?
-						() => get_value (inner_updates_computation)
-					:
-						false
+					const outer_dynamic_updates_computation = get_computation(
+						outer_dynamic.updates.occurrences.compute,
+						instant
+					)
+					if (is_occurring(outer_dynamic_updates_computation)) {
+						const inner_dynamic = get_value(outer_dynamic_updates_computation)
+						const inner_updates_computation = get_computation(inner_dynamic.updates.occurrences.compute, instant)
+						return is_occurring(inner_updates_computation)
+							?
+								() => get_value(inner_updates_computation)
+							:
+								inner_dynamic.perform
+					} else {
+						const inner_dynamic = outer_dynamic.perform()
+						const inner_updates_computation = get_computation(inner_dynamic.updates.occurrences.compute, instant)
+						/* TODO: maybe no need to check whether this occurring because `compute` should only be called if the outer dynamic is updating or the inner dynamic is updating
+						*/
+						return is_occurring(inner_updates_computation)
+							?
+								() => get_value (inner_updates_computation)
+							:
+								false
+					}
 				}
 			},
 			join_propagation: f => {
