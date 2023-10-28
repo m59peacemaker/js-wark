@@ -8,22 +8,6 @@ export const switching = outer_dynamic => {
 	let leave_outer_dynamic_updates_completion_propagation = null
 	let leave_inner_event_completion_propagation = null
 
-	const get_inner_event = instant => {
-		if (outer_dynamic.updates.is_complete.perform()) {
-			return outer_dynamic.perform()
-		} else {
-			const outer_dynamic_updates_computation = get_computation(
-				outer_dynamic.updates.occurrences.compute,
-				instant
-			)
-			return is_occurring(outer_dynamic_updates_computation)
-				?
-					get_value(outer_dynamic_updates_computation)
-				:
-					outer_dynamic.perform()
-		}
-	}
-
 	const propagate = instant => {
 		for (const f of dependants.values()) {
 			f(instant)
