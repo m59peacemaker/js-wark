@@ -1,9 +1,9 @@
 import { suite } from 'uvu'
 import * as assert from 'uvu/assert'
 import { immediately } from '../immediately.js'
-import * as Event from './index.js'
+import { Dynamic, Event } from '../index.js'
 
-const test = suite('Event.switching_from')
+const test = suite('Dynamic.switching')
 
 // NOTE: this is fun
 test('recursive map switch can implement merge_2 for non simultaneous events', () => {
@@ -11,11 +11,13 @@ test('recursive map switch can implement merge_2 for non simultaneous events', (
 	const a = Event.create()
 	const b = Event.create()
 	const merge_2 = a => b =>
-		Event.switching_from
-			(a)
-			(Event.map
-				(_ => merge_2 (b) (a))
-				(b)
+		Dynamic.switching
+			(Event.hold
+				(a)
+				(Event.map
+					(_ => merge_2 (b) (a))
+					(b)
+				)
 			)
 	const c = merge_2 (a) (b)
 	Event.calling (x => values.push(x)) (c)
@@ -36,18 +38,20 @@ test('merge_2 built from switch is an infinite loop when the input events are si
 	let switches = 0
 
 	const merge_2 = a => b =>
-		Event.switching_from
-			(a)
-			(Event.map
-				(() => {
-					++switches
-					if (switches === 10) {
-						throw new Error(error_message)
-					}
-					return merge_2 (b) (a)
-				})
-				(b)
-			)
+		Dynamic.switching (
+			Event.hold
+				(a)
+				(Event.map
+					(() => {
+						++switches
+						if (switches === 10) {
+							throw new Error(error_message)
+						}
+						return merge_2 (b) (a)
+					})
+					(b)
+				)
+		)
 	
 	const a = Event.create()
 	const b = Event.map (x => x + 100) (a)

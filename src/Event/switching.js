@@ -1,4 +1,5 @@
+import { hold } from './hold.js'
+import { switching as Dynamic_switching } from '../Dynamic/switching.js'
 import { never } from './never.js'
-import { switching_from } from './switching_from.js'
 
-export const switching = switching_from (never)
+export const switching = event => Dynamic_switching (hold (never) (event))
