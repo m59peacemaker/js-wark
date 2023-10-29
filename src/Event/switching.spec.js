@@ -1,6 +1,5 @@
 import { suite } from 'uvu'
 import * as assert from 'uvu/assert'
-import { immediately } from '../immediately.js'
 import * as Event from './index.js'
 
 const test = suite('Event.switching')
@@ -254,7 +253,7 @@ test('can implement filter (completion)', () => {
 	const values = []
 	const a = Event.create()
 	const a_x = Event.create()
-	const b = filter (x => x === 0) (Event.complete_when (a_x) (a))
+	const b = filter (x => x === 0) (Event.complete_on (a_x) (a))
 	Event.calling
 		(x => values.push(x))
 		(Event.merge_2_with
@@ -277,7 +276,7 @@ test('can implement filter (completion following an occurrence)', () => {
 	const values = []
 	const a = Event.create()
 	const a_x = Event.create()
-	const b = filter (x => x === 0) (Event.complete_when (a_x) (a))
+	const b = filter (x => x === 0) (Event.complete_on (a_x) (a))
 	Event.calling
 		(x => values.push(x))
 		(Event.merge_2_with
@@ -297,7 +296,7 @@ test(
 	() => {
 		const a = Event.create()
 		const a_x = Event.create()
-		const b = Event.complete_when (a_x) (a)
+		const b = Event.complete_on (a_x) (a)
 		const c = Event.switching (b)
 		const d = Event.create()
 		const d_x = Event.create()
@@ -308,7 +307,7 @@ test(
 		Event.calling (x => values.push(x)) (c)
 		Event.calling (x => completion_update_values.push(x)) (Event.completion (c))
 
-		a.produce(Event.complete_when (d_x) (d))
+		a.produce(Event.complete_on (d_x) (d))
 		d.produce(1)
 		a_x.produce('x') // source event completes
 		assert.equal(c.is_complete.perform(), false) // TODO: Sample.get (Event.is_complete (c))
@@ -328,7 +327,7 @@ test(
 	() => {
 		const a = Event.create()
 		const a_x = Event.create()
-		const b = Event.complete_when (a_x) (a)
+		const b = Event.complete_on (a_x) (a)
 		const c = Event.switching (b)
 		const d = Event.create()
 		const d_x = Event.create()
@@ -337,7 +336,7 @@ test(
 
 		Event.calling (x => completion_update_values.push(x)) (Event.completion (c))
 
-		a.produce(Event.complete_when (d_x) (d))
+		a.produce(Event.complete_on (d_x) (d))
 		d.produce(1)
 		a_x.produce('x') // source event completes
 		assert.equal(c.is_complete.perform(), false) // TODO: Sample.get (Event.is_complete (c))
@@ -356,7 +355,7 @@ test(
 	() => {
 		const a = Event.create()
 		const a_x = Event.create()
-		const b = Event.complete_when (a_x) (a)
+		const b = Event.complete_on (a_x) (a)
 		const c = Event.switching (b)
 		const d = Event.create()
 
@@ -387,7 +386,7 @@ test(
 	() => {
 		const a = Event.create()
 		const a_x = Event.create()
-		const b = Event.complete_when (a_x) (a)
+		const b = Event.complete_on (a_x) (a)
 		const c = Event.switching (b)
 		const d = Event.create()
 
@@ -415,7 +414,7 @@ test(
 	() => {
 		const a = Event.create()
 		const a_x = Event.create()
-		const b = Event.complete_when (a_x) (a)
+		const b = Event.complete_on (a_x) (a)
 		const c = Event.switching (b)
 		const d = Event.create()
 
@@ -426,7 +425,7 @@ test(
 		Event.calling (x => completion_update_values.push(x)) (Event.completion (c))
 
 		a.produce(d)
-		a.produce(Event.complete_when (a_x) (d))
+		a.produce(Event.complete_on (a_x) (d))
 
 		d.produce(1)
 
@@ -448,7 +447,7 @@ test(
 	() => {
 		const a = Event.create()
 		const a_x = Event.create()
-		const b = Event.complete_when (a_x) (a)
+		const b = Event.complete_on (a_x) (a)
 		const c = Event.switching (b)
 		const d = Event.create()
 
@@ -457,7 +456,7 @@ test(
 		Event.calling (x => completion_update_values.push(x)) (Event.completion (c))
 
 		a.produce(d)
-		a.produce(Event.complete_when (a_x) (d))
+		a.produce(Event.complete_on (a_x) (d))
 
 		d.produce(1)
 
@@ -477,7 +476,7 @@ test(
 	'when has occurrence dependants, completes on simultaneous source event occurrence and completion, updated focused event already complete',
 	() => {
 		const a = Event.create()
-		const b = Event.complete_when (Event.filter (x => x === Event.never) (a)) (a)
+		const b = Event.complete_on (Event.filter (x => x === Event.never) (a)) (a)
 		const c = Event.switching (b)
 		const d = Event.create()
 
@@ -507,7 +506,7 @@ test(
 	'when does not have occurrence dependants, completes on simultaneous source event occurrence and completion, updated focused event already complete',
 	() => {
 		const a = Event.create()
-		const b = Event.complete_when (Event.filter (x => x === Event.never) (a)) (a)
+		const b = Event.complete_on (Event.filter (x => x === Event.never) (a)) (a)
 		const c = Event.switching (b)
 		const d = Event.create()
 
@@ -534,7 +533,7 @@ test(
 	'when has occurrence dependants, completes on simultaneous: source event occurrence, source event completion, updated focused event completion',
 	() => {
 		const a = Event.create()
-		const b = Event.complete_when (a) (a)
+		const b = Event.complete_on (a) (a)
 		const c = Event.switching (b)
 
 		const values = []
@@ -544,7 +543,7 @@ test(
 		Event.calling (x => completion_update_values.push(x)) (Event.completion (c))
 
 		assert.equal(c.is_complete.perform(), false) // TODO: Sample.get (Event.is_complete (c))
-		a.produce(Event.complete_when (a) (Event.create()))
+		a.produce(Event.complete_on (a) (Event.create()))
 		assert.equal(c.is_complete.perform(), true) // TODO: Sample.get (Event.is_complete (c))
 
 		assert.equal (values, [])
@@ -556,7 +555,7 @@ test(
 	'when does not have occurrence dependants, completes on simultaneous: source event occurrence, source event completion, updated focused event completion',
 	() => {
 		const a = Event.create()
-		const b = Event.complete_when (a) (a)
+		const b = Event.complete_on (a) (a)
 		const c = Event.switching (b)
 
 		const completion_update_values = []
@@ -564,7 +563,7 @@ test(
 		Event.calling (x => completion_update_values.push(x)) (Event.completion (c))
 
 		assert.equal(c.is_complete.perform(), false) // TODO: Sample.get (Event.is_complete (c))
-		a.produce(Event.complete_when (a) (Event.create()))
+		a.produce(Event.complete_on (a) (Event.create()))
 		assert.equal(c.is_complete.perform(), true) // TODO: Sample.get (Event.is_complete (c))
 
 		assert.equal (completion_update_values, [ true ])
@@ -575,7 +574,7 @@ test(
 	'when has occurrence dependants, completes and occurs on simultaneous: source event occurrence, source event completion, updated focused event occurrence, updated focused event completion',
 	() => {
 		const a = Event.create()
-		const b = Event.complete_when (a) (a)
+		const b = Event.complete_on (a) (a)
 		const c = Event.switching (b)
 
 		const values = []
@@ -585,7 +584,7 @@ test(
 		Event.calling (x => completion_update_values.push(x)) (Event.completion (c))
 
 		assert.equal(c.is_complete.perform(), false) // TODO: Sample.get (Event.is_complete (c))
-		a.produce(Event.complete_when (a) (Event.map (() => 1) (a)))
+		a.produce(Event.complete_on (a) (Event.map (() => 1) (a)))
 		assert.equal(c.is_complete.perform(), true) // TODO: Sample.get (Event.is_complete (c))
 
 		assert.equal (values, [ 1 ])
@@ -597,7 +596,7 @@ test(
 	'when does not have occurrence dependants, completes on simultaneous: source event occurrence, source event completion, updated focused event occurrence, updated focused event completion',
 	() => {
 		const a = Event.create()
-		const b = Event.complete_when (a) (a)
+		const b = Event.complete_on (a) (a)
 		const c = Event.switching (b)
 
 		const completion_update_values = []
@@ -605,7 +604,7 @@ test(
 		Event.calling (x => completion_update_values.push(x)) (Event.completion (c))
 
 		assert.equal(c.is_complete.perform(), false) // TODO: Sample.get (Event.is_complete (c))
-		a.produce(Event.complete_when (a) (Event.map (() => 1) (a)))
+		a.produce(Event.complete_on (a) (Event.map (() => 1) (a)))
 		assert.equal(c.is_complete.perform(), true) // TODO: Sample.get (Event.is_complete (c))
 
 		assert.equal (completion_update_values, [ true ])
@@ -617,8 +616,8 @@ test(
 	() => {
 		const a = Event.create()
 		const a_x = Event.filter (x => x === d) (a)
-		const a_x_once = Event.complete_when (a_x) (a_x)
-		const b = Event.complete_when (a_x) (a)
+		const a_x_once = Event.complete_on (a_x) (a_x)
+		const b = Event.complete_on (a_x) (a)
 		const c = Event.switching (b)
 		const d = Event.create()
 
@@ -649,8 +648,8 @@ test(
 	() => {
 		const a = Event.create()
 		const a_x = Event.filter (x => x === d) (a)
-		const a_x_once = Event.complete_when (a_x) (a_x)
-		const b = Event.complete_when (a_x) (a)
+		const a_x_once = Event.complete_on (a_x) (a_x)
+		const b = Event.complete_on (a_x) (a)
 		const c = Event.switching (b)
 		const d = Event.create()
 
@@ -678,8 +677,8 @@ test(
 	() => {
 		const a = Event.create()
 		const a_x = Event.filter (x => x === d) (a)
-		const a_x_once = Event.complete_when (a_x) (a_x)
-		const b = Event.complete_when (a_x) (a)
+		const a_x_once = Event.complete_on (a_x) (a_x)
+		const b = Event.complete_on (a_x) (a)
 		const c = Event.switching (b)
 		const d = Event.map (() => 1) (a)
 
@@ -708,8 +707,8 @@ test(
 	() => {
 		const a = Event.create()
 		const a_x = Event.filter (x => x === d) (a)
-		const a_x_once = Event.complete_when (a_x) (a_x)
-		const b = Event.complete_when (a_x) (a)
+		const a_x_once = Event.complete_on (a_x) (a_x)
+		const b = Event.complete_on (a_x) (a)
 		const c = Event.switching (b)
 		const d = Event.map (() => 1) (a)
 

@@ -1,6 +1,5 @@
-import { register_finalizer } from '../finalization.js'
 import { get_computation, is_occurring } from '../Occurrences/internal/computation.js'
-import { map } from '../Occurrences/map.js'
+import { register_finalizer } from '../finalization.js'
 
 // toggle (false) (take (1) (occurrences))
 export const observed = occurrences => {
@@ -8,7 +7,12 @@ export const observed = occurrences => {
 
 	const self = {
 		// TODO: inline this instead of using `map`
-		updates: map (() => true) (occurrences),
+		updates: {
+			compute: instant =>
+				is_occurring(get_computation(occurrences.compute, instant)) && (() => true)
+			,
+			join_propagation: occurrences.join_propagation
+		},
 		perform: () => value
 	}
 
@@ -18,15 +22,20 @@ export const observed = occurrences => {
 			instant.post_computations.push(instant => {
 				value = true
 				leave_propagation()
+				unregister_finalizer()
 			})
 		}
 	}
 
 	const leave_propagation = occurrences.join_propagation(instant => {
+		/*
+			TODO: if this function can only ever be called once per instant,
+			call the code from `compute_update` directly in here rather than using get_computation
+		*/
 		get_computation(compute_update, instant)
 	})
 
-	register_finalizer(self, leave_propagation)
+	const unregister_finalizer = register_finalizer(self, leave_propagation)
 
 	return self
 }

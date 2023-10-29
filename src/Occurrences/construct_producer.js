@@ -9,8 +9,6 @@ export const construct_producer = f => {
 		TODO:
 			Setting producer.compute to a symbol is ugly,
 			but it works and was the best I could do for efficiency so far.
-			It's to use `compute` as a cache key so
-			
 	*/
 	const self = {
 		compute: Symbol(),

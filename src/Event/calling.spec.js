@@ -33,7 +33,7 @@ test('completes when input event completes not-simultaneously with input event o
 	// const completion_values = []
 	Event.calling
 		(x => values.push(x))
-		(Event.complete_when (ax) (a))
+		(Event.complete_on (ax) (a))
 	a.produce('a')
 	a.produce('b')
 	ax.produce('-')
@@ -54,7 +54,7 @@ test('has no further occurrences after input event completes not-simultaneously 
 	// const completion_values = []
 	Event.calling
 		(x => values.push(x))
-		(Event.complete_when (ax) (a))
+		(Event.complete_on (ax) (a))
 	a.produce('a')
 	a.produce('b')
 	ax.produce('-')
@@ -74,7 +74,7 @@ test('has no further occurrences after input event completes simultaneously with
 	// const completion_values = []
 	Event.calling
 		(x => values.push(x))
-		(Event.complete_when (a) (a))
+		(Event.complete_on (a) (a))
 	a.produce('a')
 	a.produce('b')
 	assert.equal(

@@ -116,11 +116,11 @@ test(
 		const outer_dynamic_updates_completion = Event.create()
 		const foo_updates = Event.create()
 		const foo_completion = Event.create()
-		const foo = Event.hold (0) (Event.complete_when (foo_completion) (foo_updates))
+		const foo = Event.hold (0) (Event.complete_on (foo_completion) (foo_updates))
 		const joined_dynamic = Dynamic.join (
 			Event.hold
 				(foo)
-				(Event.complete_when (outer_dynamic_updates_completion) (outer_dynamic_updates))
+				(Event.complete_on (outer_dynamic_updates_completion) (outer_dynamic_updates))
 		)
 
 		const values = []
@@ -153,7 +153,7 @@ test(
 		const joined_dynamic = Dynamic.join (
 			Event.hold
 				(foo)
-				(Event.complete_when (outer_dynamic_updates_completion) (outer_dynamic_updates))
+				(Event.complete_on (outer_dynamic_updates_completion) (outer_dynamic_updates))
 		)
 
 		const values = []
@@ -184,11 +184,11 @@ test(
 		const outer_dynamic_updates = Event.create()
 		const outer_dynamic_updates_completion = Event.create()
 		const foo_updates = Event.create()
-		const foo = Event.hold (0) (Event.complete_when (outer_dynamic_updates_completion) (foo_updates))
+		const foo = Event.hold (0) (Event.complete_on (outer_dynamic_updates_completion) (foo_updates))
 		const joined_dynamic = Dynamic.join (
 			Event.hold
 				(foo)
-				(Event.complete_when (outer_dynamic_updates_completion) (outer_dynamic_updates))
+				(Event.complete_on (outer_dynamic_updates_completion) (outer_dynamic_updates))
 		)
 
 		const values = []
@@ -222,7 +222,7 @@ test(
 			Event.hold
 				(foo)
 				(
-					Event.complete_when
+					Event.complete_on
 						(Event.filter (x => x === bar) (outer_dynamic_updates))
 						(outer_dynamic_updates)
 				)
@@ -255,7 +255,7 @@ test(
 		const joined_dynamic = Dynamic.join(
 			Event.hold
 				(Dynamic.of(0))
-				(Event.complete_when (outer_dynamic_updates) (outer_dynamic_updates))
+				(Event.complete_on (outer_dynamic_updates) (outer_dynamic_updates))
 		)
 
 		const values = []
@@ -268,7 +268,7 @@ test(
 		outer_dynamic_updates.produce(
 			Event.hold
 				(1)
-				(Event.complete_when (outer_dynamic_updates) (Event.create()))
+				(Event.complete_on (outer_dynamic_updates) (Event.create()))
 		)
 		assert.equal(joined_dynamic.updates.is_complete.perform(), true)
 		assert.equal (completion_update_values, [ true ])
@@ -284,7 +284,7 @@ test(
 		const joined_dynamic = Dynamic.join(
 			Event.hold
 				(Dynamic.of(0))
-				(Event.complete_when (outer_dynamic_updates) (outer_dynamic_updates))
+				(Event.complete_on (outer_dynamic_updates) (outer_dynamic_updates))
 		)
 
 		const values = []
@@ -297,7 +297,7 @@ test(
 		outer_dynamic_updates.produce(
 			Event.hold
 				(0)
-				(Event.complete_when (outer_dynamic_updates) (Event.map (() => 1) (outer_dynamic_updates)))
+				(Event.complete_on (outer_dynamic_updates) (Event.map (() => 1) (outer_dynamic_updates)))
 		)
 		assert.equal(joined_dynamic.updates.is_complete.perform(), true)
 		assert.equal (completion_update_values, [ true ])
@@ -312,10 +312,10 @@ test(
 		const outer_dynamic_updates = Event.create()
 		const foo = Dynamic.create(0)
 		const outer_dynamic_updates_completion = Event.filter (x => x === foo) (outer_dynamic_updates)
-		const outer_dynamic_updates_completion_once = Event.complete_when (outer_dynamic_updates_completion) (outer_dynamic_updates_completion)
+		const outer_dynamic_updates_completion_once = Event.complete_on (outer_dynamic_updates_completion) (outer_dynamic_updates_completion)
 		const unjoined_dynamic = Event.hold
 			(Dynamic.of(0))
-			(Event.complete_when (outer_dynamic_updates_completion) (outer_dynamic_updates))
+			(Event.complete_on (outer_dynamic_updates_completion) (outer_dynamic_updates))
 		const joined_dynamic = Dynamic.join (unjoined_dynamic)
 
 		const values = []
@@ -345,12 +345,12 @@ test(
 	() => {
 		const outer_dynamic_updates = Event.create()
 		const outer_dynamic_updates_completion = Event.filter (x => x === foo) (outer_dynamic_updates)
-		const outer_dynamic_updates_completion_once = Event.complete_when
+		const outer_dynamic_updates_completion_once = Event.complete_on
 			(outer_dynamic_updates_completion)
 			(outer_dynamic_updates_completion)
 		const unjoined_dynamic = Event.hold
 			(Dynamic.of(0))
-			(Event.complete_when (outer_dynamic_updates_completion) (outer_dynamic_updates))
+			(Event.complete_on (outer_dynamic_updates_completion) (outer_dynamic_updates))
 		const joined_dynamic = Dynamic.join (unjoined_dynamic)
 		const foo = Event.hold (0) (Event.map (() => 1) (outer_dynamic_updates))
 

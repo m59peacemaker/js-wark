@@ -1,6 +1,6 @@
 import { suite } from 'uvu'
 import * as assert from 'uvu/assert'
-import { Event, Sample } from '../index.js'
+import { Dynamic, Event, Sample } from '../index.js'
 
 const test = suite('Event.hold')
 
@@ -50,7 +50,7 @@ test('Event.tag - value is unchanged in the instant the update event is occurrin
 	const a = Event.create()
 	const b = Event.hold (0) (a)
 	const c = Event.tag (b) (a)
-	Event.calling (x => values_b_updates.push(x)) (b.updates)
+	Event.calling (x => values_b_updates.push(x)) (Dynamic.updates(b))
 	Event.calling (x => values_c.push(x)) (c)
 	a.produce(1)
 	a.produce(2)

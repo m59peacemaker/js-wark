@@ -1,6 +1,6 @@
-import { never_occurs } from '../Occurrences/never_occurs.js'
+import { never } from '../Occurrences/never.js'
 
 export const of = value => ({
-	updates: never_occurs,
-	perform: () => value
+	perform: () => value,
+	updates: never
 })

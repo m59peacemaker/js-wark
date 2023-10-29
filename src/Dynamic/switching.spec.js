@@ -1,6 +1,5 @@
 import { suite } from 'uvu'
 import * as assert from 'uvu/assert'
-import { immediately } from '../immediately.js'
 import { Dynamic, Event } from '../index.js'
 
 const test = suite('Dynamic.switching')
