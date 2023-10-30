@@ -2,7 +2,7 @@ import { map as Occurrences_map } from '../Occurrences/map.js'
 import { get_computation, get_value, is_occurring } from '../Occurrences/internal/computation.js'
 import { undetermined } from './internal/undetermined.js'
 import { register_finalizer } from '../finalization.js'
-import { never as Occurrences_never } from '../Occurrences/never.js'
+import { never } from '../Event/never.js'
 
 export const map = f => x => {
 	let value = undetermined
@@ -16,7 +16,7 @@ export const map = f => x => {
 
 	if (x.updates.is_complete.perform()) {
 		return {
-			updates: Occurrences_never,
+			updates: never,
 			perform
 		}
 	}
@@ -30,7 +30,7 @@ export const map = f => x => {
 			so as not to race with with state changes in the post computation phase.
 		*/
 		if (is_occurring(computation)) {
-			instant.post_computations.push(instant => {
+			instant.post_computations.push(() => {
 				/*
 					Check whether a value was cached during the post computation phase,
 					so as not to race with it being computed and cached during the computation phase.
@@ -45,7 +45,7 @@ export const map = f => x => {
 	})
 
 	const leave_completion_propagation = x.updates.is_complete.updates.join_propagation(instant => {
-		if (is_occurring(x.is_complete.updates.compute, instant)) {
+		if (is_occurring(x.updates.is_complete.updates.compute, instant)) {
 			instant.post_computations.push(() => {
 				leave_propagation()
 				leave_completion_propagation()

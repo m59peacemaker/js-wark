@@ -1,3 +1,4 @@
+export * from './combine.js'
 export * from './create.js'
 export * from './join.js'
 export * from './of.js'
