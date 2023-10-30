@@ -11,7 +11,7 @@ test('waits from the same instant for the same duration occur simultaneously', a
 	const a = Event.create()
 	Event.calling
 		(x => values.push(x))
-		(Event.merge_2_with
+		(Event.merge_2
 			(a => b => [ a, b ])
 			(Event.switching (Event.tag (Sample.wait ({ ms })) (a)))
 			(Event.switching (Event.tag (Sample.wait ({ ms })) (a)))

@@ -3,13 +3,13 @@ import * as assert from 'uvu/assert'
 import { nothing } from './nothing.js'
 import * as Event from './index.js'
 
-const test = suite('Event.merge_2_with')
+const test = suite('Event.merge_2')
 
 test('merged event has all occurrences of input events', () => {
 	const values = []
 	const a = Event.create()
 	const b = Event.create()
-	const c = Event.merge_2_with (a => b => [ a, b ]) (a) (b)
+	const c = Event.merge_2 (a => b => [ a, b ]) (a) (b)
 	Event.calling (x => values.push(x)) (c)
 	a.produce(1)
 	b.produce(2)
@@ -22,7 +22,7 @@ test('merged event has all occurrences of input events', () => {
 test('merging an event with itself creates an event with two simultaneous occurrences', () => {
 	const values = []
 	const a = Event.create()
-	const b = Event.merge_2_with (a => b => [ a, b ]) (a) (a)
+	const b = Event.merge_2 (a => b => [ a, b ]) (a) (a)
 	Event.calling (x => values.push(x)) (b)
 	a.produce(1)
 	a.produce(2)
@@ -33,7 +33,7 @@ test('does not occur when return value is `nothing`', () => {
 	const values = []
 	const a = Event.create()
 	const b = Event.create()
-	const c = Event.merge_2_with (a => b => a === 0 || b === 0 ? nothing : (a === nothing ? b : a)) (a) (b)
+	const c = Event.merge_2 (a => b => a === 0 || b === 0 ? nothing : (a === nothing ? b : a)) (a) (b)
 	Event.calling (x => values.push(x)) (c)
 	a.produce(0)
 	a.produce(1)
@@ -54,7 +54,7 @@ test('upstream on demand producer deactivates when first merged event completes'
 	})
 	const a_x = Event.create()
 	const b = Event.create()
-	const c = Event.merge_2_with (a => b => a === nothing ? b : a) (Event.complete_on (a_x) (a)) (b)
+	const c = Event.merge_2 (a => b => a === nothing ? b : a) (Event.complete_on (a_x) (a)) (b)
 	assert.equal(active, false)
 	Event.calling (x => values.push(x)) (c)
 	assert.equal(active, true)
@@ -73,7 +73,7 @@ test('upstream on demand producer deactivates when second merged event completes
 	})
 	const a_x = Event.create()
 	const b = Event.create()
-	const c = Event.merge_2_with (a => b => a === nothing ? b : a) (b) (Event.complete_on (a_x) (a))
+	const c = Event.merge_2 (a => b => a === nothing ? b : a) (b) (Event.complete_on (a_x) (a))
 	assert.equal(active, false)
 	Event.calling (x => values.push(x)) (c)
 	assert.equal(active, true)
@@ -87,7 +87,7 @@ test('is complete after both input events are complete', () => {
 	const b = Event.create()
 	const a_x = Event.create()
 	const b_x = Event.create()
-	const c = Event.merge_2_with
+	const c = Event.merge_2
 		(a => b => a === nothing ? b : a)
 		(Event.complete_on (a_x) (a))
 		(Event.complete_on (b_x) (a))
@@ -106,11 +106,11 @@ test('completion occurs simultaneously with completion of second input event whe
 	const b_x = Event.create()
 	const a_a_x = Event.complete_on (a_x) (a)
 	const b_b_x = Event.complete_on (b_x) (b)
-	const c = Event.merge_2_with
+	const c = Event.merge_2
 		(a => b => a === nothing ? b : a)
 		(a_a_x)
 		(b_b_x)
-	const d = Event.merge_2_with (a => b => [ a, b ])
+	const d = Event.merge_2 (a => b => [ a, b ])
 		(Event.completion (c))
 		(Event.completion (b_b_x))
 	Event.calling(x => values.push(x)) (d)
@@ -130,11 +130,11 @@ test('completion occurs simultaneously with completion of first input event when
 	const b_x = Event.create()
 	const a_a_x = Event.complete_on (a_x) (a)
 	const b_b_x = Event.complete_on (b_x) (b)
-	const c = Event.merge_2_with
+	const c = Event.merge_2
 		(a => b => a === nothing ? b : a)
 		(a_a_x)
 		(b_b_x)
-	const d = Event.merge_2_with (a => b => [ a, b ])
+	const d = Event.merge_2 (a => b => [ a, b ])
 		(Event.completion (c))
 		(Event.completion (a_a_x))
 	Event.calling(x => values.push(x)) (d)
@@ -153,11 +153,11 @@ test('completion occurs simultaneously with completion of first and second input
 	const x = Event.create()
 	const a_x = Event.complete_on (x) (a)
 	const b_x = Event.complete_on (x) (b)
-	const c = Event.merge_2_with
+	const c = Event.merge_2
 		(a => b => a === nothing ? b : a)
 		(a_x)
 		(b_x)
-	const d = Event.merge_2_with (a => b => [ a, b ])
+	const d = Event.merge_2 (a => b => [ a, b ])
 		(Event.completion (c))
 		(x)
 	Event.calling(x => values.push(x)) (d)
@@ -168,18 +168,18 @@ test('completion occurs simultaneously with completion of first and second input
 })
 
 test('returns never event when a and b are already complete', () => {
-	assert.equal(Event.merge_2_with (() => {}) (Event.never) (Event.never), Event.never)
+	assert.equal(Event.merge_2 (() => {}) (Event.never) (Event.never), Event.never)
 })
 
 test('has occurrences and completion of a when b is already complete', () => {
 	const values = []
 	const a = Event.create()
 	const a_x = Event.create()
-	const c = Event.merge_2_with
+	const c = Event.merge_2
 		(a => b => [ a, b ])
 		(Event.complete_on (a_x) (a))
 		(Event.never)
-	const d = Event.merge_2_with
+	const d = Event.merge_2
 		(a => b => [ a, b ])
 		(a_x)
 		(Event.completion (c))
@@ -204,11 +204,11 @@ test('has occurrences and completion of b when a is already complete', () => {
 	const values = []
 	const b = Event.create()
 	const b_x = Event.create()
-	const c = Event.merge_2_with
+	const c = Event.merge_2
 		(a => b => [ a, b ])
 		(Event.never)
 		(Event.complete_on (b_x) (b))
-	const d = Event.merge_2_with
+	const d = Event.merge_2
 		(a => b => [ a, b ])
 		(b_x)
 		(Event.completion (c))

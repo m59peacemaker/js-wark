@@ -3,7 +3,7 @@ import { join_propagation } from './internal/join_propagation.js'
 import { produce } from './internal/produce.js'
 
 export const construct_producer = f => {
-	const state = create_state()
+	const propagation = new Set()
 
 	/*
 		TODO:
@@ -12,10 +12,10 @@ export const construct_producer = f => {
 	*/
 	const self = {
 		compute: Symbol(),
-		join_propagation: f => join_propagation(f, state)
+		join_propagation: f => join_propagation(f, propagation)
 	}
 
-	f(value => produce(self, state, value))
+	f(value => produce(self, propagation, value))
 
 	return self
 }

@@ -1,18 +1,71 @@
-import { construct_weak_producer } from './construct_weak_producer.js'
-import { complete_on } from './complete_on.js'
+import { create as create_instant } from '../Instant/create.js'
+import { join_propagation } from '../Occurrences/internal/join_propagation.js'
+import { register_finalizer } from '../finalization.js'
 
-/*
-	it seems like it will be more efficient to derive this directly,
-	rather than `construct_weak_producer`,
-	because then it requires extra work to derive is_complete
+export const wait  = ({ ms }) => {
+	const propagation = new Set()
+	let is_complete_value = false
 
-	TODO: write this without any abstraction and then see if it can be more generalized
-*/
-export const wait = ({ ms }) => {
-	// TODO: efficient implementation rather than construct_weak_producer followed by complete_on
-	const producer = construct_weak_producer (produce => {
-		const timeout = setTimeout (() => produce (ms), ms)
-		return () => clearTimeout (timeout)
-	})
-	return complete_on (producer) (producer)
+	const occurrences = {
+		compute: Symbol(),
+		join_propagation: f => join_propagation(f, propagation),
+	}
+
+	const is_complete = {
+		perform: () => is_complete_value,
+		updates: {
+			compute: Symbol(),
+			join_propagation: occurrences.join_propagation
+		}
+	}
+
+	const compute_ref = new WeakRef(occurrences.compute)
+	const completion_compute_ref = new WeakRef(is_complete.updates.compute)
+
+	const timeout = setTimeout(
+		() => {
+			const instant = create_instant()
+			const compute = compute_ref.deref()
+			const completion_compute = completion_compute_ref.deref()
+			if (compute !== undefined) {
+				instant.cache.set(compute, { compute_value: () => ms, value: ms })
+			}
+			if (completion_compute !== undefined) {
+				instant.cache.set(completion_compute, { compute_value: () => true, value: true })
+			}
+			for (const f of propagation) {
+				f(instant)
+			}
+			is_complete_value = true
+			for (const f of instant.post_computations) {
+				f()
+			}
+		},
+		ms
+	)
+
+	const unregister_compute_finalizer = register_finalizer(
+		occurrences.compute,
+		() => {
+			if (completion_compute_ref.deref() === undefined) {
+				clearTimeout(timeout)
+				unregister_completion_compute_finalizer()
+			}
+		}
+	)
+
+	const unregister_completion_compute_finalizer = register_finalizer(
+		is_complete.updates.compute,
+		() => {
+			if (compute_ref.deref() === undefined) {
+				clearTimeout(timeout)
+				unregister_compute_finalizer()
+			}
+		}
+	)
+
+	return {
+		occurrences,
+		is_complete
+	}
 }

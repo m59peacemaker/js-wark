@@ -256,7 +256,7 @@ test('can implement filter (completion)', () => {
 	const b = filter (x => x === 0) (Event.complete_on (a_x) (a))
 	Event.calling
 		(x => values.push(x))
-		(Event.merge_2_with
+		(Event.merge_2
 			(a => b => [ a, b ])
 			(a_x)
 			(Event.completion (b))
@@ -279,7 +279,7 @@ test('can implement filter (completion following an occurrence)', () => {
 	const b = filter (x => x === 0) (Event.complete_on (a_x) (a))
 	Event.calling
 		(x => values.push(x))
-		(Event.merge_2_with
+		(Event.merge_2
 			(a => b => [ a, b ])
 			(a_x)
 			(Event.completion (b))

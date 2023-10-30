@@ -5,13 +5,13 @@ import { no_op } from '../util/no_op.js'
 
 /*
 	TODO:
-		merge_2_with is the most generic way to merge occurrences,
+		merge_2 is the most generic way to merge occurrences,
 		but it's also therefore the least efficient.
 		Most things derived from this would have better performance by implementing them directly
 		with similar low level code.
 */
 
-const a_merge_2_with = (f, x, _) => ({
+const a_merge_2 = (f, x, _) => ({
 	occurrences: {
 		compute: instant => {
 			const computation = get_computation(x.occurrences.compute, instant)
@@ -29,7 +29,7 @@ const a_merge_2_with = (f, x, _) => ({
 	is_complete: x.is_complete
 })
 
-const b_merge_2_with = (f, _, x) => ({
+const b_merge_2 = (f, _, x) => ({
 	occurrences: {
 		compute: instant => {
 			const computation = get_computation(x.occurrences.compute, instant)
@@ -47,7 +47,7 @@ const b_merge_2_with = (f, _, x) => ({
 	is_complete: x.is_complete
 })
 
-const a_b_merge_2_with = (f, a, b) => {
+const a_b_merge_2 = (f, a, b) => {
 	const dependants = new Map()
 	const completion_dependants = new Map()
 	let leave_a_propagation = no_op
@@ -197,14 +197,14 @@ const a_b_merge_2_with = (f, a, b) => {
 	}
 }
 
-export const merge_2_with = f => a => b => {
+export const merge_2 = f => a => b => {
 	if (a.is_complete.perform() && b.is_complete.perform()) {
 		return never
 	} else if (a.is_complete.perform()) {
-		return b_merge_2_with(f, a, b)
+		return b_merge_2(f, a, b)
 	} else if (b.is_complete.perform()) {
-		return a_merge_2_with(f, a, b)
+		return a_merge_2(f, a, b)
 	} else {
-		return a_b_merge_2_with(f, a, b)
+		return a_b_merge_2(f, a, b)
 	}
 }

@@ -1,13 +1,11 @@
 import { create as create_instant } from '../../Instant/create.js'
 
-export const produce = (self, state, value) => {
+export const produce = (self, propagation, value) => {
 	const instant = create_instant()
-	state.instant = instant
 	instant.cache.set(self.compute, { compute_value: () => value, value })
-	for (const f of state.propagation) {
+	for (const f of propagation) {
 		f(instant)
 	}
-	state.instant = null
 	for (const f of instant.post_computations) {
 		f()
 	}

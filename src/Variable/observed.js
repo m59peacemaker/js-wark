@@ -6,7 +6,6 @@ export const observed = occurrences => {
 	let value = false
 
 	const self = {
-		// TODO: inline this instead of using `map`
 		updates: {
 			compute: instant =>
 				is_occurring(get_computation(occurrences.compute, instant)) && (() => true)
