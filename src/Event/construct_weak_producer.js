@@ -17,14 +17,18 @@ export const construct_weak_producer = producer_f => {
 
 	const self_ref = new WeakRef(self)
 
-	register_finalizer(
+	// TODO: I'm not sure that unregister_finalizer needs to be called
+	const unregister_finalizer = register_finalizer(
 		self,
-		producer_f(value => {
-			const self = self_ref.deref()
-			if (self !== undefined) {
-				produce(self.occurrences, state, value)
-			}
-		})
+		producer_f(
+			value => {
+				const self = self_ref.deref()
+				if (self !== undefined) {
+					produce(self.occurrences, state, value)
+				}
+			},
+			() => unregister_finalizer()
+		)
 	)
 
 	return self
