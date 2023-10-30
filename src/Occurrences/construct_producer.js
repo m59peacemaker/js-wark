@@ -1,4 +1,3 @@
-import { create_state } from './internal/create_state.js'
 import { join_propagation } from './internal/join_propagation.js'
 import { produce } from './internal/produce.js'
 
