@@ -60,11 +60,11 @@ test.skip('', () => {
 	const a = Event.create()
 	const b = foo (0) (a)
 
-	assert.equal (Dynamic.get (b), 0)
+	assert.equal (Sample.get (b), 0)
 	a.produce (1)
-	assert.equal (Dynamic.get (b), 0)
+	assert.equal (Sample.get (b), 0)
 	a.produce (2)
-	assert.equal (Dynamic.get (b), 0)
+	assert.equal (Sample.get (b), 0)
 })
 
 test.run()

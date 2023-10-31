@@ -9,8 +9,8 @@ test('`f` receives sample value and event value', () => {
 	let values = []
 
 	let a_value = 0
-	const a = Sample.construct(() => a_value++)
-	const b = Event.exposed_producer()
+	const a = Sample.from(() => a_value++)
+	const b = Event.create()
 	const c = Event.snapshot (x => y => [ x, y ]) (a) (b)
 	Event.calling (x => values.push(x)) (c)
 	b.produce('a')
@@ -24,8 +24,8 @@ test('sample value is the same at the same moment of time', () => {
 	let values = []
 
 	let a_value = 0
-	const a = Sample.construct(() => a_value++)
-	const b = Event.exposed_producer()
+	const a = Sample.from(() => a_value++)
+	const b = Event.create()
 	const c = Event.snapshot (x => y => [ x, y ]) (a) (b)
 	const d = Event.snapshot (x => y => [ x, y ]) (a) (Event.map (a => a + a) (b))
 	Event.calling (x => values.push(x)) (c)
