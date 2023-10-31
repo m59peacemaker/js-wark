@@ -20,8 +20,8 @@ test('catches up and occurs when input event is occurring during the instant of 
 		values,
 		[
 			[ 1, 'a' ],
-			[ 2, 'b' ],
-			[ 1, 'b' ]
+			[ 1, 'b' ],
+			[ 2, 'b' ]
 		]
 	)
 })
