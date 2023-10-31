@@ -1,3 +1,5 @@
+import { construct } from './construct.js'
+
 export const lift_2 = f => x1 => x2 =>
 	construct (instant =>
 		f
