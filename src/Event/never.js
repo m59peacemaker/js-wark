@@ -3,5 +3,5 @@ import { of as Variable_of } from '../Variable/of.js'
 
 export const never = ({
 	occurrences: Occurrences_never,
-	is_complete: Variable_of (true)
+	completed: Variable_of (true)
 })

@@ -26,7 +26,7 @@ const a_merge_2 = (f, x, _) => ({
 		},
 		join_propagation: x.occurrences.join_propagation
 	},
-	is_complete: x.is_complete
+	completed: x.completed
 })
 
 const b_merge_2 = (f, _, x) => ({
@@ -44,7 +44,7 @@ const b_merge_2 = (f, _, x) => ({
 		},
 		join_propagation: x.occurrences.join_propagation
 	},
-	is_complete: x.is_complete
+	completed: x.completed
 })
 
 const a_b_merge_2 = (f, a, b) => {
@@ -68,8 +68,8 @@ const a_b_merge_2 = (f, a, b) => {
 	}
 
 	const join_completion_propagation = () => {
-		leave_a_completion_propagation = a.is_complete.updates.join_propagation(instant => {
-			if (is_occurring(get_computation(a.is_complete.updates.compute, instant))) {
+		leave_a_completion_propagation = a.completed.updates.join_propagation(instant => {
+			if (is_occurring(get_computation(a.completed.updates.compute, instant))) {
 				get_computation(propagate_completion, instant)
 				instant.post_computations.push(() => {
 					leave_a_propagation()
@@ -77,8 +77,8 @@ const a_b_merge_2 = (f, a, b) => {
 				})
 			}
 		})
-		leave_b_completion_propagation = b.is_complete.updates.join_propagation(instant => {
-			if (is_occurring(get_computation(b.is_complete.updates.compute, instant))) {
+		leave_b_completion_propagation = b.completed.updates.join_propagation(instant => {
+			if (is_occurring(get_computation(b.completed.updates.compute, instant))) {
 				get_computation(propagate_completion, instant)
 				instant.post_computations.push(() => {
 					leave_b_propagation()
@@ -89,13 +89,13 @@ const a_b_merge_2 = (f, a, b) => {
 	}
 
 	const join_propagation = () => {
-		if (a.is_complete.perform() === false) {
+		if (a.completed.perform() === false) {
 			leave_a_propagation = a.occurrences.join_propagation(instant => {
 				get_computation(propagate, instant)
 			})
 		}
 
-		if (b.is_complete.perform() === false) {
+		if (b.completed.perform() === false) {
 			leave_b_propagation = b.occurrences.join_propagation(instant => {
 				get_computation(propagate, instant)
 			})
@@ -103,13 +103,13 @@ const a_b_merge_2 = (f, a, b) => {
 	}
 
 	return {
-		is_complete: {
+		completed: {
 			updates: {
 				compute: instant => {
-					const a_computation = get_computation(a.is_complete.updates.compute, instant)
-					const b_computation = get_computation(b.is_complete.updates.compute, instant)
-					const a_is_complete = a.is_complete.perform() || is_occurring(a_computation)
-					const b_is_complete = b.is_complete.perform() || is_occurring(b_computation)
+					const a_computation = get_computation(a.completed.updates.compute, instant)
+					const b_computation = get_computation(b.completed.updates.compute, instant)
+					const a_is_complete = a.completed.perform() || is_occurring(a_computation)
+					const b_is_complete = b.completed.perform() || is_occurring(b_computation)
 					const is_complete = a_is_complete && b_is_complete
 					return is_complete
 						?
@@ -131,11 +131,11 @@ const a_b_merge_2 = (f, a, b) => {
 					}
 				}
 			},
-			perform: () => a.is_complete.perform() && b.is_complete.perform()
+			perform: () => a.completed.perform() && b.completed.perform()
 		},
 		occurrences: {
 			compute: instant => {
-				if (a.is_complete.perform()) {
+				if (a.completed.perform()) {
 					const b_computation = get_computation(b.occurrences.compute, instant)
 					const value = is_occurring(b_computation)
 						?
@@ -145,7 +145,7 @@ const a_b_merge_2 = (f, a, b) => {
 							:
 								nothing
 					return value === nothing ? false : () => value
-				} else if (b.is_complete.perform()) {
+				} else if (b.completed.perform()) {
 					const a_computation = get_computation(a.occurrences.compute, instant)
 					const value = is_occurring(a_computation)
 						?
@@ -198,11 +198,11 @@ const a_b_merge_2 = (f, a, b) => {
 }
 
 export const merge_2 = f => a => b => {
-	if (a.is_complete.perform() && b.is_complete.perform()) {
+	if (a.completed.perform() && b.completed.perform()) {
 		return never
-	} else if (a.is_complete.perform()) {
+	} else if (a.completed.perform()) {
 		return b_merge_2(f, a, b)
-	} else if (b.is_complete.perform()) {
+	} else if (b.completed.perform()) {
 		return a_merge_2(f, a, b)
 	} else {
 		return a_b_merge_2(f, a, b)

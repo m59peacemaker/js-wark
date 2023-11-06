@@ -3,7 +3,7 @@ import { get_computation, get_value, is_occurring } from '../Occurrences/interna
 import { of as Dynamic_of } from '../Dynamic/of.js'
 
 export const scan = reducer => initial_value => event => {
-	if (event.is_complete.perform()) {
+	if (event.completed.perform()) {
 		return Dynamic_of (initial_value)
 	}
 
@@ -21,7 +21,7 @@ export const scan = reducer => initial_value => event => {
 			},
 			join_propagation: event.occurrences.join_propagation
 		},
-		is_complete: event.is_complete
+		completed: event.completed
 	}
 
 	/*
@@ -47,8 +47,8 @@ export const scan = reducer => initial_value => event => {
 		}
 	})
 
-	const leave_completion_propagation = updates.is_complete.updates.join_propagation(instant => {
-		if (is_occurring(get_computation(updates.is_complete.updates.compute, instant))) {
+	const leave_completion_propagation = updates.completed.updates.join_propagation(instant => {
+		if (is_occurring(get_computation(updates.completed.updates.compute, instant))) {
 			instant.post_computations.push(() => {
 				leave_propagation()
 				leave_completion_propagation()

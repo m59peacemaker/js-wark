@@ -310,11 +310,11 @@ test(
 		a.produce(Event.complete_on (d_x) (d))
 		d.produce(1)
 		a_x.produce('x') // source event completes
-		assert.equal(c.is_complete.perform(), false) // TODO: Sample.get (Event.is_complete (c))
+		assert.equal(c.completed.perform(), false) // TODO: Sample.get (Event.completed (c))
 		a.produce(Event.never) // should not affect source event
 		d.produce(2)
 		d_x.produce('x') // focused event completes
-		assert.equal(c.is_complete.perform(), true) // TODO: Sample.get (Event.is_complete (c))
+		assert.equal(c.completed.perform(), true) // TODO: Sample.get (Event.completed (c))
 		d.produce(3)
 
 		assert.equal (values, [ 1, 2 ])
@@ -339,11 +339,11 @@ test(
 		a.produce(Event.complete_on (d_x) (d))
 		d.produce(1)
 		a_x.produce('x') // source event completes
-		assert.equal(c.is_complete.perform(), false) // TODO: Sample.get (Event.is_complete (c))
+		assert.equal(c.completed.perform(), false) // TODO: Sample.get (Event.completed (c))
 		a.produce(Event.never) // should not affect source event
 		d.produce(2)
 		d_x.produce('x') // focused event completes
-		assert.equal(c.is_complete.perform(), true) // TODO: Sample.get (Event.is_complete (c))
+		assert.equal(c.completed.perform(), true) // TODO: Sample.get (Event.completed (c))
 		d.produce(3)
 
 		assert.equal (completion_update_values, [ true ])
@@ -368,9 +368,9 @@ test(
 		a.produce(d)
 		d.produce(1)
 		a.produce(Event.never) // focused event is complete
-		assert.equal(c.is_complete.perform(), false) // TODO: Sample.get (Event.is_complete (c))
+		assert.equal(c.completed.perform(), false) // TODO: Sample.get (Event.completed (c))
 		a_x.produce('x') // source event is complete
-		assert.equal(c.is_complete.perform(), true) // TODO: Sample.get (Event.is_complete (c))
+		assert.equal(c.completed.perform(), true) // TODO: Sample.get (Event.completed (c))
 		a_x.produce('x')
 		a.produce(d)
 		d.produce('x')
@@ -397,9 +397,9 @@ test(
 		a.produce(d)
 		d.produce(1)
 		a.produce(Event.never) // focused event is complete
-		assert.equal(c.is_complete.perform(), false) // TODO: Sample.get (Event.is_complete (c))
+		assert.equal(c.completed.perform(), false) // TODO: Sample.get (Event.completed (c))
 		a_x.produce('x') // source event is complete
-		assert.equal(c.is_complete.perform(), true) // TODO: Sample.get (Event.is_complete (c))
+		assert.equal(c.completed.perform(), true) // TODO: Sample.get (Event.completed (c))
 		a_x.produce('x')
 		a.produce(d)
 		d.produce('x')
@@ -429,9 +429,9 @@ test(
 
 		d.produce(1)
 
-		assert.equal(c.is_complete.perform(), false) // TODO: Sample.get (Event.is_complete (c))
+		assert.equal(c.completed.perform(), false) // TODO: Sample.get (Event.completed (c))
 		a_x.produce('x')
-		assert.equal(c.is_complete.perform(), true) // TODO: Sample.get (Event.is_complete (c))
+		assert.equal(c.completed.perform(), true) // TODO: Sample.get (Event.completed (c))
 
 		d.produce(2)
 		a.produce(d)
@@ -460,9 +460,9 @@ test(
 
 		d.produce(1)
 
-		assert.equal(c.is_complete.perform(), false) // TODO: Sample.get (Event.is_complete (c))
+		assert.equal(c.completed.perform(), false) // TODO: Sample.get (Event.completed (c))
 		a_x.produce('x')
-		assert.equal(c.is_complete.perform(), true) // TODO: Sample.get (Event.is_complete (c))
+		assert.equal(c.completed.perform(), true) // TODO: Sample.get (Event.completed (c))
 
 		d.produce(2)
 		a.produce(d)
@@ -490,9 +490,9 @@ test(
 		a.produce(d)
 		d.produce(1)
 
-		assert.equal(c.is_complete.perform(), false) // TODO: Sample.get (Event.is_complete (c))
+		assert.equal(c.completed.perform(), false) // TODO: Sample.get (Event.completed (c))
 		a.produce(Event.never)
-		assert.equal(c.is_complete.perform(), true) // TODO: Sample.get (Event.is_complete (c))
+		assert.equal(c.completed.perform(), true) // TODO: Sample.get (Event.completed (c))
 
 		a.produce(d)
 		d.produce(2)
@@ -518,9 +518,9 @@ test(
 		a.produce(d)
 		d.produce(1)
 
-		assert.equal(c.is_complete.perform(), false) // TODO: Sample.get (Event.is_complete (c))
+		assert.equal(c.completed.perform(), false) // TODO: Sample.get (Event.completed (c))
 		a.produce(Event.never)
-		assert.equal(c.is_complete.perform(), true) // TODO: Sample.get (Event.is_complete (c))
+		assert.equal(c.completed.perform(), true) // TODO: Sample.get (Event.completed (c))
 
 		a.produce(d)
 		d.produce(2)
@@ -542,9 +542,9 @@ test(
 		Event.calling (x => values.push(x)) (c)
 		Event.calling (x => completion_update_values.push(x)) (Event.completion (c))
 
-		assert.equal(c.is_complete.perform(), false) // TODO: Sample.get (Event.is_complete (c))
+		assert.equal(c.completed.perform(), false) // TODO: Sample.get (Event.completed (c))
 		a.produce(Event.complete_on (a) (Event.create()))
-		assert.equal(c.is_complete.perform(), true) // TODO: Sample.get (Event.is_complete (c))
+		assert.equal(c.completed.perform(), true) // TODO: Sample.get (Event.completed (c))
 
 		assert.equal (values, [])
 		assert.equal (completion_update_values, [ true ])
@@ -562,9 +562,9 @@ test(
 
 		Event.calling (x => completion_update_values.push(x)) (Event.completion (c))
 
-		assert.equal(c.is_complete.perform(), false) // TODO: Sample.get (Event.is_complete (c))
+		assert.equal(c.completed.perform(), false) // TODO: Sample.get (Event.completed (c))
 		a.produce(Event.complete_on (a) (Event.create()))
-		assert.equal(c.is_complete.perform(), true) // TODO: Sample.get (Event.is_complete (c))
+		assert.equal(c.completed.perform(), true) // TODO: Sample.get (Event.completed (c))
 
 		assert.equal (completion_update_values, [ true ])
 	}
@@ -583,9 +583,9 @@ test(
 		Event.calling (x => values.push(x)) (c)
 		Event.calling (x => completion_update_values.push(x)) (Event.completion (c))
 
-		assert.equal(c.is_complete.perform(), false) // TODO: Sample.get (Event.is_complete (c))
+		assert.equal(c.completed.perform(), false) // TODO: Sample.get (Event.completed (c))
 		a.produce(Event.complete_on (a) (Event.map (() => 1) (a)))
-		assert.equal(c.is_complete.perform(), true) // TODO: Sample.get (Event.is_complete (c))
+		assert.equal(c.completed.perform(), true) // TODO: Sample.get (Event.completed (c))
 
 		assert.equal (values, [ 1 ])
 		assert.equal (completion_update_values, [ true ])
@@ -603,9 +603,9 @@ test(
 
 		Event.calling (x => completion_update_values.push(x)) (Event.completion (c))
 
-		assert.equal(c.is_complete.perform(), false) // TODO: Sample.get (Event.is_complete (c))
+		assert.equal(c.completed.perform(), false) // TODO: Sample.get (Event.completed (c))
 		a.produce(Event.complete_on (a) (Event.map (() => 1) (a)))
-		assert.equal(c.is_complete.perform(), true) // TODO: Sample.get (Event.is_complete (c))
+		assert.equal(c.completed.perform(), true) // TODO: Sample.get (Event.completed (c))
 
 		assert.equal (completion_update_values, [ true ])
 	}
@@ -627,16 +627,16 @@ test(
 		Event.calling (x => values.push(x)) (c)
 		Event.calling (x => completion_update_values.push(x)) (Event.completion (c))
 
-		assert.equal(a_x_once.is_complete.perform(), false) // TODO: Sample.get (Event.is_complete (c))
-		assert.equal(b.is_complete.perform(), false) // TODO: Sample.get (Event.is_complete (c))
-		assert.equal(c.is_complete.perform(), false) // TODO: Sample.get (Event.is_complete (c))
+		assert.equal(a_x_once.completed.perform(), false) // TODO: Sample.get (Event.completed (c))
+		assert.equal(b.completed.perform(), false) // TODO: Sample.get (Event.completed (c))
+		assert.equal(c.completed.perform(), false) // TODO: Sample.get (Event.completed (c))
 		a.produce(a_x_once)
-		assert.equal(a_x_once.is_complete.perform(), false) // TODO: Sample.get (Event.is_complete (c))
-		assert.equal(b.is_complete.perform(), false) // TODO: Sample.get (Event.is_complete (c))
+		assert.equal(a_x_once.completed.perform(), false) // TODO: Sample.get (Event.completed (c))
+		assert.equal(b.completed.perform(), false) // TODO: Sample.get (Event.completed (c))
 		a.produce(d)
-		assert.equal(a_x_once.is_complete.perform(), true) // TODO: Sample.get (Event.is_complete (c))
-		assert.equal(b.is_complete.perform(), true) // TODO: Sample.get (Event.is_complete (c))
-		assert.equal(c.is_complete.perform(), false) // TODO: Sample.get (Event.is_complete (c))
+		assert.equal(a_x_once.completed.perform(), true) // TODO: Sample.get (Event.completed(c))
+		assert.equal(b.completed.perform(), true) // TODO: Sample.get (Event.completed (c))
+		assert.equal(c.completed.perform(), false) // TODO: Sample.get (Event.completed (c))
 
 		assert.equal (values, [])
 		assert.equal (completion_update_values, [])
@@ -657,16 +657,16 @@ test(
 
 		Event.calling (x => completion_update_values.push(x)) (Event.completion (c))
 
-		assert.equal(a_x_once.is_complete.perform(), false) // TODO: Sample.get (Event.is_complete (c))
-		assert.equal(b.is_complete.perform(), false) // TODO: Sample.get (Event.is_complete (c))
-		assert.equal(c.is_complete.perform(), false) // TODO: Sample.get (Event.is_complete (c))
+		assert.equal(a_x_once.completed.perform(), false) // TODO: Sample.get (Event.completed (c))
+		assert.equal(b.completed.perform(), false) // TODO: Sample.get (Event.completed (c))
+		assert.equal(c.completed.perform(), false) // TODO: Sample.get (Event.completed (c))
 		a.produce(a_x_once)
-		assert.equal(a_x_once.is_complete.perform(), false) // TODO: Sample.get (Event.is_complete (c))
-		assert.equal(b.is_complete.perform(), false) // TODO: Sample.get (Event.is_complete (c))
+		assert.equal(a_x_once.completed.perform(), false) // TODO: Sample.get (Event.completed (c))
+		assert.equal(b.completed.perform(), false) // TODO: Sample.get (Event.completed (c))
 		a.produce(d)
-		assert.equal(a_x_once.is_complete.perform(), true) // TODO: Sample.get (Event.is_complete (c))
-		assert.equal(b.is_complete.perform(), true) // TODO: Sample.get (Event.is_complete (c))
-		assert.equal(c.is_complete.perform(), false) // TODO: Sample.get (Event.is_complete (c))
+		assert.equal(a_x_once.completed.perform(), true) // TODO: Sample.get (Event.completed (c))
+		assert.equal(b.completed.perform(), true) // TODO: Sample.get (Event.completed (c))
+		assert.equal(c.completed.perform(), false) // TODO: Sample.get (Event.completed (c))
 
 		assert.equal (completion_update_values, [])
 	}
@@ -688,14 +688,14 @@ test(
 		Event.calling (x => values.push(x)) (c)
 		Event.calling (x => completion_update_values.push(x)) (Event.completion (c))
 
-		assert.equal(a_x_once.is_complete.perform(), false) // TODO: Sample.get (Event.is_complete (c))
-		assert.equal(b.is_complete.perform(), false) // TODO: Sample.get (Event.is_complete (c))
-		assert.equal(c.is_complete.perform(), false) // TODO: Sample.get (Event.is_complete (c))
+		assert.equal(a_x_once.completed.perform(), false) // TODO: Sample.get (Event.completed (c))
+		assert.equal(b.completed.perform(), false) // TODO: Sample.get (Event.completed (c))
+		assert.equal(c.completed.perform(), false) // TODO: Sample.get (Event.completed (c))
 		a.produce(a_x_once)
 		a.produce(d)
-		assert.equal(a_x_once.is_complete.perform(), true) // TODO: Sample.get (Event.is_complete (c))
-		assert.equal(b.is_complete.perform(), true) // TODO: Sample.get (Event.is_complete (c))
-		assert.equal(c.is_complete.perform(), false) // TODO: Sample.get (Event.is_complete (c))
+		assert.equal(a_x_once.completed.perform(), true) // TODO: Sample.get (Event.completed (c))
+		assert.equal(b.completed.perform(), true) // TODO: Sample.get (Event.completed (c))
+		assert.equal(c.completed.perform(), false) // TODO: Sample.get (Event.completed (c))
 
 		assert.equal (values, [ 1 ])
 		assert.equal (completion_update_values, [])
@@ -716,14 +716,14 @@ test(
 
 		Event.calling (x => completion_update_values.push(x)) (Event.completion (c))
 
-		assert.equal(a_x_once.is_complete.perform(), false) // TODO: Sample.get (Event.is_complete (c))
-		assert.equal(b.is_complete.perform(), false) // TODO: Sample.get (Event.is_complete (c))
-		assert.equal(c.is_complete.perform(), false) // TODO: Sample.get (Event.is_complete (c))
+		assert.equal(a_x_once.completed.perform(), false) // TODO: Sample.get (Event.completed (c))
+		assert.equal(b.completed.perform(), false) // TODO: Sample.get (Event.completed (c))
+		assert.equal(c.completed.perform(), false) // TODO: Sample.get (Event.completed (c))
 		a.produce(a_x_once)
 		a.produce(d)
-		assert.equal(a_x_once.is_complete.perform(), true) // TODO: Sample.get (Event.is_complete (c))
-		assert.equal(b.is_complete.perform(), true) // TODO: Sample.get (Event.is_complete (c))
-		assert.equal(c.is_complete.perform(), false) // TODO: Sample.get (Event.is_complete (c))
+		assert.equal(a_x_once.completed.perform(), true) // TODO: Sample.get (Event.completed (c))
+		assert.equal(b.completed.perform(), true) // TODO: Sample.get (Event.completed (c))
+		assert.equal(c.completed.perform(), false) // TODO: Sample.get (Event.completed (c))
 
 		assert.equal (completion_update_values, [])
 	}

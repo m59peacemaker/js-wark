@@ -131,11 +131,11 @@ test(
 
 		foo_updates.produce(1)
 		outer_dynamic_updates_completion.produce('x') // source event completes
-		assert.equal(joined_dynamic.updates.is_complete.perform(), false)
+		assert.equal(joined_dynamic.updates.completed.perform(), false)
 		outer_dynamic_updates.produce(Dynamic.of('x'))
 		foo_updates.produce(2)
 		foo_completion.produce('x') // focused event completes
-		assert.equal(joined_dynamic.updates.is_complete.perform(), true)
+		assert.equal(joined_dynamic.updates.completed.perform(), true)
 		assert.equal (completion_update_values, [ true ])
 
 		foo_updates.produce(3)
@@ -164,9 +164,9 @@ test(
 
 		foo.updates.produce(1)
 		outer_dynamic_updates.produce(Dynamic.of(2)) // focused event is complete
-		assert.equal(joined_dynamic.updates.is_complete.perform(), false)
+		assert.equal(joined_dynamic.updates.completed.perform(), false)
 		outer_dynamic_updates_completion.produce('x') // source event is complete
-		assert.equal(joined_dynamic.updates.is_complete.perform(), true)
+		assert.equal(joined_dynamic.updates.completed.perform(), true)
 		assert.equal (completion_update_values, [ true ])
 
 		outer_dynamic_updates_completion.produce('x')
@@ -199,9 +199,9 @@ test(
 
 		foo_updates.produce(1)
 
-		assert.equal(joined_dynamic.updates.is_complete.perform(), false)
+		assert.equal(joined_dynamic.updates.completed.perform(), false)
 		outer_dynamic_updates_completion.produce('x')
-		assert.equal(joined_dynamic.updates.is_complete.perform(), true)
+		assert.equal(joined_dynamic.updates.completed.perform(), true)
 		assert.equal (completion_update_values, [ true ])
 
 		foo_updates.produce(2)
@@ -236,9 +236,9 @@ test(
 
 		foo.updates.produce(1)
 
-		assert.equal(joined_dynamic.updates.is_complete.perform(), false)
+		assert.equal(joined_dynamic.updates.completed.perform(), false)
 		outer_dynamic_updates.produce(bar)
-		assert.equal(joined_dynamic.updates.is_complete.perform(), true)
+		assert.equal(joined_dynamic.updates.completed.perform(), true)
 		assert.equal (completion_update_values, [ true ])
 
 		outer_dynamic_updates.produce(foo)
@@ -264,13 +264,13 @@ test(
 		Event.calling (x => values.push(x)) (Dynamic.updates (joined_dynamic))
 		Event.calling (x => completion_update_values.push(x)) (Event.completion (Dynamic.updates (joined_dynamic)))
 
-		assert.equal(joined_dynamic.updates.is_complete.perform(), false)
+		assert.equal(joined_dynamic.updates.completed.perform(), false)
 		outer_dynamic_updates.produce(
 			Event.hold
 				(1)
 				(Event.complete_on (outer_dynamic_updates) (Event.create()))
 		)
-		assert.equal(joined_dynamic.updates.is_complete.perform(), true)
+		assert.equal(joined_dynamic.updates.completed.perform(), true)
 		assert.equal (completion_update_values, [ true ])
 
 		assert.equal (values, [ 1 ])
@@ -293,13 +293,13 @@ test(
 		Event.calling (x => values.push(x)) (Dynamic.updates (joined_dynamic))
 		Event.calling (x => completion_update_values.push(x)) (Event.completion (Dynamic.updates (joined_dynamic)))
 
-		assert.equal(joined_dynamic.updates.is_complete.perform(), false)
+		assert.equal(joined_dynamic.updates.completed.perform(), false)
 		outer_dynamic_updates.produce(
 			Event.hold
 				(0)
 				(Event.complete_on (outer_dynamic_updates) (Event.map (() => 1) (outer_dynamic_updates)))
 		)
-		assert.equal(joined_dynamic.updates.is_complete.perform(), true)
+		assert.equal(joined_dynamic.updates.completed.perform(), true)
 		assert.equal (completion_update_values, [ true ])
 
 		assert.equal (values, [ 1 ])
@@ -324,16 +324,16 @@ test(
 		Event.calling (x => values.push(x)) (Dynamic.updates (joined_dynamic))
 		Event.calling (x => completion_update_values.push(x)) (Event.completion (Dynamic.updates (joined_dynamic)))
 
-		assert.equal(outer_dynamic_updates_completion_once.is_complete.perform(), false)
-		assert.equal(unjoined_dynamic.updates.is_complete.perform(), false)
-		assert.equal(joined_dynamic.updates.is_complete.perform(), false)
+		assert.equal(outer_dynamic_updates_completion_once.completed.perform(), false)
+		assert.equal(unjoined_dynamic.updates.completed.perform(), false)
+		assert.equal(joined_dynamic.updates.completed.perform(), false)
 		outer_dynamic_updates.produce(Event.hold (0) (outer_dynamic_updates_completion_once))
-		assert.equal(outer_dynamic_updates_completion_once.is_complete.perform(), false)
-		assert.equal(unjoined_dynamic.updates.is_complete.perform(), false)
+		assert.equal(outer_dynamic_updates_completion_once.completed.perform(), false)
+		assert.equal(unjoined_dynamic.updates.completed.perform(), false)
 		outer_dynamic_updates.produce(foo)
-		assert.equal(outer_dynamic_updates_completion_once.is_complete.perform(), true)
-		assert.equal(unjoined_dynamic.updates.is_complete.perform(), true)
-		assert.equal(joined_dynamic.updates.is_complete.perform(), false)
+		assert.equal(outer_dynamic_updates_completion_once.completed.perform(), true)
+		assert.equal(unjoined_dynamic.updates.completed.perform(), true)
+		assert.equal(joined_dynamic.updates.completed.perform(), false)
 
 		assert.equal (values, [ 0, 0 ])
 		assert.equal (completion_update_values, [])
@@ -360,14 +360,14 @@ test(
 		Event.calling (x => values.push(x)) (Dynamic.updates (joined_dynamic))
 		Event.calling (x => completion_update_values.push(x)) (Event.completion (Dynamic.updates (joined_dynamic)))
 
-		assert.equal(outer_dynamic_updates_completion_once.is_complete.perform(), false)
-		assert.equal(unjoined_dynamic.updates.is_complete.perform(), false)
-		assert.equal(joined_dynamic.updates.is_complete.perform(), false)
+		assert.equal(outer_dynamic_updates_completion_once.completed.perform(), false)
+		assert.equal(unjoined_dynamic.updates.completed.perform(), false)
+		assert.equal(joined_dynamic.updates.completed.perform(), false)
 		outer_dynamic_updates.produce(Event.hold (0) (outer_dynamic_updates_completion_once))
 		outer_dynamic_updates.produce(foo)
-		assert.equal(outer_dynamic_updates_completion_once.is_complete.perform(), true)
-		assert.equal(unjoined_dynamic.updates.is_complete.perform(), true)
-		assert.equal(joined_dynamic.updates.is_complete.perform(), false)
+		assert.equal(outer_dynamic_updates_completion_once.completed.perform(), true)
+		assert.equal(unjoined_dynamic.updates.completed.perform(), true)
+		assert.equal(joined_dynamic.updates.completed.perform(), false)
 
 		assert.equal (values, [ 0, 1 ])
 		assert.equal (completion_update_values, [])

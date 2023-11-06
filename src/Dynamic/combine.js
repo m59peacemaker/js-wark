@@ -4,7 +4,7 @@ import { register_finalizer } from '../finalization.js'
 
 export const combine = f => dynamics => {
 	let value = undetermined
-	let is_complete_value = undetermined
+	let completed_value = undetermined
 	const dependants = new Map()
 	const completion_dependants = new Map()
 
@@ -26,7 +26,7 @@ export const combine = f => dynamics => {
 							These conditions are awkward due to avoiding `get_computation` when an event is already complete.
 							See if this can be improved.
 					*/
-					if (dynamic.updates.is_complete.perform()) {
+					if (dynamic.updates.completed.perform()) {
 						value_getters.push(dynamic.perform)
 					} else {
 						const computation = get_computation(dynamic.updates.occurrences.compute, instant)
@@ -46,18 +46,18 @@ export const combine = f => dynamics => {
 				return () => dependants.delete(id)
 			}
 		},
-		is_complete: {
+		completed: {
 			perform: () => {
-				if (is_complete_value = undetermined) {
-					is_complete_value = dynamics.every(dynamic => dynamic.updates.is_complete.perform())
+				if (completed_value = undetermined) {
+					completed_value = dynamics.every(dynamic => dynamic.updates.completed.perform())
 				}
-				return is_complete_value
+				return completed_value
 			},
 			updates: {
 				compute: instant =>
 					dynamics.every(dynamic =>
-						dynamic.updates.is_complete.perform()
-							|| is_occurring(get_computation(dynamic.updates.is_complete.updates.compute, instant))
+						dynamic.updates.completed.perform()
+							|| is_occurring(get_computation(dynamic.updates.completed.updates.compute, instant))
 					)
 						?
 							() => true
@@ -96,13 +96,13 @@ export const combine = f => dynamics => {
 		}
 
 		// TODO: this is probably not efficient for this case
-		const computation = get_computation(updates.is_complete.updates.compute, instant)
+		const computation = get_computation(updates.completed.updates.compute, instant)
 		if (is_occurring(computation)) {
 			instant.post_computations.push(instant => {
 				if ('value' in computation) {
-					is_complete_value = computation.value
+					completed_value = computation.value
 				} else {
-					is_complete_value = undetermined
+					completed_value = undetermined
 				}
 			})
 		}
@@ -110,13 +110,13 @@ export const combine = f => dynamics => {
 
 
 	for (const dynamic of dynamics) {
-		if (dynamic.updates.is_complete.perform() === false) {
+		if (dynamic.updates.completed.perform() === false) {
 			const leave_propagation = dynamic.updates.occurrences.join_propagation(instant => {
 				get_computation(compute_propagation, instant)
 			})
 
 			const compute_completion = instant => {
-				if (is_occurring(updates.is_complete.updates.compute, instant)) {
+				if (is_occurring(updates.completed.updates.compute, instant)) {
 					get_computation(compute_completion_propagation, instant)
 					instant.post_computations.push(() => {
 						leave_propagation()
@@ -126,7 +126,7 @@ export const combine = f => dynamics => {
 				}
 			}
 
-			const leave_completion_propagation = dynamic.updates.is_complete.updates.join_propagation(instant =>
+			const leave_completion_propagation = dynamic.updates.completed.updates.join_propagation(instant =>
 				/*
 					TODO:
 						this function is probably only called once per instant anyway,

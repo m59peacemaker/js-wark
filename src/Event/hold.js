@@ -3,7 +3,7 @@ import { get_computation, get_value, is_occurring } from '../Occurrences/interna
 import { of as Dynamic_of } from '../Dynamic/of.js'
 
 export const hold = initial_value => updates => {
-	if (updates.is_complete.perform()) {
+	if (updates.completed.perform()) {
 		return Dynamic_of (initial_value)
 	}
 
@@ -19,8 +19,8 @@ export const hold = initial_value => updates => {
 		}
 	})
 
-	const leave_completion_propagation = updates.is_complete.updates.join_propagation(instant => {
-		if (is_occurring(get_computation(updates.is_complete.updates.compute, instant))) {
+	const leave_completion_propagation = updates.completed.updates.join_propagation(instant => {
+		if (is_occurring(get_computation(updates.completed.updates.compute, instant))) {
 			instant.post_computations.push(() => {
 				leave_propagation()
 				leave_completion_propagation()

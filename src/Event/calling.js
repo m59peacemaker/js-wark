@@ -2,7 +2,7 @@ import { never } from './never.js'
 import { get_computation, get_value, is_occurring } from '../Occurrences/internal/computation.js'
 
 export const calling = f => x => {
-	if (x.is_complete.perform()) {
+	if (x.completed.perform()) {
 		return never
 	} else {
 		const occurrences = {
@@ -29,7 +29,7 @@ export const calling = f => x => {
 		})
 
 		const compute_completion = instant => {
-			if (is_occurring(get_computation(x.is_complete.updates.compute, instant))) {
+			if (is_occurring(get_computation(x.completed.updates.compute, instant))) {
 				instant.post_computations.push(() => {
 					leave_propagation()
 					leave_completion_propagation()
@@ -37,7 +37,7 @@ export const calling = f => x => {
 			}
 		}
 
-		const leave_completion_propagation = x.is_complete.updates.join_propagation(instant => {
+		const leave_completion_propagation = x.completed.updates.join_propagation(instant => {
 			/*
 				TODO:
 				As long as get_computation calls the compute function, this only needs to get the computation
@@ -52,11 +52,9 @@ export const calling = f => x => {
 			// instant.computations.push(instant => get_computation(compute_completion, instant))
 		})
 
-		const self = {
+		return {
 			occurrences,
-			is_complete: x.is_complete
+			completed: x.completed
 		}
-
-		return self
 	}
 }

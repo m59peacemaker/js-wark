@@ -120,19 +120,19 @@ test(`combined dynamic's updates complete when updates of input dynamics complet
 	const values = []
 	Event.calling (x => values.push(x)) (Event.completion (Dynamic.updates (d)))
 
-	assert.equal(Sample.get (Event.is_complete (Dynamic.updates (d))), false)
+	assert.equal(Sample.get (Event.completed (Dynamic.updates (d))), false)
 
 	assert.equal(Sample.get (d), [ 0, 1, 2 ])
 
 	c_updates_completion.produce('x')
 
-	assert.equal(Sample.get (Event.is_complete (Dynamic.updates (d))), false)
+	assert.equal(Sample.get (Event.completed (Dynamic.updates (d))), false)
 
 	assert.equal(values, [])
 
 	a_updates_completion.produce('x')
 
-	assert.equal(Sample.get (Event.is_complete (Dynamic.updates (d))), true)
+	assert.equal(Sample.get (Event.completed (Dynamic.updates (d))), true)
 
 	assert.equal(values, [ true ])
 

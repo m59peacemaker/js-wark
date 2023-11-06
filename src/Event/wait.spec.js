@@ -31,7 +31,7 @@ test('completes', async () => {
 	const a = Event.wait ({ ms })
 	Event.calling (x => values.push (x)) (Event.completion (a))
 	await promise_wait({ ms: ms * 4 })
-	assert.equal(Sample.get (Event.is_complete (a)), true)
+	assert.equal(Sample.get (Event.completed (a)), true)
 	assert.equal(values, [ true ])
 })
 
@@ -47,7 +47,7 @@ test('completes simultaneously with its occurrence', async () => {
 			(Event.completion (a))
 		)
 	await promise_wait({ ms: ms * 4 })
-	assert.equal(Sample.get (Event.is_complete (a)), true)
+	assert.equal(Sample.get (Event.completed (a)), true)
 	assert.equal(values, [ [ 25, true ] ])
 })
 

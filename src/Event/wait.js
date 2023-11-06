@@ -4,15 +4,15 @@ import { register_finalizer } from '../finalization.js'
 
 export const wait  = ({ ms }) => {
 	const propagation = new Set()
-	let is_complete_value = false
+	let completed_value = false
 
 	const occurrences = {
 		compute: Symbol(),
 		join_propagation: f => join_propagation(f, propagation),
 	}
 
-	const is_complete = {
-		perform: () => is_complete_value,
+	const completed = {
+		perform: () => completed_value,
 		updates: {
 			compute: Symbol(),
 			join_propagation: occurrences.join_propagation
@@ -20,7 +20,7 @@ export const wait  = ({ ms }) => {
 	}
 
 	const compute_ref = new WeakRef(occurrences.compute)
-	const completion_compute_ref = new WeakRef(is_complete.updates.compute)
+	const completion_compute_ref = new WeakRef(completed.updates.compute)
 
 	const timeout = setTimeout(
 		() => {
@@ -36,7 +36,7 @@ export const wait  = ({ ms }) => {
 			for (const f of propagation) {
 				f(instant)
 			}
-			is_complete_value = true
+			completed_value = true
 			for (const f of instant.post_computations) {
 				f()
 			}
@@ -55,7 +55,7 @@ export const wait  = ({ ms }) => {
 	)
 
 	const unregister_completion_compute_finalizer = register_finalizer(
-		is_complete.updates.compute,
+		completed.updates.compute,
 		() => {
 			if (compute_ref.deref() === undefined) {
 				clearTimeout(timeout)
@@ -66,6 +66,6 @@ export const wait  = ({ ms }) => {
 
 	return {
 		occurrences,
-		is_complete
+		completed
 	}
 }

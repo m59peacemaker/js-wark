@@ -14,7 +14,7 @@ export const map = f => x => {
 		return value
 	}
 
-	if (x.updates.is_complete.perform()) {
+	if (x.updates.completed.perform()) {
 		return {
 			updates: never,
 			perform
@@ -44,8 +44,8 @@ export const map = f => x => {
 		}
 	})
 
-	const leave_completion_propagation = x.updates.is_complete.updates.join_propagation(instant => {
-		if (is_occurring(x.updates.is_complete.updates.compute, instant)) {
+	const leave_completion_propagation = x.updates.completed.updates.join_propagation(instant => {
+		if (is_occurring(x.updates.completed.updates.compute, instant)) {
 			instant.post_computations.push(() => {
 				leave_propagation()
 				leave_completion_propagation()
@@ -56,7 +56,7 @@ export const map = f => x => {
 
 	const updates = {
 		occurrences: updates_occurrences,
-		is_complete: x.updates.is_complete
+		completed: x.updates.completed
 	}
 
 	const unregister_finalizer = register_finalizer(updates, () => {

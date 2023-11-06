@@ -31,8 +31,8 @@ export const switching = outer_dynamic => {
 
 	const join_inner_event_completion_propagation = () => {
 		const inner_event = outer_dynamic.perform()
-		leave_inner_event_completion_propagation = inner_event.is_complete.updates.join_propagation(instant => {
-			if (is_occurring(get_computation(inner_event.is_complete.updates.compute, instant))) {
+		leave_inner_event_completion_propagation = inner_event.completed.updates.join_propagation(instant => {
+			if (is_occurring(get_computation(inner_event.completed.updates.compute, instant))) {
 				get_computation(propagate_completion, instant)
 			}
 		})
@@ -41,7 +41,7 @@ export const switching = outer_dynamic => {
 	return {
 		occurrences: {
 			compute: instant => {
-				if (outer_dynamic.updates.is_complete.perform()) {
+				if (outer_dynamic.updates.completed.perform()) {
 					const inner_event = outer_dynamic.perform()
 					const inner_event_computation = get_computation(inner_event.occurrences.compute, instant)
 					return is_occurring(inner_event_computation)
@@ -101,16 +101,16 @@ export const switching = outer_dynamic => {
 				}
 			}
 		},
-		is_complete: {
+		completed: {
 			perform: () =>
-				outer_dynamic.updates.is_complete.perform() && outer_dynamic.perform().is_complete.perform()
+				outer_dynamic.updates.completed.perform() && outer_dynamic.perform().completed.perform()
 			,
 			updates: {
 				compute: instant => {
-					if (outer_dynamic.updates.is_complete.perform()) {
+					if (outer_dynamic.updates.completed.perform()) {
 						const inner_event = outer_dynamic.perform()
-						const is_complete = inner_event.is_complete.perform()
-							|| is_occurring(get_computation(inner_event.is_complete.updates.compute, instant))
+						const is_complete = inner_event.completed.perform()
+							|| is_occurring(get_computation(inner_event.completed.updates.compute, instant))
 						return is_complete && (() => true)
 					} else {
 						const outer_dynamic_updates_computation = get_computation(
@@ -122,10 +122,10 @@ export const switching = outer_dynamic => {
 								get_value(outer_dynamic_updates_computation)
 							:
 								outer_dynamic.perform()
-						const inner_event_is_complete = inner_event.is_complete.perform()
-							|| is_occurring(get_computation(inner_event.is_complete.updates.compute, instant))
+						const inner_event_is_complete = inner_event.completed.perform()
+							|| is_occurring(get_computation(inner_event.completed.updates.compute, instant))
 						const is_complete = inner_event_is_complete
-							&& is_occurring(get_computation(outer_dynamic.updates.is_complete.updates.compute, instant))
+							&& is_occurring(get_computation(outer_dynamic.updates.completed.updates.compute, instant))
 						return is_complete && (() => true)
 					}
 				},
@@ -133,8 +133,8 @@ export const switching = outer_dynamic => {
 					const id = Symbol()
 					completion_dependants.set(id, f)
 					if (completion_dependants.size === 1) {
-						leave_outer_dynamic_updates_completion_propagation = outer_dynamic.updates.is_complete.updates.join_propagation(instant => {
-							if (is_occurring(get_computation(outer_dynamic.updates.is_complete.updates.compute, instant))) {
+						leave_outer_dynamic_updates_completion_propagation = outer_dynamic.updates.completed.updates.join_propagation(instant => {
+							if (is_occurring(get_computation(outer_dynamic.updates.completed.updates.compute, instant))) {
 								get_computation(propagate_completion, instant)
 								instant.post_computations.push(instant => {
 									if (completion_dependants.size > 0) {
