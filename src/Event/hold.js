@@ -1,4 +1,4 @@
-import { register_finalizer } from '../finalization.js'
+import { register_finalizer } from '../lib/finalization.js'
 import { get_computation, get_value, is_occurring } from '../Occurrences/internal/computation.js'
 import { of as Dynamic_of } from '../Dynamic/of.js'
 

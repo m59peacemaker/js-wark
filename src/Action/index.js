@@ -1,7 +1,1 @@
-export * from './apply.js'
-export * from './chain.js'
-export * from './from.js'
-export * from './lift_2.js'
-export * from './map.js'
-export * from './of.js'
 export * from './perform.js'

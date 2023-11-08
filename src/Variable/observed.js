@@ -1,5 +1,5 @@
 import { get_computation, is_occurring } from '../Occurrences/internal/computation.js'
-import { register_finalizer } from '../finalization.js'
+import { register_finalizer } from '../lib/finalization.js'
 
 // toggle (false) (take (1) (occurrences))
 export const observed = occurrences => {

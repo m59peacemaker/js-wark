@@ -1,6 +1,6 @@
 import { get_computation, get_value, is_occurring } from '../Occurrences/internal/computation.js'
 import { undetermined } from './internal/undetermined.js'
-import { register_finalizer } from '../finalization.js'
+import { register_finalizer } from '../lib/finalization.js'
 
 export const combine = f => dynamics => {
 	let value = undetermined

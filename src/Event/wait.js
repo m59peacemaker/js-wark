@@ -1,6 +1,6 @@
 import { create as create_instant } from '../Instant/create.js'
 import { join_propagation } from '../Occurrences/internal/join_propagation.js'
-import { register_finalizer } from '../finalization.js'
+import { register_finalizer } from '../lib/finalization.js'
 
 export const wait  = ({ ms }) => {
 	const propagation = new Set()

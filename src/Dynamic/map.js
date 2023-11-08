@@ -1,7 +1,7 @@
 import { map as Occurrences_map } from '../Occurrences/map.js'
 import { get_computation, get_value, is_occurring } from '../Occurrences/internal/computation.js'
 import { undetermined } from './internal/undetermined.js'
-import { register_finalizer } from '../finalization.js'
+import { register_finalizer } from '../lib/finalization.js'
 import { never } from '../Event/never.js'
 
 export const map = f => x => {
