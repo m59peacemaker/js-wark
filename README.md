@@ -16,7 +16,7 @@ aka Demand-Driven Computation
 
 ### Temporal Determinism
 
-Temporal determinism means that all actions within a system are explicitly associated with and performed within logical instants of time, providing consistent and predictable behavior of operations in relation to time
+Temporal determinism means that all actions within a system are explicitly associated with and performed within logical instants of time, providing consistent and predictable behavior of operations in relation to time.
 
 #### How complicated, inefficient, and error-prone is temporally non-deterministic code?
 
