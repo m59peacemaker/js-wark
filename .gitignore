@@ -1,3 +1,7 @@
-/node_modules
-/build
-/dist
+/node_modules/
+
+build/*
+!build/.keep
+
+dist/*
+!dist/.keep
