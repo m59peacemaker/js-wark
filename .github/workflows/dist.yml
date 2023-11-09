@@ -1,0 +1,34 @@
+name: dist
+on:
+  push:
+    tags:
+      - 'v*'
+      - '!v*-dist'
+jobs:
+  dist:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: dist
+          fetch-depth: 0
+      - run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+      - run: git merge origin/main
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 19.x
+      - run: npm ci
+      - run: npm run test
+      - run: npm run build
+      - run: |
+          git add --force ./dist
+          TAG="${GITHUB_REF#refs/tags/}-dist"
+          git diff --quiet && git diff --staged --quiet || git commit -m "$TAG"
+          git tag -a "$TAG" -m "$TAG"
+      - run: git push --follow-tags
+      # - uses: JS-DevTools/npm-publish@v1
+      #   with:
+      #     access: public
+      #     token: ${{ secrets.NPM_ACCESS_TOKEN }}
