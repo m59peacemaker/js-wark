@@ -1,6 +1,5 @@
-import { Monad } from '../typeclass/Monad'
 import { Instant } from '../Instant/Instant'
 
-export interface Action<A> extends Monad<A> {
+export interface Action<A> {
 	perform: (instant: Instant): A
 }

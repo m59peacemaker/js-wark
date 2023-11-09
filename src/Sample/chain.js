@@ -1,4 +1,4 @@
 import { construct } from './construct.js'
+import { Chain } from '../Action/Chain.js'
 
-export const chain = f => x =>
-	construct (instant => f (x.perform(instant)).perform(instant))
+export const chain = Chain (construct)

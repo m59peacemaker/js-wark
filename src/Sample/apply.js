@@ -1,4 +1,4 @@
-import { lift_2 } from './lift_2.js'
-import { call } from '../util/call.js'
+import { construct } from './construct.js'
+import { Apply } from '../Action/Apply.js'
 
-export const apply = lift_2 (call)
+export const apply = Apply (construct)

@@ -1,3 +1,4 @@
 import { construct } from './construct.js'
+import { Of } from '../Action/Of.js'
 
-export const of = x => construct(() => x)
+export const of = Of (construct)

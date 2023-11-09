@@ -1,7 +1,4 @@
 import { construct } from './construct.js'
+import { Map } from '../Action/Map.js'
 
-export const map = f => x =>
-	construct (
-		instant =>
-			f (x.perform(instant))
-	)
+export const map = Map (construct)
