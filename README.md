@@ -44,11 +44,11 @@ The same logic, expressed with semantics of temporal determinism results in a pr
 ```js
 // TODO: this can be nicer
 ;[
-	unix_timstamp_ms
+	unix_timstamp_ms,
 	unix_timestamp_ms,
 	is8601_datetime,
 	unix_timestamp_ms,
-	is8601_datetime,
+	is8601_datetime
 ]
 	.reduce(
 		(acc, x) => Event.chain (log) (Effect.tag (x) (acc)),
