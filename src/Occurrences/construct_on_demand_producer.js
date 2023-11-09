@@ -8,7 +8,7 @@ export const construct_on_demand_producer = producer_f => {
 	const _produce = value => produce(self, propagation, value)
 
 	const self = {
-		compute: Symbol(),
+		compute: {},
 		join_propagation: f => {
 			const activate = propagation.size === 0
 			const leave_propagation = join_propagation(f, propagation)

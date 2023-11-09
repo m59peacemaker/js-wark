@@ -10,7 +10,7 @@ export const construct_producer = f => {
 			but it works and was the best I could do for efficiency so far.
 	*/
 	const self = {
-		compute: Symbol(),
+		compute: {},
 		join_propagation: f => join_propagation(f, propagation)
 	}
 

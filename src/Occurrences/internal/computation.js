@@ -12,7 +12,7 @@ export const get_computation = (compute, instant) => {
 			so it is efficient to call and cache it now,
 			so `is_occurring` can always use the cached value.
 		*/
-		cache.compute_value = typeof compute === 'symbol'
+		cache.compute_value = typeof compute === 'object'
 			?
 				// compute function belongs to a producer and it is not occurring right now
 				false

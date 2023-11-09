@@ -37,7 +37,7 @@ export const produces = values => {
 // export const produces = values => {
 // 	const self = {
 // 		occurrences: {
-// 			compute: Symbol(),
+// 			compute: {},
 // 			join_propagation: f => {
 // 				for (const [ i, value ] of values.entries()) {
 // 					console.log('join prop', value)
@@ -56,7 +56,7 @@ export const produces = values => {
 // 		},
 // 		completed: {
 // 			updates: {
-// 				compute: Symbol(),
+// 				compute: {},
 // 				join_propagation: f => {
 // 					const instant = create_instant()
 // 					instant.cache.set(self.completed.updates.compute, { compute_value: () => true, value: true })

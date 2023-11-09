@@ -7,14 +7,14 @@ export const wait  = ({ ms }) => {
 	let completed_value = false
 
 	const occurrences = {
-		compute: Symbol(),
+		compute: {},
 		join_propagation: f => join_propagation(f, propagation),
 	}
 
 	const completed = {
 		perform: () => completed_value,
 		updates: {
-			compute: Symbol(),
+			compute: {},
 			join_propagation: occurrences.join_propagation
 		}
 	}
